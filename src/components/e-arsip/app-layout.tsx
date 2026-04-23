@@ -11,7 +11,6 @@ import {
   CheckCircle,
   BarChart3,
   Hourglass,
-  Settings,
   Moon,
   Sun,
   Bell,
@@ -183,7 +182,6 @@ function SidebarContent({
                 )}
                 aria-current={isActive ? 'page' : undefined}
               >
-                {/* Active right accent bar */}
                 {isActive && (
                   <motion.div
                     layoutId="sidebar-active-bar"
@@ -193,7 +191,6 @@ function SidebarContent({
                   />
                 )}
 
-                {/* Active background highlight */}
                 {isActive && (
                   <motion.div
                     layoutId="sidebar-active-bg"
@@ -341,13 +338,7 @@ function NotificationPopover() {
 // ===== Theme Toggle =====
 
 function ThemeToggle() {
-  const { theme, setTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
-
-  // Avoid hydration mismatch
-  useState(() => {
-    setMounted(true);
-  });
+  const { theme, toggleTheme, mounted } = useTheme();
 
   if (!mounted) {
     return (
@@ -362,7 +353,7 @@ function ThemeToggle() {
       variant="ghost"
       size="icon"
       className="h-9 w-9 text-muted-foreground hover:text-foreground"
-      onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+      onClick={toggleTheme}
       aria-label={theme === 'dark' ? 'Mode terang' : 'Mode gelap'}
     >
       <AnimatePresence mode="wait" initial={false}>
@@ -411,7 +402,6 @@ function Topbar({
           </Button>
         </SheetTrigger>
         <SheetContent side="left" className="w-64 p-0 sm:max-w-[256px]">
-          {/* Sheet title for accessibility */}
           <SheetTitle className="sr-only">Menu navigasi</SheetTitle>
           <MobileSidebar onNavigate={() => setMobileSidebarOpen(false)} />
         </SheetContent>

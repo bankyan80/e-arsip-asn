@@ -3,39 +3,51 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
 
 interface ThemeContextType {
-  theme: string;
+  theme: 'light' | 'dark';
   toggleTheme: () => void;
+  setTheme: (theme: 'light' | 'dark') => void;
+  resolvedTheme: 'light' | 'dark';
+  mounted: boolean;
 }
 
-const ThemeContext = createContext<ThemeContextType>({ theme: 'light', toggleTheme: () => {} });
+const ThemeContext = createContext<ThemeContextType>({
+  theme: 'light',
+  toggleTheme: () => {},
+  setTheme: () => {},
+  resolvedTheme: 'light',
+  mounted: false,
+});
 
-export const useTheme = () => useContext(ThemeContext);
+export function useTheme() {
+  return useContext(ThemeContext);
+}
 
 export function Providers({ children }: { children: ReactNode }) {
-  const [theme, setTheme] = useState('light');
+  const [theme, setThemeState] = useState<'light' | 'dark'>('light');
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    const saved = localStorage.getItem('theme') || 'light';
-    setTheme(saved);
     setMounted(true);
+    const stored = localStorage.getItem('e-arsip-theme') as 'light' | 'dark' | null;
+    if (stored) {
+      setThemeState(stored);
+      document.documentElement.classList.toggle('dark', stored === 'dark');
+    }
   }, []);
 
-  useEffect(() => {
-    if (!mounted) return;
-    document.documentElement.classList.remove('light', 'dark');
-    document.documentElement.classList.add(theme);
-    localStorage.setItem('theme', theme);
-  }, [theme, mounted]);
+  const setTheme = (newTheme: 'light' | 'dark') => {
+    setThemeState(newTheme);
+    localStorage.setItem('e-arsip-theme', newTheme);
+    document.documentElement.classList.toggle('dark', newTheme === 'dark');
+  };
 
-  const toggleTheme = () => setTheme((t) => (t === 'light' ? 'dark' : 'light'));
-
-  if (!mounted) {
-    return <div className="min-h-screen bg-white" />;
-  }
+  const toggleTheme = () => {
+    const next = theme === 'light' ? 'dark' : 'light';
+    setTheme(next);
+  };
 
   return (
-    <ThemeContext.Provider value={{ theme, toggleTheme }}>
+    <ThemeContext.Provider value={{ theme, toggleTheme, setTheme, resolvedTheme: theme, mounted }}>
       {children}
     </ThemeContext.Provider>
   );

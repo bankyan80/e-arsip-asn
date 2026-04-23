@@ -15,7 +15,8 @@ import type { Pegawai } from '@/lib/types';
 
 export default function LoginForm() {
   const { login, initializeData, pegawaiList, addPegawai } = useArsipStore();
-  const { resolvedTheme } = useTheme();
+  const { theme } = useTheme();
+  const resolvedTheme = theme;
 
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -47,7 +48,7 @@ export default function LoginForm() {
     try {
       // --- Admin login ---
       if (username === 'admin' && password === 'admin123') {
-        initializeData();
+        await initializeData();
         login({ role: 'admin', nip: 'admin', nama: 'Administrator' });
         toast.success('Selamat datang, Administrator!', {
           description: 'Anda masuk sebagai Admin.',
@@ -76,11 +77,11 @@ export default function LoginForm() {
             tanggalLahir: '',
             status: 'Aktif',
           };
-          addPegawai(newPegawai);
+          await addPegawai(newPegawai);
           pegawai = newPegawai;
         }
 
-        initializeData();
+        await initializeData();
         login({
           role: 'pegawai',
           nip: pegawai.nip,

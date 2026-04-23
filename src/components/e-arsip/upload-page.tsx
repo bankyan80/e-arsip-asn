@@ -57,21 +57,10 @@ function isPegawaiComplete(pg: Pegawai): boolean {
   );
 }
 
-// ===== Helper: File reader as data URL =====
-
-function readFileAsDataURL(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = () => reject(new Error('Gagal membaca file'));
-    reader.readAsDataURL(file);
-  });
-}
-
 // ===== Upload Page Component =====
 
 export default function UploadPage() {
-  const { currentUser, pegawaiList, dokumenList, addDokumenWithFile } = useArsipStore();
+  const { currentUser, pegawaiList, dokumenList, addDokumenWithFile, addNotifikasi } = useArsipStore();
 
   // ===== Form state =====
   const [selectedPegawaiId, setSelectedPegawaiId] = useState<string>('');
@@ -187,7 +176,6 @@ export default function UploadPage() {
   // ===== File handling =====
 
   const validateAndSetFile = useCallback((file: File) => {
-    // Validate type — PDF only
     if (!ALLOWED_MIME_TYPES.includes(file.type)) {
       setFileError('Format file tidak didukung. Hanya file PDF yang diperbolehkan.');
       setSelectedFile(null);
@@ -196,7 +184,6 @@ export default function UploadPage() {
       return;
     }
 
-    // Validate size
     if (file.size > MAX_FILE_SIZE) {
       setFileError(`Ukuran file melebihi batas ${formatFileSize(MAX_FILE_SIZE)} (${formatFileSize(file.size)}).`);
       setSelectedFile(null);
@@ -209,11 +196,9 @@ export default function UploadPage() {
     setSelectedFile(file);
     setQualityResult(null);
 
-    // Generate preview
     const url = URL.createObjectURL(file);
     setPreviewUrl(url);
 
-    // Run quality analysis
     runQualityAnalysis(file);
   }, [runQualityAnalysis]);
 
@@ -291,32 +276,33 @@ export default function UploadPage() {
     if (!pg) return;
 
     try {
-      const dokumen: Dokumen = {
-        id: Date.now(),
-        pegawaiId: pegawai.id,
-        pegawaiNama: pegawai.nama,
-        nip: pegawai.nip,
-        jenisASN: pegawai.jenisASN,
+      const docBase: Omit<Dokumen, 'id' | 'url' | 'filePath' | 'fileSize'> = {
+        pegawaiId: pg.id,
+        pegawaiNama: pg.nama,
+        nip: pg.nip,
+        jenisASN: pg.jenisASN,
         jenisDokumen: selectedJenisDokumen,
         tanggal: todayISO(),
         status: 'Pending',
-        url: '',
         expiry: masaBerlaku || '',
         fileName: selectedFile.name,
         keterangan: keterangan.trim(),
       };
 
       if (selectedJenisDokumen === 'SK PPPK' && showPPPKPeriod) {
-        dokumen.periode = periode || nextPPPKPeriode;
-        dokumen.tmtAwal = tmtAwal || '';
-        dokumen.tmtAkhir = tmtAkhir || '';
+        docBase.periode = periode || nextPPPKPeriode;
+        docBase.tmtAwal = tmtAwal || '';
+        docBase.tmtAkhir = tmtAkhir || '';
       }
 
-      await addDokumenWithFile(selectedFile, dokumen);
+      await addDokumenWithFile(selectedFile, docBase);
+      addNotifikasi(
+        `Dokumen "${selectedJenisDokumen}" untuk ${pg.nama} berhasil diunggah.`,
+        'success'
+      );
 
       toast.success('Dokumen berhasil diunggah!');
 
-      // Reset form
       if (pegawaiRole === 'pegawai') {
         setSelectedJenisDokumen('');
         setPeriode('');
@@ -353,6 +339,7 @@ export default function UploadPage() {
     nextPPPKPeriode,
     pegawaiRole,
     addDokumenWithFile,
+    addNotifikasi,
     removeFile,
   ]);
 
@@ -697,7 +684,6 @@ export default function UploadPage() {
                   )}
                 </div>
 
-                {/* File error */}
                 {fileError && (
                   <p className="flex items-center gap-1.5 text-xs text-red-600 dark:text-red-400">
                     <AlertCircle className="h-3.5 w-3.5 shrink-0" />
@@ -705,7 +691,6 @@ export default function UploadPage() {
                   </p>
                 )}
 
-                {/* ===== PDF Quality Analysis Result ===== */}
                 {isAnalyzing && (
                   <div className="flex items-center gap-3 rounded-lg border border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-950/20 p-3.5">
                     <Loader2 className="h-4 w-4 text-blue-600 dark:text-blue-400 animate-spin shrink-0" />

@@ -3,19 +3,13 @@ export interface Pegawai {
   nip: string;
   nama: string;
   jenisASN: string;
-  golongan: string;
   jabatan: string;
+  golongan: string;
   unitKerja: string;
-  tempatLahir: string;
-  tanggalLahir: string;
-  jenisKelamin: string;
-  agama: string;
   email: string;
   hp: string;
-  alamat: string;
-  pendidikanTerakhir: string;
-  status: string;
-  masaBerlaku: string;
+  tanggalLahir: string;
+  status: 'Aktif' | 'Nonaktif';
 }
 
 export interface Dokumen {
@@ -26,48 +20,48 @@ export interface Dokumen {
   jenisASN: string;
   jenisDokumen: string;
   tanggal: string;
-  status: string;
+  status: 'Pending' | 'Approved' | 'Rejected';
   url: string;
-  fileName: string;
   expiry: string;
+  fileName: string;
   keterangan: string;
-  periode: string;
-  tmtAwal: string;
-  tmtAkhir: string;
+  periode?: string;
+  tmtAwal?: string;
+  tmtAkhir?: string;
   filePath: string;
   fileSize: number;
 }
 
 export interface Notifikasi {
   id: number;
-  pesan: string;
-  tipe: string;
-  dibaca: boolean;
-  tanggal: string;
+  message: string;
+  type: 'success' | 'warning' | 'error' | 'info';
+  read: boolean;
+  createdAt: string;
 }
 
 export interface AppConfig {
-  namaInstansi: string;
-  alamatInstansi: string;
-  teleponInstansi: string;
-  emailInstansi: string;
-  maxFileUpload: number;
-  blurThreshold: number;
-  autoApprove: boolean;
-  retentionDays: number;
+  appsScriptURL: string;
+  telegramBotToken: string;
+  telegramChatId: string;
 }
 
 export interface CurrentUser {
+  role: 'admin' | 'pegawai';
   nip: string;
   nama: string;
-  role: 'admin' | 'pegawai';
-  jenisASN?: string;
+  pegawaiId?: number;
+}
+
+export type ASNType = 'PNS' | 'PPPK_PENUH' | 'PPPK_PARUH' | 'OTHER';
+
+export interface DokumenConfig {
+  required: string;
+  options: string[];
+  hint: string;
+  showPPPKPeriod?: boolean;
+  periodNote?: string;
+  contractDuration?: number;
 }
 
 export type PageType = 'dashboard' | 'pegawai' | 'dokumen' | 'arsip' | 'approval' | 'laporan' | 'bup';
-
-export interface PDFQualityResult {
-  score: number;
-  isBlurry: boolean;
-  error?: string;
-}

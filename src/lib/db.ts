@@ -1,248 +1,421 @@
 import { supabase } from './supabase';
-import type { Pegawai, Dokumen, Notifikasi, AppConfig } from './types';
+import type { Pegawai, Dokumen, Notifikasi } from './types';
 
-// ========================================
-// PEGAWAI
-// ========================================
-
-function mapPegawaiFromDB(row: Record<string, unknown>): Pegawai {
-  return {
-    id: row.id as number,
-    nip: (row.nip as string) || '',
-    nama: (row.nama as string) || '',
-    jenisASN: (row.jenisASN as string) || 'PNS',
-    golongan: (row.golongan as string) || '',
-    jabatan: (row.jabatan as string) || '',
-    unitKerja: (row.unitKerja as string) || '',
-    tempatLahir: (row.tempatLahir as string) || '',
-    tanggalLahir: (row.tanggalLahir as string) || '',
-    jenisKelamin: (row.jenisKelamin as string) || '',
-    agama: (row.agama as string) || '',
-    email: (row.email as string) || '',
-    hp: (row.hp as string) || '',
-    alamat: (row.alamat as string) || '',
-    pendidikanTerakhir: (row.pendidikanTerakhir as string) || '',
-    status: (row.status as string) || 'Aktif',
-    masaBerlaku: (row.masaBerlaku as string) || '',
-  };
-}
+// ===== PEGAWAI =====
 
 export async function fetchPegawai(): Promise<Pegawai[]> {
   const { data, error } = await supabase
     .from('pegawai')
     .select('*')
     .order('nama', { ascending: true });
-  if (error) { console.error('fetchPegawai:', error); return []; }
-  return (data || []).map(mapPegawaiFromDB);
+
+  if (error) {
+    console.error('Error fetching pegawai:', error);
+    return [];
+  }
+
+  return (data || []).map((row) => ({
+    id: row.id,
+    nip: row.nip || '',
+    nama: row.nama || '',
+    jenisASN: row.jenis_asn || '',
+    jabatan: row.jabatan || '',
+    golongan: row.golongan || '',
+    unitKerja: row.unit_kerja || '',
+    email: row.email || '',
+    hp: row.hp || '',
+    tanggalLahir: row.tanggal_lahir || '',
+    status: row.status || 'Aktif',
+  }));
 }
 
-export async function fetchPegawaiByNIP(nip: string): Promise<Pegawai | null> {
+export async function fetchPegawaiByNIP(nip: string): Promise<Pegawai | undefined> {
   const { data, error } = await supabase
     .from('pegawai')
     .select('*')
     .eq('nip', nip)
     .single();
-  if (error || !data) return null;
-  return mapPegawaiFromDB(data);
-}
 
-export async function addPegawai(p: Pegawai): Promise<Pegawai | null> {
-  const row: Record<string, unknown> = {
-    nip: p.nip, nama: p.nama, jenisASN: p.jenisASN,
-    golongan: p.golongan, jabatan: p.jabatan, unitKerja: p.unitKerja,
-    tempatLahir: p.tempatLahir, tanggalLahir: p.tanggalLahir,
-    jenisKelamin: p.jenisKelamin, agama: p.agama,
-    email: p.email, hp: p.hp, alamat: p.alamat,
-    pendidikanTerakhir: p.pendidikanTerakhir,
-    status: p.status, masaBerlaku: p.masaBerlaku,
+  if (error || !data) return undefined;
+
+  return {
+    id: data.id,
+    nip: data.nip || '',
+    nama: data.nama || '',
+    jenisASN: data.jenis_asn || '',
+    jabatan: data.jabatan || '',
+    golongan: data.golongan || '',
+    unitKerja: data.unit_kerja || '',
+    email: data.email || '',
+    hp: data.hp || '',
+    tanggalLahir: data.tanggal_lahir || '',
+    status: data.status || 'Aktif',
   };
+}
+
+export async function addPegawaiToDB(pg: Pegawai): Promise<Pegawai | null> {
   const { data, error } = await supabase
-    .from('pegawai').insert(row).select().single();
-  if (error) { console.error('addPegawai:', error); return null; }
-  return mapPegawaiFromDB(data);
-}
+    .from('pegawai')
+    .insert({
+      nip: pg.nip,
+      nama: pg.nama,
+      jenis_asn: pg.jenisASN,
+      jabatan: pg.jabatan,
+      golongan: pg.golongan,
+      unit_kerja: pg.unitKerja,
+      email: pg.email,
+      hp: pg.hp,
+      tanggal_lahir: pg.tanggalLahir,
+      status: pg.status,
+    })
+    .select()
+    .single();
 
-export async function updatePegawai(id: number, data: Partial<Pegawai>): Promise<Pegawai | null> {
-  const { data: result, error } = await supabase
-    .from('pegawai').update(data as Record<string, unknown>).eq('id', id).select().single();
-  if (error) { console.error('updatePegawai:', error); return null; }
-  return mapPegawaiFromDB(result);
-}
-
-export async function deletePegawai(id: number): Promise<boolean> {
-  const { data: docs } = await supabase
-    .from('dokumen').select('filePath').eq('pegawaiId', id);
-  if (docs) {
-    const paths = docs.map((d: { filePath: string }) => d.filePath).filter(Boolean);
-    if (paths.length > 0) await supabase.storage.from('dokumen').remove(paths);
+  if (error) {
+    console.error('Error adding pegawai:', error);
+    return null;
   }
-  const { error } = await supabase.from('pegawai').delete().eq('id', id);
-  if (error) { console.error('deletePegawai:', error); return false; }
+
+  return {
+    id: data.id,
+    nip: data.nip || '',
+    nama: data.nama || '',
+    jenisASN: data.jenis_asn || '',
+    jabatan: data.jabatan || '',
+    golongan: data.golongan || '',
+    unitKerja: data.unit_kerja || '',
+    email: data.email || '',
+    hp: data.hp || '',
+    tanggalLahir: data.tanggal_lahir || '',
+    status: data.status || 'Aktif',
+  };
+}
+
+export async function updatePegawaiInDB(id: number, pg: Partial<Pegawai>): Promise<boolean> {
+  const row: Record<string, unknown> = {};
+  if (pg.nip !== undefined) row.nip = pg.nip;
+  if (pg.nama !== undefined) row.nama = pg.nama;
+  if (pg.jenisASN !== undefined) row.jenis_asn = pg.jenisASN;
+  if (pg.jabatan !== undefined) row.jabatan = pg.jabatan;
+  if (pg.golongan !== undefined) row.golongan = pg.golongan;
+  if (pg.unitKerja !== undefined) row.unit_kerja = pg.unitKerja;
+  if (pg.email !== undefined) row.email = pg.email;
+  if (pg.hp !== undefined) row.hp = pg.hp;
+  if (pg.tanggalLahir !== undefined) row.tanggal_lahir = pg.tanggalLahir;
+  if (pg.status !== undefined) row.status = pg.status;
+
+  const { error } = await supabase
+    .from('pegawai')
+    .update(row)
+    .eq('id', id);
+
+  if (error) {
+    console.error('Error updating pegawai:', error);
+    return false;
+  }
   return true;
 }
 
-// ========================================
-// DOKUMEN
-// ========================================
+export async function deletePegawaiFromDB(id: number): Promise<boolean> {
+  const { data: docs } = await supabase
+    .from('dokumen')
+    .select('file_path')
+    .eq('pegawai_id', id);
 
-function mapDokumenFromDB(row: Record<string, unknown>): Dokumen {
-  let url = '';
-  const filePath = (row.filePath as string) || '';
-  if (filePath) {
-    const { data: pub } = supabase.storage.from('dokumen').getPublicUrl(filePath);
-    url = pub?.publicUrl || '';
+  if (docs && docs.length > 0) {
+    const paths = docs.map((d) => d.file_path).filter(Boolean) as string[];
+    if (paths.length > 0) {
+      await supabase.storage.from('dokumen').remove(paths);
+    }
   }
-  return {
-    id: row.id as number,
-    pegawaiId: row.pegawaiId as number,
-    pegawaiNama: (row.pegawaiNama as string) || '',
-    nip: (row.nip as string) || '',
-    jenisASN: (row.jenisASN as string) || '',
-    jenisDokumen: (row.jenisDokumen as string) || '',
-    tanggal: (row.tanggal as string) || '',
-    status: (row.status as string) || 'Pending',
-    url,
-    fileName: (row.fileName as string) || '',
-    expiry: (row.expiry as string) || '',
-    keterangan: (row.keterangan as string) || '',
-    periode: (row.periode as string) || '',
-    tmtAwal: (row.tmtAwal as string) || '',
-    tmtAkhir: (row.tmtAkhir as string) || '',
-    filePath,
-    fileSize: (row.fileSize as number) || 0,
-  };
+
+  const { error } = await supabase
+    .from('pegawai')
+    .delete()
+    .eq('id', id);
+
+  if (error) {
+    console.error('Error deleting pegawai:', error);
+    return false;
+  }
+  return true;
 }
+
+// ===== DOKUMEN =====
 
 export async function fetchDokumen(): Promise<Dokumen[]> {
   const { data, error } = await supabase
-    .from('dokumen').select('*').order('tanggal', { ascending: false });
-  if (error) { console.error('fetchDokumen:', error); return []; }
-  return (data || []).map(mapDokumenFromDB);
+    .from('dokumen')
+    .select('*')
+    .order('tanggal', { ascending: false });
+
+  if (error) {
+    console.error('Error fetching dokumen:', error);
+    return [];
+  }
+
+  return (data || []).map((row) => ({
+    id: row.id,
+    pegawaiId: row.pegawai_id,
+    pegawaiNama: row.pegawai_nama || '',
+    nip: row.nip || '',
+    jenisASN: row.jenis_asn || '',
+    jenisDokumen: row.jenis_dokumen || '',
+    tanggal: row.tanggal || '',
+    status: row.status || 'Pending',
+    url: row.url || '',
+    expiry: row.expiry || '',
+    fileName: row.file_name || '',
+    keterangan: row.keterangan || '',
+    periode: row.periode || '',
+    tmtAwal: row.tmt_awal || '',
+    tmtAkhir: row.tmt_akhir || '',
+    filePath: row.file_path || '',
+    fileSize: row.file_size || 0,
+  }));
 }
 
 export async function fetchDokumenByPegawaiId(pegawaiId: number): Promise<Dokumen[]> {
   const { data, error } = await supabase
-    .from('dokumen').select('*')
-    .eq('pegawaiId', pegawaiId)
+    .from('dokumen')
+    .select('*')
+    .eq('pegawai_id', pegawaiId)
     .order('tanggal', { ascending: false });
-  if (error) { console.error('fetchDokumenByPegawaiId:', error); return []; }
-  return (data || []).map(mapDokumenFromDB);
-}
 
-export async function uploadFileAndGetUrl(file: File): Promise<{ path: string; url: string } | null> {
-  const ext = file.name.split('.').pop() || 'pdf';
-  const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 8)}.${ext}`;
-  const { data, error } = await supabase.storage
-    .from('dokumen').upload(fileName, file, { contentType: file.type, cacheControl: '3600' });
-  if (error) { console.error('uploadFile:', error); return null; }
-  const { data: pub } = supabase.storage.from('dokumen').getPublicUrl(data.path);
-  return { path: data.path, url: pub?.publicUrl || '' };
-}
-
-export async function addDokumenToDB(doc: Record<string, unknown>): Promise<Dokumen | null> {
-  const { data, error } = await supabase
-    .from('dokumen').insert(doc).select().single();
-  if (error) { console.error('addDokumen:', error); return null; }
-  return mapDokumenFromDB(data);
-}
-
-export async function updateDokumenStatus(id: number, status: string): Promise<boolean> {
-  const { error } = await supabase.from('dokumen').update({ status }).eq('id', id);
-  if (error) { console.error('updateDokumenStatus:', error); return false; }
-  return true;
-}
-
-export async function updateDokumenKeterangan(id: number, keterangan: string): Promise<boolean> {
-  const { error } = await supabase.from('dokumen').update({ keterangan }).eq('id', id);
-  if (error) { console.error('updateDokumenKeterangan:', error); return false; }
-  return true;
-}
-
-export async function deleteDokumen(id: number): Promise<boolean> {
-  const { data: doc } = await supabase
-    .from('dokumen').select('filePath').eq('id', id).single();
-  if (doc?.filePath) {
-    await supabase.storage.from('dokumen').remove([doc.filePath]);
+  if (error) {
+    console.error('Error fetching dokumen for pegawai:', error);
+    return [];
   }
-  const { error } = await supabase.from('dokumen').delete().eq('id', id);
-  if (error) { console.error('deleteDokumen:', error); return false; }
-  return true;
-}
 
-// ========================================
-// NOTIFIKASI
-// ========================================
-
-export async function fetchNotifikasi(): Promise<Notifikasi[]> {
-  const { data, error } = await supabase
-    .from('notifikasi').select('*').order('id', { ascending: false });
-  if (error) { console.error('fetchNotifikasi:', error); return []; }
-  return (data || []).map((row: Record<string, unknown>) => ({
-    id: row.id as number,
-    pesan: (row.pesan as string) || '',
-    tipe: (row.tipe as string) || 'info',
-    dibaca: (row.dibaca as boolean) || false,
-    tanggal: (row.tanggal as string) || '',
+  return (data || []).map((row) => ({
+    id: row.id,
+    pegawaiId: row.pegawai_id,
+    pegawaiNama: row.pegawai_nama || '',
+    nip: row.nip || '',
+    jenisASN: row.jenis_asn || '',
+    jenisDokumen: row.jenis_dokumen || '',
+    tanggal: row.tanggal || '',
+    status: row.status || 'Pending',
+    url: row.url || '',
+    expiry: row.expiry || '',
+    fileName: row.file_name || '',
+    keterangan: row.keterangan || '',
+    periode: row.periode || '',
+    tmtAwal: row.tmt_awal || '',
+    tmtAkhir: row.tmt_akhir || '',
+    filePath: row.file_path || '',
+    fileSize: row.file_size || 0,
   }));
 }
 
-export async function addNotifikasi(pesan: string, tipe: string): Promise<Notifikasi | null> {
+export async function uploadFileAndGetUrl(file: File, pegawaiId: number): Promise<{ url: string; filePath: string } | null> {
+  const ext = file.name.split('.').pop() || 'pdf';
+  const timestamp = Date.now();
+  const safeFileName = `${pegawaiId}_${timestamp}.${ext}`;
+
+  console.log('[DB] Uploading file to storage bucket "dokumen":', safeFileName, 'size:', file.size);
+
+  const { data, error } = await supabase.storage
+    .from('dokumen')
+    .upload(safeFileName, file, {
+      cacheControl: '3600',
+      upsert: false,
+    });
+
+  if (error) {
+    console.error('[DB] Storage upload FAILED:', error.message, 'code:', error.name);
+    return null;
+  }
+
+  console.log('[DB] Storage upload SUCCESS, path:', data.path);
+
+  const { data: urlData } = supabase.storage
+    .from('dokumen')
+    .getPublicUrl(data.path);
+
+  return {
+    url: urlData.publicUrl,
+    filePath: data.path,
+  };
+}
+
+export async function addDokumenToDB(doc: Omit<Dokumen, 'id'>): Promise<Dokumen | null> {
+  const row: Record<string, unknown> = {
+    pegawai_id: doc.pegawaiId,
+    pegawai_nama: doc.pegawaiNama,
+    nip: doc.nip,
+    jenis_asn: doc.jenisASN,
+    jenis_dokumen: doc.jenisDokumen,
+    tanggal: doc.tanggal,
+    status: doc.status,
+    url: doc.url,
+    expiry: doc.expiry,
+    file_name: doc.fileName,
+    keterangan: doc.keterangan,
+  };
+
+  if (doc.periode) row.periode = doc.periode;
+  if (doc.tmtAwal) row.tmt_awal = doc.tmtAwal;
+  if (doc.tmtAkhir) row.tmt_akhir = doc.tmtAkhir;
+  if (doc.filePath) row.file_path = doc.filePath;
+  if (doc.fileSize) row.file_size = doc.fileSize;
+
+  const { data, error } = await supabase
+    .from('dokumen')
+    .insert(row)
+    .select()
+    .single();
+
+  if (error) {
+    console.error('[DB] addDokumenToDB FAILED:', error.message, 'code:', error.code, 'details:', error.details);
+    return null;
+  }
+
+  console.log('[DB] addDokumenToDB SUCCESS, id:', data.id);
+
+  return {
+    id: data.id,
+    pegawaiId: data.pegawai_id,
+    pegawaiNama: data.pegawai_nama || '',
+    nip: data.nip || '',
+    jenisASN: data.jenis_asn || '',
+    jenisDokumen: data.jenis_dokumen || '',
+    tanggal: data.tanggal || '',
+    status: data.status || 'Pending',
+    url: data.url || '',
+    expiry: data.expiry || '',
+    fileName: data.file_name || '',
+    keterangan: data.keterangan || '',
+    periode: data.periode || '',
+    tmtAwal: data.tmt_awal || '',
+    tmtAkhir: data.tmt_akhir || '',
+    filePath: data.file_path || '',
+    fileSize: data.file_size || 0,
+  };
+}
+
+export async function updateDokumenStatusInDB(id: number, status: 'Pending' | 'Approved' | 'Rejected'): Promise<boolean> {
+  const { error } = await supabase
+    .from('dokumen')
+    .update({ status })
+    .eq('id', id);
+
+  if (error) {
+    console.error('Error updating dokumen status:', error);
+    return false;
+  }
+  return true;
+}
+
+export async function updateDokumenKeteranganInDB(id: number, keterangan: string): Promise<boolean> {
+  const { error } = await supabase
+    .from('dokumen')
+    .update({ keterangan })
+    .eq('id', id);
+
+  if (error) {
+    console.error('Error updating dokumen keterangan:', error);
+    return false;
+  }
+  return true;
+}
+
+export async function deleteDokumenFromDB(id: number, filePath?: string): Promise<boolean> {
+  if (filePath) {
+    await supabase.storage.from('dokumen').remove([filePath]);
+  }
+
+  const { error } = await supabase
+    .from('dokumen')
+    .delete()
+    .eq('id', id);
+
+  if (error) {
+    console.error('Error deleting dokumen:', error);
+    return false;
+  }
+  return true;
+}
+
+// ===== NOTIFIKASI =====
+
+export async function fetchNotifikasi(): Promise<Notifikasi[]> {
   const { data, error } = await supabase
     .from('notifikasi')
-    .insert({ pesan, tipe, dibaca: false, tanggal: new Date().toISOString() })
-    .select().single();
-  if (error) { console.error('addNotifikasi:', error); return null; }
-  return { id: data.id, pesan: data.pesan, tipe: data.tipe, dibaca: data.dibaca, tanggal: data.tanggal };
-}
+    .select('*')
+    .order('created_at', { ascending: false })
+    .limit(50);
 
-export async function markNotifikasiRead(id: number): Promise<void> {
-  await supabase.from('notifikasi').update({ dibaca: true }).eq('id', id);
-}
-
-export async function markAllNotifikasiRead(): Promise<void> {
-  await supabase.from('notifikasi').update({ dibaca: true }).eq('dibaca', false);
-}
-
-// ========================================
-// APP CONFIG
-// ========================================
-
-export async function fetchAppConfig(): Promise<AppConfig | null> {
-  const { data, error } = await supabase.from('app_config').select('*');
-  if (error || !data || data.length === 0) return null;
-  const config: AppConfig = {
-    namaInstansi: 'Dinas Pendidikan Kabupaten',
-    alamatInstansi: '', teleponInstansi: '', emailInstansi: '',
-    maxFileUpload: 5, blurThreshold: 80, autoApprove: false, retentionDays: 365,
-  };
-  for (const row of data) {
-    const key = row.key as string;
-    const val = row.value as string;
-    if (key === 'namaInstansi') config.namaInstansi = val;
-    else if (key === 'alamatInstansi') config.alamatInstansi = val;
-    else if (key === 'teleponInstansi') config.teleponInstansi = val;
-    else if (key === 'emailInstansi') config.emailInstansi = val;
-    else if (key === 'maxFileUpload') config.maxFileUpload = Number(val) || 5;
-    else if (key === 'blurThreshold') config.blurThreshold = Number(val) || 80;
-    else if (key === 'autoApprove') config.autoApprove = val === 'true';
-    else if (key === 'retentionDays') config.retentionDays = Number(val) || 365;
+  if (error) {
+    console.error('Error fetching notifikasi:', error);
+    return [];
   }
-  return config;
+
+  return (data || []).map((row) => ({
+    id: row.id,
+    message: row.message || '',
+    type: row.type || 'info',
+    read: row.read || false,
+    createdAt: row.created_at || new Date().toISOString(),
+  }));
 }
 
-export async function updateAppConfig(config: AppConfig): Promise<boolean> {
-  const rows = [
-    { key: 'namaInstansi', value: config.namaInstansi },
-    { key: 'alamatInstansi', value: config.alamatInstansi },
-    { key: 'teleponInstansi', value: config.teleponInstansi },
-    { key: 'emailInstansi', value: config.emailInstansi },
-    { key: 'maxFileUpload', value: String(config.maxFileUpload) },
-    { key: 'blurThreshold', value: String(config.blurThreshold) },
-    { key: 'autoApprove', value: String(config.autoApprove) },
-    { key: 'retentionDays', value: String(config.retentionDays) },
-  ];
-  for (const row of rows) {
-    await supabase.from('app_config').upsert(row, { onConflict: 'key' });
+export async function addNotifikasiToDB(message: string, type: Notifikasi['type']): Promise<Notifikasi | null> {
+  const { data, error } = await supabase
+    .from('notifikasi')
+    .insert({ message, type })
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error adding notifikasi:', error);
+    return null;
+  }
+
+  return {
+    id: data.id,
+    message: data.message || '',
+    type: data.type || 'info',
+    read: data.read || false,
+    createdAt: data.created_at || new Date().toISOString(),
+  };
+}
+
+export async function markNotifikasiReadInDB(id: number): Promise<boolean> {
+  const { error } = await supabase
+    .from('notifikasi')
+    .update({ read: true })
+    .eq('id', id);
+
+  if (error) {
+    console.error('Error marking notifikasi read:', error);
+    return false;
+  }
+  return true;
+}
+
+export async function markAllNotifikasiReadInDB(): Promise<boolean> {
+  const { error } = await supabase
+    .from('notifikasi')
+    .update({ read: true })
+    .eq('read', false);
+
+  if (error) {
+    console.error('Error marking all notifikasi read:', error);
+    return false;
+  }
+  return true;
+}
+
+export async function clearNotifikasiInDB(): Promise<boolean> {
+  const { error } = await supabase
+    .from('notifikasi')
+    .delete()
+    .neq('id', 0);
+
+  if (error) {
+    console.error('Error clearing notifikasi:', error);
+    return false;
   }
   return true;
 }
