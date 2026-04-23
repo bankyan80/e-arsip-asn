@@ -247,7 +247,7 @@ export default function PegawaiPage() {
     }
 
     const reader = new FileReader();
-    reader.onload = (ev) => {
+    reader.onload = async (ev) => {
       const data = ev.target?.result as ArrayBuffer;
       if (!data) {
         toast.error('Gagal membaca file Excel');
@@ -264,8 +264,10 @@ export default function PegawaiPage() {
       let errorCount = 0;
       const messages: string[] = [];
 
-      rows.forEach((row, idx) => {
-        const rowNum = idx + 2; // 1-indexed, skip header
+      // Use sequential async loop instead of forEach (forEach doesn't await)
+      for (let idx = 0; idx < rows.length; idx++) {
+        const row = rows[idx];
+        const rowNum = idx + 2;
         const nip = (row['NIP'] || '').trim();
         const nama = (row['Nama'] || '').trim();
         const jenisASN = (row['Jenis ASN'] || '').trim();
@@ -277,53 +279,25 @@ export default function PegawaiPage() {
         const tanggalLahir = (row['Tanggal Lahir'] || '').trim();
         const status = (row['Status'] || 'Aktif').trim() as 'Aktif' | 'Nonaktif';
 
-        // Validation
-        if (!nip) {
-          errorCount++;
-          messages.push(`Baris ${rowNum}: NIP wajib diisi`);
-          return;
-        }
-        if (!nama) {
-          errorCount++;
-          messages.push(`Baris ${rowNum}: Nama wajib diisi`);
-          return;
-        }
-        if (jenisASN && !ALL_JENIS_ASN.includes(jenisASN)) {
-          errorCount++;
-          messages.push(`Baris ${rowNum}: Jenis ASN "${jenisASN}" tidak valid`);
-          return;
-        }
-        // Validate golongan matches jenis ASN
+        if (!nip) { errorCount++; messages.push(`Baris ${rowNum}: NIP wajib diisi`); continue; }
+        if (!nama) { errorCount++; messages.push(`Baris ${rowNum}: Nama wajib diisi`); continue; }
+        if (jenisASN && !ALL_JENIS_ASN.includes(jenisASN)) { errorCount++; messages.push(`Baris ${rowNum}: Jenis ASN "${jenisASN}" tidak valid`); continue; }
         if (jenisASN && golongan && !isValidGolongan(jenisASN, golongan)) {
           errorCount++;
           const asnType = jenisASN.startsWith('PNS') ? 'PNS' : 'PPPK';
-          messages.push(`Baris ${rowNum}: Golongan "${golongan}" tidak valid untuk ${asnType}. Gunakan format ${asnType === 'PNS' ? 'I/a - IV/e' : 'I, IV, V, VI, VII, IX, X, XI'}`);
-          return;
+          messages.push(`Baris ${rowNum}: Golongan "${golongan}" tidak valid untuk ${asnType}`);
+          continue;
         }
+        if (pegawaiList.some((p) => p.nip === nip)) { errorCount++; messages.push(`Baris ${rowNum}: NIP "${nip}" sudah terdaftar`); continue; }
 
-        // Check duplicate NIP
-        if (pegawaiList.some((p) => p.nip === nip)) {
+        try {
+          await addPegawai({ id: Date.now() + idx, nip, nama, jenisASN: jenisASN || '', jabatan, golongan, unitKerja, email, hp, tanggalLahir, status });
+          successCount++;
+        } catch (err) {
           errorCount++;
-          messages.push(`Baris ${rowNum}: NIP "${nip}" sudah terdaftar`);
-          return;
+          messages.push(`Baris ${rowNum}: Gagal menyimpan - ${err instanceof Error ? err.message : 'Unknown error'}`);
         }
-
-        // Add pegawai
-        addPegawai({
-          id: Date.now() + idx,
-          nip,
-          nama,
-          jenisASN: jenisASN || '',
-          jabatan,
-          golongan,
-          unitKerja,
-          email,
-          hp,
-          tanggalLahir,
-          status,
-        });
-        successCount++;
-      });
+      }
 
       setImportResult({ success: successCount, errors: errorCount, messages });
       if (errorCount === 0) {
