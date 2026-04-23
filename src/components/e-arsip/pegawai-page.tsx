@@ -168,7 +168,7 @@ export default function PegawaiPage() {
 
   // ===== Share Link handler =====
   const handleShareLink = useCallback((pegawai: Pegawai) => {
-    const url = `${window.location.origin}/u/${pegawai.id}`;
+    const url = `${window.location.origin}/u/${pegawai.nip}`;
     navigator.clipboard.writeText(url).then(() => {
       toast.success('Link berhasil disalin!', {
         description: `Link upload untuk ${pegawai.nama} telah disalin ke clipboard. Bagikan link ini ke pegawai yang bersangkutan.`,
