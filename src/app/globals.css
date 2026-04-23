@@ -1,0 +1,192 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+
+  /* Neve Theme Colors */
+  --color-neve-50: #f6f7f9;
+  --color-neve-100: #ededf0;
+  --color-neve-200: #dcdfe5;
+  --color-neve-300: #b8bdc7;
+  --color-neve-400: #8b919e;
+  --color-neve-500: #636976;
+  --color-neve-600: #4b5060;
+  --color-neve-700: #3b3f4d;
+  --color-neve-800: #2c2e3a;
+  --color-neve-900: #1a1c24;
+  --color-neve-950: #0f1015;
+
+  --color-nv-blue: #3c6eff;
+  --color-nv-blue-dark: #2b54f5;
+  --color-nv-green: #22c55e;
+  --color-nv-red: #ef4444;
+  --color-nv-amber: #f59e0b;
+  --color-nv-purple: #8b5cf6;
+}
+
+:root {
+  --radius: 0.5rem;
+  --background: #f6f7f9;
+  --foreground: #2c2e3a;
+  --card: #ffffff;
+  --card-foreground: #2c2e3a;
+  --popover: #ffffff;
+  --popover-foreground: #2c2e3a;
+  --primary: #3c6eff;
+  --primary-foreground: #ffffff;
+  --secondary: #f0f5ff;
+  --secondary-foreground: #2b54f5;
+  --muted: #f6f7f9;
+  --muted-foreground: #636976;
+  --accent: #e0eaff;
+  --accent-foreground: #1e3fe1;
+  --destructive: #ef4444;
+  --border: #e2e4e9;
+  --input: #dcdfe5;
+  --ring: #3c6eff;
+  --chart-1: #3c6eff;
+  --chart-2: #22c55e;
+  --chart-3: #f59e0b;
+  --chart-4: #8b5cf6;
+  --chart-5: #ef4444;
+  --sidebar: #ffffff;
+  --sidebar-foreground: #2c2e3a;
+  --sidebar-primary: #3c6eff;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #e0eaff;
+  --sidebar-accent-foreground: #2b54f5;
+  --sidebar-border: #e2e4e9;
+  --sidebar-ring: #3c6eff;
+}
+
+.dark {
+  --background: #0f1015;
+  --foreground: #e0e2e8;
+  --card: #1a1c24;
+  --card-foreground: #e0e2e8;
+  --popover: #1a1c24;
+  --popover-foreground: #e0e2e8;
+  --primary: #608fff;
+  --primary-foreground: #ffffff;
+  --secondary: rgba(60,110,255,0.12);
+  --secondary-foreground: #94b4ff;
+  --muted: #1a1c24;
+  --muted-foreground: #8b919e;
+  --accent: rgba(60,110,255,0.15);
+  --accent-foreground: #94b4ff;
+  --destructive: #f87171;
+  --border: #2c2e3a;
+  --input: #3b3f4d;
+  --ring: #608fff;
+  --chart-1: #608fff;
+  --chart-2: #4ade80;
+  --chart-3: #fbbf24;
+  --chart-4: #a78bfa;
+  --chart-5: #f87171;
+  --sidebar: #16171d;
+  --sidebar-foreground: #e0e2e8;
+  --sidebar-primary: #608fff;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: rgba(60,110,255,0.12);
+  --sidebar-accent-foreground: #94b4ff;
+  --sidebar-border: #2c2e3a;
+  --sidebar-ring: #608fff;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* Neve Scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #b8bdc7; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #8b919e; }
+.dark ::-webkit-scrollbar-thumb { background: #3b3f4d; }
+.dark ::-webkit-scrollbar-thumb:hover { background: #636976; }
+
+/* Login Background */
+.login-bg {
+  background: linear-gradient(160deg, #121d57 0%, #1a2f8f 25%, #3c6eff 60%, #94b4ff 100%);
+  min-height: 100vh;
+}
+
+/* Print styles */
+@media print {
+  .no-print { display: none !important; }
+  .print-only { display: block !important; }
+}
+
+/* Table styling */
+.nv-table th {
+  background: #f6f7f9;
+  font-weight: 700;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #636976;
+}
+.dark .nv-table th {
+  background: #1a1c24;
+  color: #8b919e;
+}
+
+/* Dashboard staggered entrance animation */
+@keyframes dashboard-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.dashboard-animate {
+  opacity: 0;
+  animation: dashboard-fade-up 0.4s ease-out forwards;
+}
