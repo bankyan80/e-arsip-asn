@@ -63,16 +63,16 @@ function readFileAsDataURL(file: File): Promise<string> {
 
 export default function ShareUploadPage() {
   const params = useParams();
-  const pegawaiId = params?.id ? Number(params.id) : null;
+  const nipParam = params?.id as string;
   const { resolvedTheme, setTheme } = useTheme();
 
   const { pegawaiList, dokumenList, addDokumen, addNotifikasi, initializeData } = useArsipStore();
 
   // ===== Pegawai data =====
   const pegawai = useMemo<Pegawai | undefined>(() => {
-    if (!pegawaiId) return undefined;
-    return pegawaiList.find((p) => p.id === pegawaiId);
-  }, [pegawaiId, pegawaiList]);
+    if (!nipParam) return undefined;
+    return pegawaiList.find((p) => p.nip === nipParam);
+  }, [nipParam, pegawaiList]);
 
   // ===== Init store on mount =====
   const [hydrated, setHydrated] = useState(false);
