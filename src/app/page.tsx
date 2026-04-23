@@ -20,12 +20,10 @@ export default function Home() {
     initializeData();
   }, [initializeData]);
 
-  // Not logged in - show login form
   if (!isLoggedIn) {
     return <LoginForm />;
   }
 
-  // Logged in - show app layout with active page content
   const renderPage = () => {
     switch (activePage) {
       case 'dashboard':
