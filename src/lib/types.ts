@@ -1,17 +1,21 @@
-// ===== E-Arsip ASN Types =====
-
 export interface Pegawai {
   id: number;
   nip: string;
   nama: string;
   jenisASN: string;
-  jabatan: string;
   golongan: string;
+  jabatan: string;
   unitKerja: string;
+  tempatLahir: string;
+  tanggalLahir: string;
+  jenisKelamin: string;
+  agama: string;
   email: string;
   hp: string;
-  tanggalLahir: string;
-  status: 'Aktif' | 'Nonaktif';
+  alamat: string;
+  pendidikanTerakhir: string;
+  status: string;
+  masaBerlaku: string;
 }
 
 export interface Dokumen {
@@ -22,46 +26,48 @@ export interface Dokumen {
   jenisASN: string;
   jenisDokumen: string;
   tanggal: string;
-  status: 'Pending' | 'Approved' | 'Rejected';
+  status: string;
   url: string;
-  expiry: string;
   fileName: string;
+  expiry: string;
   keterangan: string;
-  periode?: string;
-  tmtAwal?: string;
-  tmtAkhir?: string;
+  periode: string;
+  tmtAwal: string;
+  tmtAkhir: string;
+  filePath: string;
+  fileSize: number;
 }
 
 export interface Notifikasi {
   id: number;
-  message: string;
-  type: 'success' | 'warning' | 'error' | 'info';
-  read: boolean;
-  createdAt: string;
+  pesan: string;
+  tipe: string;
+  dibaca: boolean;
+  tanggal: string;
 }
 
 export interface AppConfig {
-  appsScriptURL: string;
-  telegramBotToken: string;
-  telegramChatId: string;
+  namaInstansi: string;
+  alamatInstansi: string;
+  teleponInstansi: string;
+  emailInstansi: string;
+  maxFileUpload: number;
+  blurThreshold: number;
+  autoApprove: boolean;
+  retentionDays: number;
 }
 
 export interface CurrentUser {
-  role: 'admin' | 'pegawai';
   nip: string;
   nama: string;
-  pegawaiId?: number;
+  role: 'admin' | 'pegawai';
+  jenisASN?: string;
 }
 
-export type ASNType = 'PNS' | 'PPPK_PENUH' | 'PPPK_PARUH' | 'OTHER';
+export type PageType = 'dashboard' | 'pegawai' | 'dokumen' | 'arsip' | 'approval' | 'laporan' | 'bup';
 
-export interface DokumenConfig {
-  required: string;
-  options: string[];
-  hint: string;
-  showPPPKPeriod?: boolean;
-  periodNote?: string;
-  contractDuration?: number;
+export interface PDFQualityResult {
+  score: number;
+  isBlurry: boolean;
+  error?: string;
 }
-
-export type PageType = 'dashboard' | 'pegawai' | 'dokumen' | 'arsip' | 'approval' | 'laporan' | 'bup' | 'pengaturan';

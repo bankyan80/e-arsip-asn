@@ -11,16 +11,15 @@ import ArsipPage from '@/components/e-arsip/arsip-page';
 import ApprovalPage from '@/components/e-arsip/approval-page';
 import LaporanPage from '@/components/e-arsip/laporan-page';
 import BUPPage from '@/components/e-arsip/bup-page';
-import PengaturanPage from '@/components/e-arsip/pengaturan-page';
 
 export default function Home() {
-  const { isLoggedIn, activePage, initializeData } = useArsipStore();
+  const { currentUser, activePage, initializeData } = useArsipStore();
 
   useEffect(() => {
     initializeData();
   }, [initializeData]);
 
-  if (!isLoggedIn) {
+  if (!currentUser) {
     return <LoginForm />;
   }
 
@@ -40,8 +39,6 @@ export default function Home() {
         return <LaporanPage />;
       case 'bup':
         return <BUPPage />;
-      case 'pengaturan':
-        return <PengaturanPage />;
       default:
         return <DashboardPage />;
     }

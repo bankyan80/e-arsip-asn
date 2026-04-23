@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { useTheme } from 'next-themes';
+import { useTheme } from '@/app/providers';
 import { toast } from 'sonner';
 import { IdCard, Lock, Eye, EyeOff, LogIn } from 'lucide-react';
 

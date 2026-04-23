@@ -1,134 +1,181 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
 import type { Pegawai, Dokumen, Notifikasi, AppConfig, CurrentUser, PageType } from './types';
-import { generateDummyPegawai, getASNType } from './constants';
+import {
+  fetchPegawai, addPegawai as dbAddPegawai,
+  updatePegawai as dbUpdatePegawai, deletePegawai as dbDeletePegawai,
+  fetchDokumen,
+  uploadFileAndGetUrl, addDokumenToDB,
+  updateDokumenStatus, updateDokumenKeterangan, deleteDokumen as dbDeleteDokumen,
+  fetchNotifikasi, addNotifikasi as dbAddNotifikasi,
+  markNotifikasiRead, markAllNotifikasiRead,
+  fetchAppConfig, updateAppConfig as dbUpdateConfig,
+} from './db';
 
 interface ArsipStore {
-  currentUser: CurrentUser | null;
-  isLoggedIn: boolean;
-  login: (user: CurrentUser) => void;
-  logout: () => void;
-
   pegawaiList: Pegawai[];
   dokumenList: Dokumen[];
   notifikasiList: Notifikasi[];
-  config: AppConfig;
-
-  addPegawai: (p: Pegawai) => void;
-  updatePegawai: (id: number, data: Partial<Pegawai>) => void;
-  deletePegawai: (id: number) => void;
-
-  addDokumen: (d: Dokumen) => void;
-  updateDokumenStatus: (id: number, status: 'Pending' | 'Approved' | 'Rejected') => void;
-  deleteDokumen: (id: number) => void;
-
-  addNotifikasi: (message: string, type: Notifikasi['type']) => void;
-  markNotifRead: (id: number) => void;
-  clearNotifikasi: () => void;
-
-  updateConfig: (cfg: Partial<AppConfig>) => void;
-
+  appConfig: AppConfig | null;
+  currentUser: CurrentUser | null;
   activePage: PageType;
-  setActivePage: (page: PageType) => void;
+  isLoading: boolean;
 
-  initializeData: () => void;
-  resetAllData: () => void;
+  login: (arg1: unknown, arg2?: unknown) => Promise<boolean>;
+  logout: () => void;
+  initializeData: () => Promise<void>;
+  refreshPegawai: () => Promise<void>;
+  refreshDokumen: () => Promise<void>;
+  refreshNotifikasi: () => Promise<void>;
+  addPegawai: (p: Pegawai) => Promise<void>;
+  updatePegawai: (id: number, data: Partial<Pegawai>) => Promise<void>;
+  deletePegawai: (id: number) => Promise<void>;
+  addDokumen: (d: Dokumen) => Promise<void>;
+  addDokumenWithFile: (file: File, d: Dokumen) => Promise<void>;
+  approveDokumen: (id: number) => Promise<void>;
+  rejectDokumen: (id: number, keterangan: string) => Promise<void>;
+  updateDokumenKet: (id: number, keterangan: string) => Promise<void>;
+  deleteDokumen: (id: number) => Promise<void>;
+  addNotifikasi: (pesan: string, tipe: string) => Promise<void>;
+  markRead: (id: number) => Promise<void>;
+  markAllRead: () => Promise<void>;
+  updateAppConfig: (config: AppConfig) => Promise<void>;
+  setActivePage: (page: PageType) => void;
 }
 
-export const useArsipStore = create<ArsipStore>()(
-  persist(
-    (set, get) => ({
-      currentUser: null,
-      isLoggedIn: false,
-      login: (user) => set({ currentUser: user, isLoggedIn: true }),
-      logout: () => set({ currentUser: null, isLoggedIn: false }),
+export const useArsipStore = create<ArsipStore>((set, get) => ({
+  pegawaiList: [],
+  dokumenList: [],
+  notifikasiList: [],
+  appConfig: null,
+  currentUser: null,
+  activePage: 'dashboard',
+  isLoading: false,
 
-      pegawaiList: [],
-      dokumenList: [],
-      notifikasiList: [],
-      config: {
-        appsScriptURL: '',
-        telegramBotToken: '',
-        telegramChatId: '',
-      },
-
-      addPegawai: (p) => set((s) => ({ pegawaiList: [...s.pegawaiList, p] })),
-      updatePegawai: (id, data) => set((s) => ({
-        pegawaiList: s.pegawaiList.map((p) => (p.id === id ? { ...p, ...data } : p)),
-      })),
-      deletePegawai: (id) => set((s) => ({
-        pegawaiList: s.pegawaiList.filter((p) => p.id !== id),
-        dokumenList: s.dokumenList.filter((d) => d.pegawaiId !== id),
-      })),
-
-      addDokumen: (d) => set((s) => ({ dokumenList: [...s.dokumenList, d] })),
-      updateDokumenStatus: (id, status) => set((s) => ({
-        dokumenList: s.dokumenList.map((d) => (d.id === id ? { ...d, status } : d)),
-      })),
-      deleteDokumen: (id) => set((s) => ({
-        dokumenList: s.dokumenList.filter((d) => d.id !== id),
-      })),
-
-      addNotifikasi: (message, type) => set((s) => ({
-        notifikasiList: [
-          { id: Date.now(), message, type, read: false, createdAt: new Date().toISOString() },
-          ...s.notifikasiList,
-        ].slice(0, 50),
-      })),
-      markNotifRead: (id) => set((s) => ({
-        notifikasiList: s.notifikasiList.map((n) => (n.id === id ? { ...n, read: true } : n)),
-      })),
-      clearNotifikasi: () => set({ notifikasiList: [] }),
-
-      updateConfig: (cfg) => set((s) => ({ config: { ...s.config, ...cfg } })),
-
-      activePage: 'dashboard',
-      setActivePage: (page) => set({ activePage: page }),
-
-      initializeData: () => {
-        const state = get();
-        if (state.pegawaiList.length === 0) {
-          const dummy = generateDummyPegawai();
-          const dummyDocs: Dokumen[] = [];
-          dummy.forEach((pg, idx) => {
-            const asnType = getASNType(pg.jenisASN);
-            if (asnType === 'PNS') {
-              dummyDocs.push({
-                id: Date.now() + idx * 10 + 1,
-                pegawaiId: pg.id, pegawaiNama: pg.nama, nip: pg.nip,
-                jenisASN: pg.jenisASN, jenisDokumen: 'SK CPNS',
-                tanggal: '2020-01-15', status: 'Approved', url: '', expiry: '',
-                fileName: 'sk_cpns_' + pg.nip + '.pdf', keterangan: '',
-              });
-            } else if (asnType === 'PPPK_PENUH' || asnType === 'PPPK_PARUH') {
-              dummyDocs.push({
-                id: Date.now() + idx * 10 + 1,
-                pegawaiId: pg.id, pegawaiNama: pg.nama, nip: pg.nip,
-                jenisASN: pg.jenisASN, jenisDokumen: 'SK PPPK',
-                tanggal: '2022-03-01', status: 'Approved', url: '', expiry: '',
-                fileName: 'sk_pppk_' + pg.nip + '.pdf', keterangan: '',
-                periode: '1', tmtAwal: '2022-03-01', tmtAkhir: asnType === 'PPPK_PENUH' ? '2027-02-28' : '2023-02-28',
-              });
-            }
-          });
-          set({ pegawaiList: dummy, dokumenList: dummyDocs });
-        }
-      },
-      resetAllData: () => set({
-        pegawaiList: [], dokumenList: [], notifikasiList: [],
-        config: { appsScriptURL: '', telegramBotToken: '', telegramChatId: '' },
-      }),
-    }),
-    {
-      name: 'e-arsip-asn-storage',
-      partialize: (state) => ({
-        pegawaiList: state.pegawaiList,
-        dokumenList: state.dokumenList,
-        notifikasiList: state.notifikasiList,
-        config: state.config,
-        currentUser: state.currentUser,
-        isLoggedIn: state.isLoggedIn,
-      }),
+  login: async (arg1: unknown, arg2?: unknown) => {
+    try {
+      // Admin login via object - langsung set tanpa tunggu Supabase
+      if (typeof arg1 === 'object' && arg1 !== null) {
+        const user = arg1 as CurrentUser;
+        set({ currentUser: user, activePage: 'dashboard' });
+        if (typeof window !== 'undefined') sessionStorage.setItem('arsip_user', JSON.stringify(user));
+        // Load data di background
+        get().initializeData().catch((e) => console.error('init bg:', e));
+        return true;
+      }
+      // Login dengan nip + password
+      const nip = String(arg1 || '');
+      const password = String(arg2 || '');
+      if (nip.toLowerCase() === 'admin' && password === 'admin123') {
+        const user: CurrentUser = { nip: 'admin', nama: 'Administrator', role: 'admin' };
+        set({ currentUser: user, activePage: 'dashboard' });
+        if (typeof window !== 'undefined') sessionStorage.setItem('arsip_user', JSON.stringify(user));
+        get().initializeData().catch((e) => console.error('init bg:', e));
+        return true;
+      }
+      // Pegawai login - perlu data dari Supabase
+      const state = get();
+      if (state.pegawaiList.length === 0) {
+        await state.initializeData();
+      }
+      const cs = get();
+      const pg = cs.pegawaiList.find((p) => p.nip === nip);
+      if (pg && password === '123456') {
+        const user: CurrentUser = { nip: pg.nip, nama: pg.nama, role: 'pegawai', jenisASN: pg.jenisASN };
+        set({ currentUser: user, activePage: 'dashboard' });
+        if (typeof window !== 'undefined') sessionStorage.setItem('arsip_user', JSON.stringify(user));
+        return true;
+      }
+      return false;
+    } catch (e) {
+      console.error('login error:', e);
+      return false;
     }
-  )
-);
+  },
+
+  logout: () => {
+    set({ currentUser: null, activePage: 'dashboard' });
+    if (typeof window !== 'undefined') sessionStorage.removeItem('arsip_user');
+  },
+
+  initializeData: async () => {
+    if (get().isLoading) return;
+    set({ isLoading: true });
+    if (typeof window !== 'undefined') {
+      const saved = sessionStorage.getItem('arsip_user');
+      if (saved) { try { set({ currentUser: JSON.parse(saved) }); } catch {} }
+    }
+    const [pegawai, dokumen, notifikasi, config] = await Promise.all([
+      fetchPegawai(), fetchDokumen(), fetchNotifikasi(), fetchAppConfig(),
+    ]);
+    set({
+      pegawaiList: pegawai,
+      dokumenList: dokumen,
+      notifikasiList: notifikasi,
+      appConfig: config || {
+        namaInstansi: 'Dinas Pendidikan Kabupaten',
+        alamatInstansi: '', teleponInstansi: '', emailInstansi: '',
+        maxFileUpload: 5, blurThreshold: 80, autoApprove: false, retentionDays: 365,
+      },
+      isLoading: false,
+    });
+  },
+
+  refreshPegawai: async () => { set({ pegawaiList: await fetchPegawai() }); },
+  refreshDokumen: async () => { set({ dokumenList: await fetchDokumen() }); },
+  refreshNotifikasi: async () => { set({ notifikasiList: await fetchNotifikasi() }); },
+
+  addPegawai: async (p: Pegawai) => { await dbAddPegawai(p); await get().refreshPegawai(); },
+  updatePegawai: async (id: number, data: Partial<Pegawai>) => { await dbUpdatePegawai(id, data); await get().refreshPegawai(); },
+  deletePegawai: async (id: number) => { await dbDeletePegawai(id); await get().refreshPegawai(); await get().refreshDokumen(); },
+
+  addDokumen: async (d: Dokumen) => {
+    const row: Record<string, unknown> = {
+      pegawaiId: d.pegawaiId, pegawaiNama: d.pegawaiNama, nip: d.nip, jenisASN: d.jenisASN,
+      jenisDokumen: d.jenisDokumen, tanggal: d.tanggal, status: d.status,
+      filePath: '', fileName: d.fileName, fileSize: 0,
+      expiry: d.expiry, keterangan: d.keterangan, periode: d.periode, tmtAwal: d.tmtAwal, tmtAkhir: d.tmtAkhir,
+    };
+    await addDokumenToDB(row);
+    await get().refreshDokumen();
+    await get().addNotifikasi(`Dokumen "${d.jenisDokumen}" untuk ${d.pegawaiNama} berhasil diunggah.`, 'success');
+  },
+
+  addDokumenWithFile: async (file: File, d: Dokumen) => {
+    const uploadResult = await uploadFileAndGetUrl(file);
+    if (!uploadResult) { console.error('Upload file gagal'); return; }
+    const row: Record<string, unknown> = {
+      pegawaiId: d.pegawaiId, pegawaiNama: d.pegawaiNama, nip: d.nip, jenisASN: d.jenisASN,
+      jenisDokumen: d.jenisDokumen, tanggal: d.tanggal, status: d.status,
+      filePath: uploadResult.path, fileName: d.fileName || file.name, fileSize: file.size,
+      expiry: d.expiry, keterangan: d.keterangan, periode: d.periode, tmtAwal: d.tmtAwal, tmtAkhir: d.tmtAkhir,
+    };
+    await addDokumenToDB(row);
+    await get().refreshDokumen();
+    await get().addNotifikasi(`Dokumen "${d.jenisDokumen}" untuk ${d.pegawaiNama} berhasil diunggah.`, 'success');
+  },
+
+  approveDokumen: async (id: number) => {
+    await updateDokumenStatus(id, 'Approved');
+    await get().refreshDokumen();
+    const doc = get().dokumenList.find((d) => d.id === id);
+    if (doc) await get().addNotifikasi(`Dokumen "${doc.jenisDokumen}" untuk ${doc.pegawaiNama} telah disetujui.`, 'success');
+  },
+
+  rejectDokumen: async (id: number, keterangan: string) => {
+    await updateDokumenStatus(id, 'Rejected');
+    await updateDokumenKeterangan(id, keterangan);
+    await get().refreshDokumen();
+    const doc = get().dokumenList.find((d) => d.id === id);
+    if (doc) await get().addNotifikasi(`Dokumen "${doc.jenisDokumen}" untuk ${doc.pegawaiNama} ditolak. Alasan: ${keterangan}`, 'warning');
+  },
+
+  updateDokumenKet: async (id: number, keterangan: string) => { await updateDokumenKeterangan(id, keterangan); await get().refreshDokumen(); },
+  deleteDokumen: async (id: number) => { await dbDeleteDokumen(id); await get().refreshDokumen(); await get().addNotifikasi('Dokumen telah dihapus.', 'info'); },
+
+  addNotifikasi: async (pesan: string, tipe: string) => { await dbAddNotifikasi(pesan, tipe); await get().refreshNotifikasi(); },
+  markRead: async (id: number) => { await markNotifikasiRead(id); await get().refreshNotifikasi(); },
+  markAllRead: async () => { await markAllNotifikasiRead(); await get().refreshNotifikasi(); },
+
+  updateAppConfig: async (config: AppConfig) => { await dbUpdateConfig(config); set({ appConfig: config }); },
+  setActivePage: (page: PageType) => set({ activePage: page }),
+}));

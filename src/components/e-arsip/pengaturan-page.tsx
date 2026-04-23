@@ -56,7 +56,7 @@ export default function PengaturanPage() {
   } = useArsipStore();
 
   // ===== Config form state =====
-  const [appsScriptURL, setAppsScriptURL] = useState(config.appsScriptURL);
+  const [appsScriptURL, setAppsScriptURL] = useState((config as Record<string, unknown>).appsScriptURL as string || '');
   const [telegramBotToken, setTelegramBotToken] = useState(config.telegramBotToken);
   const [telegramChatId, setTelegramChatId] = useState(config.telegramChatId);
 

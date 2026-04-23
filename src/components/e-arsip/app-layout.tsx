@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { useTheme } from 'next-themes';
+import { useTheme } from '@/app/providers';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard,
@@ -62,7 +62,6 @@ const NAV_ITEMS: NavItem[] = [
   { icon: CheckCircle, label: 'Approval', page: 'approval', adminOnly: true },
   { icon: BarChart3, label: 'Laporan', page: 'laporan', adminOnly: true },
   { icon: Hourglass, label: 'BUP Pensiun', page: 'bup', adminOnly: true },
-  { icon: Settings, label: 'Pengaturan', page: 'pengaturan', adminOnly: true },
 ];
 
 const PAGE_TITLES: Record<PageType, string> = {
@@ -73,7 +72,6 @@ const PAGE_TITLES: Record<PageType, string> = {
   approval: 'Approval',
   laporan: 'Laporan',
   bup: 'BUP Pensiun',
-  pengaturan: 'Pengaturan',
 };
 
 const ACCENT = '#3c6eff';

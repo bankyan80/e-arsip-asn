@@ -71,7 +71,7 @@ function readFileAsDataURL(file: File): Promise<string> {
 // ===== Upload Page Component =====
 
 export default function UploadPage() {
-  const { currentUser, pegawaiList, dokumenList, addDokumen, addNotifikasi } = useArsipStore();
+  const { currentUser, pegawaiList, dokumenList, addDokumenWithFile } = useArsipStore();
 
   // ===== Form state =====
   const [selectedPegawaiId, setSelectedPegawaiId] = useState<string>('');
@@ -291,35 +291,28 @@ export default function UploadPage() {
     if (!pg) return;
 
     try {
-      const base64Url = await readFileAsDataURL(selectedFile);
-
       const dokumen: Dokumen = {
         id: Date.now(),
-        pegawaiId: pg.id,
-        pegawaiNama: pg.nama,
-        nip: pg.nip,
-        jenisASN: pg.jenisASN,
+        pegawaiId: pegawai.id,
+        pegawaiNama: pegawai.nama,
+        nip: pegawai.nip,
+        jenisASN: pegawai.jenisASN,
         jenisDokumen: selectedJenisDokumen,
         tanggal: todayISO(),
         status: 'Pending',
-        url: base64Url,
+        url: '',
         expiry: masaBerlaku || '',
         fileName: selectedFile.name,
         keterangan: keterangan.trim(),
       };
 
-      // Include PPPK period fields for SK PPPK documents
       if (selectedJenisDokumen === 'SK PPPK' && showPPPKPeriod) {
         dokumen.periode = periode || nextPPPKPeriode;
         dokumen.tmtAwal = tmtAwal || '';
         dokumen.tmtAkhir = tmtAkhir || '';
       }
 
-      addDokumen(dokumen);
-      addNotifikasi(
-        `Dokumen "${selectedJenisDokumen}" untuk ${pg.nama} berhasil diunggah.`,
-        'success'
-      );
+      await addDokumenWithFile(selectedFile, dokumen);
 
       toast.success('Dokumen berhasil diunggah!');
 
@@ -359,8 +352,7 @@ export default function UploadPage() {
     keterangan,
     nextPPPKPeriode,
     pegawaiRole,
-    addDokumen,
-    addNotifikasi,
+    addDokumenWithFile,
     removeFile,
   ]);
 
