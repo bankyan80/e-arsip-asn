@@ -171,10 +171,28 @@ export default function PegawaiPage() {
       }
 
       // BATCH INSERT: satu set() saja → satu kali localStorage.setItem()
+            // BATCH INSERT: gunakan addPegawai dari store (bisa Supabase atau localStorage)
       if (newPegawaiList.length > 0) {
-        useArsipStore.setState((s) => ({
-          pegawaiList: [...s.pegawaiList, ...newPegawaiList],
-        }));
+        const store = useArsipStore.getState();
+        // Cek apakah addPegawai async (Supabase) atau sync (localStorage)
+        const testResult = store.addPegawai(newPegawaiList[0]);
+        if (testResult && typeof testResult === 'object' && typeof testResult.then === 'function') {
+          // Supabase: jalankan parallel dengan Promise.all (10 chunk sekaligus)
+          const CHUNK = 10;
+          for (let i = 0; i < newPegawaiList.length; i += CHUNK) {
+            const chunk = newPegawaiList.slice(i, i + CHUNK);
+            await Promise.all(chunk.map((pg) => store.addPegawai(pg)));
+          }
+          // Refresh dari Supabase
+          if (typeof store.refreshData === 'function') {
+            await store.refreshData();
+          }
+        } else {
+          // localStorage: setState sekali saja → satu kali localStorage.setItem()
+          useArsipStore.setState((s) => ({
+            pegawaiList: [...s.pegawaiList, ...newPegawaiList],
+          }));
+        }
       }
 
     };
