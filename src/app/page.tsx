@@ -1,23 +1,40 @@
 ﻿'use client';
+
 import { useEffect, useState } from 'react';
-import { useArsipStore, restoreAuth } from '@/lib/store';
-import { LoginForm } from '@/components/e-arsip/login-form';
-import { AppLayout } from '@/components/e-arsip/app-layout';
-import { DashboardPage } from '@/components/e-arsip/dashboard-page';
-import { PegawaiPage } from '@/components/e-arsip/pegawai-page';
-import { UploadPage } from '@/components/e-arsip/upload-page';
-import { ArsipPage } from '@/components/e-arsip/arsip-page';
-import { ApprovalPage } from '@/components/e-arsip/approval-page';
-import { LaporanPage } from '@/components/e-arsip/laporan-page';
-import { BupPage } from '@/components/e-arsip/bup-page';
-import { PengaturanPage } from '@/components/e-arsip/pengaturan-page';
+import { useArsipStore } from '@/lib/store';
+import LoginForm from '@/components/e-arsip/login-form';
+import AppLayout from '@/components/e-arsip/app-layout';
+import DashboardPage from '@/components/e-arsip/dashboard-page';
+import PegawaiPage from '@/components/e-arsip/pegawai-page';
+import UploadPage from '@/components/e-arsip/upload-page';
+import ArsipPage from '@/components/e-arsip/arsip-page';
+import ApprovalPage from '@/components/e-arsip/approval-page';
+import LaporanPage from '@/components/e-arsip/laporan-page';
+import BupPage from '@/components/e-arsip/bup-page';
+import PengaturanPage from '@/components/e-arsip/pengaturan-page';
+
+const AUTH_KEY = 'e-arsip-auth';
 
 export default function Home() {
   const { isLoggedIn, activePage, initializeData } = useArsipStore();
   const [ready, setReady] = useState(false);
 
-  useEffect(() => { restoreAuth(); setReady(true); }, []);
-  useEffect(() => { if (ready && isLoggedIn) { initializeData(); } }, [ready, isLoggedIn, initializeData]);
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(AUTH_KEY);
+      if (raw) {
+        const user = JSON.parse(raw);
+        if (user && user.role && user.nip && user.nama) {
+          useArsipStore.setState({ currentUser: user, isLoggedIn: true });
+        }
+      }
+    } catch { /* ignore */ }
+    setReady(true);
+  }, []);
+
+  useEffect(() => {
+    if (ready && isLoggedIn) { initializeData(); }
+  }, [ready, isLoggedIn, initializeData]);
 
   if (!ready) {
     return (

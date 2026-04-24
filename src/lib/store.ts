@@ -17,8 +17,14 @@ function loadAuthFromStorage() {
 export const useArsipStore = create()((set, get) => ({
   currentUser: null,
   isLoggedIn: false,
-  login: (user) => { saveAuthToStorage(user); set({ currentUser: user, isLoggedIn: true }); },
-  logout: () => { saveAuthToStorage(null); set({ currentUser: null, isLoggedIn: false }); },
+  login: (user) => {
+    try { localStorage.setItem('e-arsip-auth', JSON.stringify(user)); } catch {}
+    set({ currentUser: user, isLoggedIn: true });
+  },
+  logout: () => {
+    try { localStorage.removeItem('e-arsip-auth'); } catch {}
+    set({ currentUser: null, isLoggedIn: false });
+  },
   pegawaiList: [],
   dokumenList: [],
   notifikasiList: [],
