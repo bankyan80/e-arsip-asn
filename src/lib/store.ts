@@ -7,7 +7,6 @@ import {
   fetchSuratMasuk, addSuratMasukToDB, deleteSuratMasukFromDB,
   fetchSuratKeluar, addSuratKeluarToDB, deleteSuratKeluarFromDB,
 } from './db';
-} from './db';
 
 const AUTH_KEY = 'e-arsip-auth';
 
@@ -190,7 +189,7 @@ export const useArsipStore = create<ArsipStore>()((set, get) => ({
       set({ pegawaiList: p, dokumenList: d, notifikasiList: n, suratMasukList: sm, suratKeluarList: sk });
     } catch (e) { console.error(e); }
   },
-    resetAllData: () => set({ pegawaiList: [], dokumenList: [], notifikasiList: [], suratMasukList: [], suratKeluarList: [], config: { ... }
+    resetAllData: () => set({ pegawaiList: [], dokumenList: [], notifikasiList: [], suratMasukList: [], suratKeluarList: [], config: { appsScriptURL: '', telegramBotToken: '', telegramChatId: '' } }),
 }));
 
 export function restoreAuth(): boolean {
