@@ -3,8 +3,8 @@
 import { useState, useMemo, useRef, useCallback } from 'react';
 import { toast } from 'sonner';
 import {
-  Plus, Download, Upload, Eye, Pencil, Trash2, Search, Users, X,
-  FileSpreadsheet, ChevronLeft, ChevronRight, AlertCircle, CheckCircle2,
+  Plus, Download, Upload, Eye, Pencil, Trash2, Search, Users,
+  X, FileSpreadsheet, ChevronLeft, ChevronRight, AlertCircle, CheckCircle2,
 } from 'lucide-react';
 
 import { Card, CardContent } from '@/components/ui/card';
@@ -30,7 +30,14 @@ interface ImportResult {
 }
 
 export default function PegawaiPage() {
-  const { pegawaiList, dokumenList, currentUser, addPegawai, deletePegawai } = useArsipStore();
+  const {
+    pegawaiList,
+    dokumenList,
+    currentUser,
+    addPegawai,
+    addPegawaiBatch,
+    deletePegawai,
+  } = useArsipStore();
 
   const [showAddModal, setShowAddModal] = useState(false);
   const [modalKey, setModalKey] = useState(0);
@@ -88,7 +95,7 @@ export default function PegawaiPage() {
   };
   const handleOpenAdd = () => { setEditingPegawai(null); setModalKey((k) => k + 1); setShowAddModal(true); };
   const handleCloseAdd = () => { setShowAddModal(false); setEditingPegawai(null); };
-  const handleDownloadTemplate = () => { downloadTemplateXLS(); toast.success('Template berhasil diunduh'); };
+  const handleDownloadTemplate = async () => { await downloadTemplateXLS(); toast.success('Template berhasil diunduh'); };
   const handleOpenUpload = () => { setImportResult(null); setShowUploadModal(true); };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -103,12 +110,13 @@ export default function PegawaiPage() {
     }
 
     setIsImporting(true);
+
     const reader = new FileReader();
     reader.onload = async (ev) => {
       const data = ev.target?.result as ArrayBuffer;
       if (!data) { toast.error('Gagal membaca file Excel'); setIsImporting(false); return; }
 
-      const rows = parseXLSXTemplate(data);
+      const rows = await parseXLSXTemplate(data);
       if (rows.length === 0) { toast.error('File Excel kosong atau format tidak valid.'); setIsImporting(false); return; }
 
       let successCount = 0;
@@ -116,10 +124,8 @@ export default function PegawaiPage() {
       const messages: string[] = [];
       const newPegawaiList: Pegawai[] = [];
 
-      // Ambil daftar NIP yang sudah ada (sekali saja, bukan per baris)
       const existingNips = new Set(useArsipStore.getState().pegawaiList.map((p) => p.nip));
 
-      // Validasi dan kumpulkan semua data baru (tanpa memanggil set() per baris)
       for (let idx = 0; idx < rows.length; idx++) {
         const row = rows[idx];
         const rowNum = idx + 2;
@@ -134,68 +140,36 @@ export default function PegawaiPage() {
         const tanggalLahir = (row['Tanggal Lahir'] || '').trim();
         const status = (row['Status'] || 'Aktif').trim() as 'Aktif' | 'Nonaktif';
 
-        if (!nip) {
-          errorCount++;
-          messages.push(`Baris ${rowNum}: NIP wajib diisi`);
-          continue;
-        }
-        if (!nama) {
-          errorCount++;
-          messages.push(`Baris ${rowNum}: Nama wajib diisi`);
-          continue;
-        }
-        if (jenisASN && !ALL_JENIS_ASN.includes(jenisASN)) {
-          errorCount++;
-          messages.push(`Baris ${rowNum}: Jenis ASN "${jenisASN}" tidak valid`);
-          continue;
-        }
+        if (!nip) { errorCount++; messages.push(`Baris ${rowNum}: NIP wajib diisi`); continue; }
+        if (!nama) { errorCount++; messages.push(`Baris ${rowNum}: Nama wajib diisi`); continue; }
+        if (jenisASN && !ALL_JENIS_ASN.includes(jenisASN)) { errorCount++; messages.push(`Baris ${rowNum}: Jenis ASN "${jenisASN}" tidak valid`); continue; }
+        if (existingNips.has(nip)) { errorCount++; messages.push(`Baris ${rowNum}: NIP "${nip}" sudah terdaftar`); continue; }
 
-        // Check duplicate NIP via Set (O(1))
-        if (existingNips.has(nip)) {
-          errorCount++;
-          messages.push(`Baris ${rowNum}: NIP "${nip}" sudah terdaftar`);
-          continue;
-        }
-
-        // Kumpulkan ke batch
-        const pg: Pegawai = {
-          id: Date.now() + idx,
-          nip, nama,
-          jenisASN: jenisASN || '',
-          jabatan, golongan, unitKerja, email, hp,
-          tanggalLahir, status,
-        };
+        const pg: Pegawai = { id: Date.now() + idx, nip, nama, jenisASN: jenisASN || '', jabatan, golongan, unitKerja, email, hp, tanggalLahir, status };
         newPegawaiList.push(pg);
         existingNips.add(nip);
         successCount++;
       }
 
-      // BATCH INSERT: satu set() saja → satu kali localStorage.setItem()
-            // BATCH INSERT: gunakan addPegawai dari store (bisa Supabase atau localStorage)
       if (newPegawaiList.length > 0) {
         const store = useArsipStore.getState();
-        // Cek apakah addPegawai async (Supabase) atau sync (localStorage)
-        const testResult = store.addPegawai(newPegawaiList[0]);
-        if (testResult && typeof testResult === 'object' && typeof testResult.then === 'function') {
-          // Supabase: jalankan parallel dengan Promise.all (10 chunk sekaligus)
-          const CHUNK = 10;
-          for (let i = 0; i < newPegawaiList.length; i += CHUNK) {
-            const chunk = newPegawaiList.slice(i, i + CHUNK);
-            await Promise.all(chunk.map((pg) => store.addPegawai(pg)));
-          }
-          // Refresh dari Supabase
-          if (typeof store.refreshData === 'function') {
-            await store.refreshData();
+        if (typeof store.addPegawaiBatch === 'function') {
+          const batchResult = await store.addPegawaiBatch(newPegawaiList);
+          if (batchResult.errors.length > 0) {
+            batchResult.errors.forEach((err) => messages.push(err));
+            errorCount += batchResult.errors.length;
           }
         } else {
-          // localStorage: setState sekali saja → satu kali localStorage.setItem()
-          useArsipStore.setState((s) => ({
-            pegawaiList: [...s.pegawaiList, ...newPegawaiList],
-          }));
+          useArsipStore.setState((s) => ({ pegawaiList: [...s.pegawaiList, ...newPegawaiList] }));
         }
       }
 
+      setIsImporting(false);
+      setImportResult({ success: successCount, errors: errorCount, messages });
+      if (errorCount === 0) { toast.success(`${successCount} pegawai berhasil diimpor`); }
+      else { toast.warning(`${successCount} berhasil, ${errorCount} gagal diimpor`); }
     };
+
     reader.onerror = () => { toast.error('Gagal membaca file'); setIsImporting(false); };
     reader.readAsArrayBuffer(file);
     if (fileInputRef.current) fileInputRef.current.value = '';
@@ -203,7 +177,6 @@ export default function PegawaiPage() {
 
   return (
     <div className="space-y-6">
-      {/* ===== Header ===== */}
       <section aria-label="Header Data Pegawai">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
@@ -220,7 +193,6 @@ export default function PegawaiPage() {
         </div>
       </section>
 
-      {/* ===== Filter Bar ===== */}
       <Card className="border-border/60 bg-white dark:bg-zinc-950">
         <CardContent className="p-4">
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -228,14 +200,16 @@ export default function PegawaiPage() {
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground pointer-events-none" />
               <Input placeholder="Cari nama atau NIP..." value={search} onChange={(e) => updateSearch(e.target.value)} className="pl-9" />
             </div>
-            <select value={filterJenisASN} onChange={(e) => updateJenisASN(e.target.value)} className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50">
+            <select value={filterJenisASN} onChange={(e) => updateJenisASN(e.target.value)} className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring">
               <option value="">Semua Jenis ASN</option>
               {JENIS_ASN_OPTIONS.map((group) => (<optgroup key={group.group} label={group.group}>{group.items.map((item) => (<option key={item} value={item}>{item}</option>))}</optgroup>))}
             </select>
-            <select value={filterStatus} onChange={(e) => updateStatus(e.target.value)} className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50">
-              <option value="">Semua Status</option><option value="Aktif">Aktif</option><option value="Nonaktif">Nonaktif</option>
+            <select value={filterStatus} onChange={(e) => updateStatus(e.target.value)} className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring">
+              <option value="">Semua Status</option>
+              <option value="Aktif">Aktif</option>
+              <option value="Nonaktif">Nonaktif</option>
             </select>
-            <select value={filterUnitKerja} onChange={(e) => updateUnitKerja(e.target.value)} className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50">
+            <select value={filterUnitKerja} onChange={(e) => updateUnitKerja(e.target.value)} className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring">
               <option value="">Semua Unit Kerja</option>
               {UNIT_KERJA_OPTIONS.map((unit) => (<option key={unit} value={unit}>{unit}</option>))}
             </select>
@@ -243,7 +217,6 @@ export default function PegawaiPage() {
         </CardContent>
       </Card>
 
-      {/* ===== Pegawai Table ===== */}
       <Card className="border-border/60 bg-white dark:bg-zinc-950">
         <CardContent className="p-0">
           <div className="overflow-x-auto">
@@ -285,9 +258,7 @@ export default function PegawaiPage() {
                         <TableCell className="px-4 py-3 text-sm text-foreground hidden lg:table-cell">{pg.jabatan || '-'}</TableCell>
                         <TableCell className="px-4 py-3 text-sm text-foreground hidden md:table-cell">{pg.golongan || '-'}</TableCell>
                         <TableCell className="px-4 py-3 text-sm text-muted-foreground hidden xl:table-cell">{pg.unitKerja || '-'}</TableCell>
-                        <TableCell className="px-4 py-3">
-                          <Badge variant="secondary" className={`text-[11px] font-semibold px-2 py-0.5 ${pg.status === 'Aktif' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'}`}>{pg.status}</Badge>
-                        </TableCell>
+                        <TableCell className="px-4 py-3"><Badge variant="secondary" className={`text-[11px] font-semibold px-2 py-0.5 ${pg.status === 'Aktif' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'}`}>{pg.status}</Badge></TableCell>
                         {isAdmin && (
                           <TableCell className="px-4 py-3 text-right">
                             <div className="flex items-center justify-end gap-1">
@@ -304,7 +275,6 @@ export default function PegawaiPage() {
               </TableBody>
             </Table>
           </div>
-
           {filteredData.length > ITEMS_PER_PAGE && (
             <div className="flex items-center justify-between border-t px-4 py-3">
               <p className="text-sm text-muted-foreground">Menampilkan <span className="font-medium text-foreground">{(currentPage - 1) * ITEMS_PER_PAGE + 1}</span> - <span className="font-medium text-foreground">{Math.min(currentPage * ITEMS_PER_PAGE, filteredData.length)}</span> dari <span className="font-medium text-foreground">{filteredData.length}</span> pegawai</p>
@@ -318,10 +288,8 @@ export default function PegawaiPage() {
         </CardContent>
       </Card>
 
-      {/* ===== Add/Edit Modal ===== */}
       <PegawaiModal key={modalKey} open={showAddModal} onClose={handleCloseAdd} pegawai={editingPegawai} />
 
-      {/* ===== Detail Dialog ===== */}
       <Dialog open={showDetailModal} onOpenChange={(v) => !v && setShowDetailModal(false)}>
         <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader><DialogTitle className="flex items-center gap-2 text-lg font-semibold"><Users className="h-5 w-5 text-[#3c6eff]" />Detail Pegawai</DialogTitle></DialogHeader>
@@ -344,29 +312,25 @@ export default function PegawaiPage() {
                 {groupedDocs.length === 0 || detailDocs.length === 0 ? (
                   <div className="flex flex-col items-center py-6 text-muted-foreground"><FileSpreadsheet className="h-8 w-8 text-muted-foreground/40 mb-2" /><p className="text-sm">Belum ada dokumen untuk pegawai ini</p></div>
                 ) : (
-                  <div className="space-y-4">
-                    {groupedDocs.map((group) => (
-                      <div key={group.label}>
-                        <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">{group.label}</h4>
-                        <div className="space-y-2">
-                          {group.items.map((doc) => (
-                            <div key={doc.id} className="flex flex-col gap-1.5 rounded-lg border border-border/60 p-3 bg-muted/20">
-                              <div className="flex items-center justify-between gap-2">
-                                <span className="text-sm font-medium text-foreground">{doc.jenisDokumen}</span>
-                                <Badge variant="secondary" className={`text-[11px] font-semibold px-2 py-0.5 shrink-0 ${getStatusBadgeClass(doc.status)}`}>{doc.status}</Badge>
-                              </div>
-                              <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
-                                {doc.periode && <span>Periode: {doc.periode}</span>}
-                                {doc.tmtAwal && <span>TMT Awal: {formatDate(doc.tmtAwal)}</span>}
-                                {doc.tmtAkhir && <span>TMT Akhir: {formatDate(doc.tmtAkhir)}</span>}
-                                {doc.tanggal && <span>Tanggal: {formatDate(doc.tanggal)}</span>}
-                              </div>
-                            </div>
-                          ))}
+                  <div className="space-y-4">{groupedDocs.map((group) => (
+                    <div key={group.label}>
+                      <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">{group.label}</h4>
+                      <div className="space-y-2">{group.items.map((doc) => (
+                        <div key={doc.id} className="flex flex-col gap-1.5 rounded-lg border border-border/60 p-3 bg-muted/20">
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="text-sm font-medium text-foreground">{doc.jenisDokumen}</span>
+                            <Badge variant="secondary" className={`text-[11px] font-semibold px-2 py-0.5 shrink-0 ${getStatusBadgeClass(doc.status)}`}>{doc.status}</Badge>
+                          </div>
+                          <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                            {doc.periode && (<span>Periode: {doc.periode}</span>)}
+                            {doc.tmtAwal && (<span>TMT Awal: {formatDate(doc.tmtAwal)}</span>)}
+                            {doc.tmtAkhir && (<span>TMT Akhir: {formatDate(doc.tmtAkhir)}</span>)}
+                            {doc.tanggal && (<span>Tanggal: {formatDate(doc.tanggal)}</span>)}
+                          </div>
                         </div>
-                      </div>
-                    ))}
-                  </div>
+                      ))}</div>
+                    </div>
+                  ))}</div>
                 )}
               </div>
             </div>
@@ -374,7 +338,6 @@ export default function PegawaiPage() {
         </DialogContent>
       </Dialog>
 
-      {/* ===== Upload Template Dialog ===== */}
       <Dialog open={showUploadModal} onOpenChange={(v) => !v && setShowUploadModal(false)}>
         <DialogContent className="sm:max-w-lg">
           <DialogHeader><DialogTitle className="flex items-center gap-2 text-lg font-semibold"><Upload className="h-5 w-5 text-amber-600" />Upload Template Pegawai</DialogTitle></DialogHeader>
@@ -387,19 +350,11 @@ export default function PegawaiPage() {
                 </div>
                 <div className="flex flex-col items-center gap-3 rounded-lg border-2 border-dashed border-muted-foreground/30 p-8 transition-colors hover:border-muted-foreground/50">
                   {isImporting ? (
-                    <>
-                      <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-[#3c6eff]" />
-                      <p className="text-sm text-muted-foreground">Sedang mengimpor data pegawai...</p>
-                      <p className="text-xs text-muted-foreground/70">Mohon tunggu, jangan tutup halaman ini</p>
-                    </>
+                    <><div className="animate-spin rounded-full h-10 w-10 border-b-2 border-[#3c6eff]" /><p className="text-sm text-muted-foreground">Sedang mengimpor data pegawai...</p><p className="text-xs text-muted-foreground/70">Mohon tunggu, jangan tutup halaman ini</p></>
                   ) : (
-                    <>
-                      <FileSpreadsheet className="h-10 w-10 text-muted-foreground/50" />
-                      <p className="text-sm text-muted-foreground">Klik untuk memilih file Excel</p>
-                      <p className="text-xs text-muted-foreground/70">Format: .xlsx (Microsoft Excel)</p>
-                      <input ref={fileInputRef} type="file" accept=".xlsx" className="hidden" onChange={handleFileChange} />
-                      <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} className="gap-2"><FileSpreadsheet className="h-4 w-4" />Pilih File Excel</Button>
-                    </>
+                    <><FileSpreadsheet className="h-10 w-10 text-muted-foreground/50" /><p className="text-sm text-muted-foreground">Klik untuk memilih file Excel</p><p className="text-xs text-muted-foreground/70">Format: .xlsx (Microsoft Excel)</p>
+                    <input ref={fileInputRef} type="file" accept=".xlsx" className="hidden" onChange={handleFileChange} />
+                    <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} className="gap-2"><FileSpreadsheet className="h-4 w-4" />Pilih File Excel</Button></>
                   )}
                 </div>
               </>
@@ -420,7 +375,7 @@ export default function PegawaiPage() {
             )}
           </div>
           <div className="flex justify-end gap-2 pt-2">
-            {importResult && <Button variant="outline" onClick={() => setImportResult(null)} className="gap-2"><Upload className="h-4 w-4" />Upload Lagi</Button>}
+            {importResult && (<Button variant="outline" onClick={() => setImportResult(null)} className="gap-2"><Upload className="h-4 w-4" />Upload Lagi</Button>)}
             <Button variant="outline" onClick={() => setShowUploadModal(false)}>Tutup</Button>
           </div>
         </DialogContent>
@@ -433,9 +388,7 @@ function DetailItem({ label, value, mono, bold, badge, badgeClass }: { label: st
   return (
     <div className="space-y-1">
       <span className="text-xs font-medium text-muted-foreground">{label}</span>
-      {badge ? (
-        <div><Badge variant="secondary" className={`text-[11px] font-semibold px-2 py-0.5 ${badgeClass ?? ''}`}>{value || '-'}</Badge></div>
-      ) : (
+      {badge ? (<div><Badge variant="secondary" className={`text-[11px] font-semibold px-2 py-0.5 ${badgeClass ?? ''}`}>{value || '-'}</Badge></div>) : (
         <p className={`text-sm ${bold ? 'font-semibold' : 'font-medium'} text-foreground ${mono ? 'font-mono' : ''}`}>{value || '-'}</p>
       )}
     </div>

@@ -1,18 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://qvuieguqrifosiwhjmfu.supabase.co';
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF2dWllZ3Vxcmlmb3Npd2hqbWZ1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY5Mzk0MjksImV4cCI6MjA5MjUxNTQyOX0.XCWH39l3akT1nUx38M-EZHkmW4iIvP1Ry9J6fnXdIhM';
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.error(
-    '[SUPABASE] CRITICAL: Missing environment variables!',
-    'NEXT_PUBLIC_SUPABASE_URL:', supabaseUrl ? 'SET' : 'MISSING',
-    'NEXT_PUBLIC_SUPABASE_ANON_KEY:', supabaseAnonKey ? 'SET' : 'MISSING',
-    '\nMake sure .env.local exists with both variables, or set them in Vercel Environment Variables.'
-  );
-}
-
-export const supabase = createClient(
-  supabaseUrl || 'https://placeholder.supabase.co',
-  supabaseAnonKey || 'placeholder-key'
-);
+export const supabase = createClient(supabaseUrl, supabaseAnonKey);
