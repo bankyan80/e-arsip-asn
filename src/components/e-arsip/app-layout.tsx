@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useTheme } from '@/app/providers';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -121,6 +122,12 @@ function getNotifIcon(type: Notifikasi['type']) {
 
 // ===== Sidebar Content (shared between desktop & mobile) =====
 
+const router = useRouter();
+const SURAT_URL_MAP: Record<string, string> = {
+  'surat-masuk': '/e-surat/masuk',
+  'surat-keluar': '/e-surat/keluar',
+  'arsip-surat': '/e-surat/arsip',
+};
 function SidebarContent({
   activePage,
   setActivePage,
@@ -136,9 +143,15 @@ function SidebarContent({
   logout: () => void;
   onNavigate?: () => void;
 }) {
-  const handleNav = (page: PageType) => {
-    setActivePage(page);
-    onNavigate?.();
+    const handleNav = (page: PageType) => {
+    const suratUrl = SURAT_URL_MAP[page];
+    if (suratUrl) {
+      router.push(suratUrl);
+      onNavigate?.();
+    } else {
+      setActivePage(page);
+      onNavigate?.();
+    }
   };
 
   return (
