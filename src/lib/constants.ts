@@ -84,13 +84,13 @@ export function getDokumenOptions(asnType: ASNType): DokumenConfig {
   if (asnType === 'PNS') {
     return {
       required: 'SK CPNS',
-      options: ['SK CPNS', 'SK PNS', 'SK Kenaikan Pangkat', 'SK Kenaikan Gaji Berkala', 'SK Jabatan', '---', 'Dokumen Umum'].concat(umum),
+      options: ['SK CPNS', 'SK PNS', 'SK Kenaikan Pangkat', 'SK Kenaikan Gaji Berkala', 'SK Jabatan', '---', 'Dokumen Umum'],
       hint: 'SK CPNS wajib diisi. Upload riwayat SK Kenaikan Pangkat dan SK Kenaikan Gaji Berkala dari awal sampai akhir karir.',
     };
   } else if (asnType === 'PPPK_PENUH') {
     return {
       required: 'SK PPPK',
-      options: ['SK PPPK', 'SK Kenaikan Gaji Berkala', 'SK Jabatan', '---', 'Dokumen Umum'].concat(umum),
+      options: ['SK PPPK', 'SK Kenaikan Gaji Berkala', 'SK Jabatan', '---', 'Dokumen Umum'],
       hint: 'SK PPPK berlaku 5 tahun per periode (TMT awal s/d akhir). Lanjut ke periode berikutnya. Upload juga riwayat SK Kenaikan Gaji Berkala.',
       showPPPKPeriod: true,
       periodNote: 'PPPK Penuh Waktu: Setiap periode kontrak berlaku 5 tahun.',
@@ -99,7 +99,7 @@ export function getDokumenOptions(asnType: ASNType): DokumenConfig {
   } else if (asnType === 'PPPK_PARUH') {
     return {
       required: 'SK PPPK',
-      options: ['SK PPPK', 'SK Jabatan', '---', 'Dokumen Umum'].concat(umum),
+      options: ['SK PPPK', 'SK Jabatan', '---', 'Dokumen Umum'],
       hint: 'SK PPPK Paruh Waktu berlaku 1 tahun. Selanjutnya bisa menjadi PPPK Penuh Waktu atau diperpanjang 1 tahun.',
       showPPPKPeriod: true,
       periodNote: 'PPPK Paruh Waktu: Setiap kontrak berlaku 1 tahun. Selanjutnya bisa naik ke PPPK Penuh Waktu atau diperpanjang.',
@@ -108,7 +108,7 @@ export function getDokumenOptions(asnType: ASNType): DokumenConfig {
   }
   return {
     required: '',
-    options: ['SK CPNS', 'SK PNS', 'SK PPPK', 'SK Kenaikan Pangkat', 'SK Kenaikan Gaji Berkala', 'SK Jabatan', '---', 'Dokumen Umum'].concat(umum),
+    options: ['SK CPNS', 'SK PNS', 'SK PPPK', 'SK Kenaikan Pangkat', 'SK Kenaikan Gaji Berkala', 'SK Jabatan', '---', 'Dokumen Umum'],
     hint: '',
   };
 }
