@@ -1,5 +1,4 @@
-'use client';
-
+﻿'use client';
 import { useEffect, useState } from 'react';
 import { useArsipStore, restoreAuth } from '@/lib/store';
 import { LoginForm } from '@/components/e-arsip/login-form';
@@ -17,14 +16,8 @@ export default function Home() {
   const { isLoggedIn, activePage, initializeData } = useArsipStore();
   const [ready, setReady] = useState(false);
 
-  useEffect(() => {
-    restoreAuth();
-    setReady(true);
-  }, []);
-
-  useEffect(() => {
-    if (ready && isLoggedIn) { initializeData(); }
-  }, [ready, isLoggedIn, initializeData]);
+  useEffect(() => { restoreAuth(); setReady(true); }, []);
+  useEffect(() => { if (ready && isLoggedIn) { initializeData(); } }, [ready, isLoggedIn, initializeData]);
 
   if (!ready) {
     return (
@@ -37,9 +30,7 @@ export default function Home() {
     );
   }
 
-  if (!isLoggedIn) {
-    return <LoginForm />;
-  }
+  if (!isLoggedIn) return <LoginForm />;
 
   const renderPage = () => {
     switch (activePage) {
