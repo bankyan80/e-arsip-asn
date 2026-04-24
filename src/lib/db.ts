@@ -1,5 +1,5 @@
 import { supabase } from './supabase';
-import type { Pegawai, Dokumen, Notifikasi } from './types';
+import type { Pegawai, Dokumen, Notifikasi, SuratMasuk, SuratKeluar } from './types';
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://qvuieguqrifosiwhjmfu.supabase.co';
 function buildPublicUrl(filePath: string): string {
@@ -273,4 +273,88 @@ export async function clearNotifikasiInDB(): Promise<boolean> {
     if (error) { console.error('[DB] Error clearing notifikasi:', error.message); return false; }
     return true;
   } catch (err) { console.error('[DB] EXCEPTION clearing notifikasi:', err); return false; }
+}
+
+// ===== SURAT MASUK =====
+
+function rowToSuratMasuk(row: Record<string, unknown>): SuratMasuk {
+  return {
+    id: row.id as number,
+    asalSurat: (row.asalSurat as string) || '',
+    nomorSurat: (row.nomorSurat as string) || '',
+    tanggalSurat: (row.tanggalSurat as string) || '',
+    createdAt: (row.created_at as string) || (row.createdAt as string) || new Date().toISOString(),
+  };
+}
+
+export async function fetchSuratMasuk(): Promise<SuratMasuk[]> {
+  try {
+    const { data, error } = await supabase.from('surat_masuk').select('*').order('tanggalSurat', { ascending: false });
+    if (error) { console.error('[DB] Error fetching surat masuk:', error.message); return []; }
+    return (data || []).map((row) => rowToSuratMasuk(row as Record<string, unknown>));
+  } catch (err) { console.error('[DB] EXCEPTION fetching surat masuk:', err); return []; }
+}
+
+export async function addSuratMasukToDB(surat: Omit<SuratMasuk, 'id' | 'createdAt'>): Promise<SuratMasuk | null> {
+  try {
+    const { data, error } = await supabase.from('surat_masuk').insert({
+      asalSurat: surat.asalSurat,
+      nomorSurat: surat.nomorSurat,
+      tanggalSurat: surat.tanggalSurat,
+    }).select().single();
+    if (error) { console.error('[DB] Error adding surat masuk:', error.message); return null; }
+    return rowToSuratMasuk(data as Record<string, unknown>);
+  } catch (err) { console.error('[DB] EXCEPTION adding surat masuk:', err); return null; }
+}
+
+export async function deleteSuratMasukFromDB(id: number): Promise<boolean> {
+  try {
+    const { error } = await supabase.from('surat_masuk').delete().eq('id', id);
+    if (error) { console.error('[DB] Error deleting surat masuk:', error.message); return false; }
+    return true;
+  } catch (err) { console.error('[DB] EXCEPTION deleting surat masuk:', err); return false; }
+}
+
+// ===== SURAT KELUAR =====
+
+function rowToSuratKeluar(row: Record<string, unknown>): SuratKeluar {
+  return {
+    id: row.id as number,
+    jenisSurat: (row.jenisSurat as string) || '',
+    ditujukanKe: (row.ditujukanKe as string) || '',
+    nomorSurat: (row.nomorSurat as string) || '',
+    perihal: (row.perihal as string) || '',
+    tanggalSurat: (row.tanggalSurat as string) || '',
+    createdAt: (row.created_at as string) || (row.createdAt as string) || new Date().toISOString(),
+  };
+}
+
+export async function fetchSuratKeluar(): Promise<SuratKeluar[]> {
+  try {
+    const { data, error } = await supabase.from('surat_keluar').select('*').order('tanggalSurat', { ascending: false });
+    if (error) { console.error('[DB] Error fetching surat keluar:', error.message); return []; }
+    return (data || []).map((row) => rowToSuratKeluar(row as Record<string, unknown>));
+  } catch (err) { console.error('[DB] EXCEPTION fetching surat keluar:', err); return []; }
+}
+
+export async function addSuratKeluarToDB(surat: Omit<SuratKeluar, 'id' | 'createdAt'>): Promise<SuratKeluar | null> {
+  try {
+    const { data, error } = await supabase.from('surat_keluar').insert({
+      jenisSurat: surat.jenisSurat,
+      ditujukanKe: surat.ditujukanKe,
+      nomorSurat: surat.nomorSurat,
+      perihal: surat.perihal,
+      tanggalSurat: surat.tanggalSurat,
+    }).select().single();
+    if (error) { console.error('[DB] Error adding surat keluar:', error.message); return null; }
+    return rowToSuratKeluar(data as Record<string, unknown>);
+  } catch (err) { console.error('[DB] EXCEPTION adding surat keluar:', err); return null; }
+}
+
+export async function deleteSuratKeluarFromDB(id: number): Promise<boolean> {
+  try {
+    const { error } = await supabase.from('surat_keluar').delete().eq('id', id);
+    if (error) { console.error('[DB] Error deleting surat keluar:', error.message); return false; }
+    return true;
+  } catch (err) { console.error('[DB] EXCEPTION deleting surat keluar:', err); return false; }
 }

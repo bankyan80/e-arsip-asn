@@ -69,4 +69,21 @@ export interface DokumenConfig {
   contractDuration?: number;
 }
 
-export type PageType = 'dashboard' | 'pegawai' | 'dokumen' | 'arsip' | 'approval' | 'laporan' | 'bup';
+export interface SuratMasuk {
+  id: number;
+  asalSurat: string;
+  nomorSurat: string;
+  tanggalSurat: string;
+  createdAt: string;
+}
+
+export interface SuratKeluar {
+  id: number;
+  jenisSurat: string;
+  ditujukanKe: string;
+  nomorSurat: string;
+  perihal: string;
+  tanggalSurat: string;
+  createdAt: string;
+}
+export type PageType = 'dashboard' | 'pegawai' | 'dokumen' | 'arsip' | 'approval' | 'laporan' | 'bup' | 'pengaturan' | 'surat-masuk' | 'surat-keluar' | 'arsip-surat';

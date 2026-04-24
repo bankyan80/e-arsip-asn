@@ -1,9 +1,12 @@
 ﻿import { create } from 'zustand';
-import type { Pegawai, Dokumen, Notifikasi, AppConfig, CurrentUser, PageType } from './types';
+import type { Pegawai, Dokumen, Notifikasi, AppConfig, CurrentUser, PageType, SuratMasuk, SuratKeluar } from './types';
 import {
   fetchPegawai, addPegawaiToDB, addPegawaiBatchToDB, updatePegawaiInDB, deletePegawaiFromDB,
   fetchDokumen, uploadFileAndGetUrl, addDokumenToDB, updateDokumenStatusInDB, updateDokumenKeteranganInDB, deleteDokumenFromDB,
   fetchNotifikasi, addNotifikasiToDB, markNotifikasiReadInDB, markAllNotifikasiReadInDB, clearNotifikasiInDB,
+  fetchSuratMasuk, addSuratMasukToDB, deleteSuratMasukFromDB,
+  fetchSuratKeluar, addSuratKeluarToDB, deleteSuratKeluarFromDB,
+} from './db';
 } from './db';
 
 const AUTH_KEY = 'e-arsip-auth';
@@ -33,6 +36,8 @@ interface ArsipStore {
   pegawaiList: Pegawai[];
   dokumenList: Dokumen[];
   notifikasiList: Notifikasi[];
+  suratMasukList: SuratMasuk[];
+  suratKeluarList: SuratKeluar[];
   config: AppConfig;
   isLoading: boolean;
 
@@ -51,6 +56,10 @@ interface ArsipStore {
   markNotifRead: (id: number) => Promise<void>;
   markAllNotifRead: () => Promise<void>;
   clearNotifikasi: () => Promise<void>;
+  addSuratMasuk: (s: Omit<SuratMasuk, 'id' | 'createdAt'>) => Promise<void>;
+  deleteSuratMasuk: (id: number) => Promise<void>;
+  addSuratKeluar: (s: Omit<SuratKeluar, 'id' | 'createdAt'>) => Promise<void>;
+  deleteSuratKeluar: (id: number) => Promise<void>;
 
   updateConfig: (cfg: Partial<AppConfig>) => void;
   activePage: PageType;
@@ -76,6 +85,8 @@ export const useArsipStore = create<ArsipStore>()((set, get) => ({
   pegawaiList: [],
   dokumenList: [],
   notifikasiList: [],
+  suratMasukList: [],
+  suratKeluarList: [],
   config: { appsScriptURL: '', telegramBotToken: '', telegramChatId: '' },
   isLoading: false,
 
@@ -145,6 +156,22 @@ export const useArsipStore = create<ArsipStore>()((set, get) => ({
     if (ok) set({ notifikasiList: [] });
   },
 
+  addSuratMasuk: async (s) => {
+    const r = await addSuratMasukToDB(s);
+    if (r) set((state) => ({ suratMasukList: [r, ...state.suratMasukList] }));
+  },
+  deleteSuratMasuk: async (id) => {
+    const ok = await deleteSuratMasukFromDB(id);
+    if (ok) set((state) => ({ suratMasukList: state.suratMasukList.filter((s) => s.id !== id) }));
+  },
+  addSuratKeluar: async (s) => {
+    const r = await addSuratKeluarToDB(s);
+    if (r) set((state) => ({ suratKeluarList: [r, ...state.suratKeluarList] }));
+  },
+  deleteSuratKeluar: async (id) => {
+    const ok = await deleteSuratKeluarFromDB(id);
+    if (ok) set((state) => ({ suratKeluarList: state.suratKeluarList.filter((s) => s.id !== id) }));
+  },
   updateConfig: (cfg) => set((s) => ({ config: { ...s.config, ...cfg } })),
   activePage: 'dashboard',
   setActivePage: (page) => set({ activePage: page }),
@@ -152,18 +179,18 @@ export const useArsipStore = create<ArsipStore>()((set, get) => ({
   initializeData: async () => {
     set({ isLoading: true });
     try {
-      const [p, d, n] = await Promise.all([fetchPegawai(), fetchDokumen(), fetchNotifikasi()]);
-      set({ pegawaiList: p, dokumenList: d, notifikasiList: n });
+      const [p, d, n, sm, sk] = await Promise.all([fetchPegawai(), fetchDokumen(), fetchNotifikasi(), fetchSuratMasuk(), fetchSuratKeluar()]);
+      set({ pegawaiList: p, dokumenList: d, notifikasiList: n, suratMasukList: sm, suratKeluarList: sk });
     } catch (e) { console.error(e); }
     finally { set({ isLoading: false }); }
   },
   refreshData: async () => {
     try {
-      const [p, d, n] = await Promise.all([fetchPegawai(), fetchDokumen(), fetchNotifikasi()]);
-      set({ pegawaiList: p, dokumenList: d, notifikasiList: n });
+      const [p, d, n, sm, sk] = await Promise.all([fetchPegawai(), fetchDokumen(), fetchNotifikasi(), fetchSuratMasuk(), fetchSuratKeluar()]);
+      set({ pegawaiList: p, dokumenList: d, notifikasiList: n, suratMasukList: sm, suratKeluarList: sk });
     } catch (e) { console.error(e); }
   },
-  resetAllData: () => set({ pegawaiList: [], dokumenList: [], notifikasiList: [], config: { appsScriptURL: '', telegramBotToken: '', telegramChatId: '' } }),
+    resetAllData: () => set({ pegawaiList: [], dokumenList: [], notifikasiList: [], suratMasukList: [], suratKeluarList: [], config: { ... }
 }));
 
 export function restoreAuth(): boolean {
