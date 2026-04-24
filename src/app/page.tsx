@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useArsipStore } from '@/lib/store';
+import { useArsipStore, restoreAuth } from '@/lib/store';
 import { LoginForm } from '@/components/e-arsip/login-form';
 import { AppLayout } from '@/components/e-arsip/app-layout';
 import { DashboardPage } from '@/components/e-arsip/dashboard-page';
@@ -15,31 +15,23 @@ import { PengaturanPage } from '@/components/e-arsip/pengaturan-page';
 
 export default function Home() {
   const { isLoggedIn, activePage, initializeData } = useArsipStore();
-  const [hydrated, setHydrated] = useState(false);
+  const [ready, setReady] = useState(false);
 
-  // Tunggu zustand persist selesai hydrate dari localStorage
   useEffect(() => {
-    const unsub = useArsipStore.persist?.onFinishHydration?.(() => {
-      setHydrated(true);
-    });
-    // Jika sudah hydrate (synchronous case)
-    if (useArsipStore.persist?.hasHydrated?.()) {
-      setHydrated(true);
-    }
-    return () => {
-      unsub?.();
-    };
+    // Restore login dari localStorage (bypass zustand persist)
+    restoreAuth();
+    setReady(true);
   }, []);
 
-  // Setelah hydrated, load data dari Supabase
+  // Setelah ready, load data dari Supabase jika sudah login
   useEffect(() => {
-    if (hydrated) {
+    if (ready && isLoggedIn) {
       initializeData();
     }
-  }, [hydrated, initializeData]);
+  }, [ready, isLoggedIn, initializeData]);
 
-  // Loading: tunggu hydration
-  if (!hydrated) {
+  // Loading screen
+  if (!ready) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-white dark:bg-zinc-950">
         <div className="flex flex-col items-center gap-3">
@@ -50,32 +42,21 @@ export default function Home() {
     );
   }
 
-  // Not logged in - show login form
   if (!isLoggedIn) {
     return <LoginForm />;
   }
 
-  // Logged in - show app layout with active page content
   const renderPage = () => {
     switch (activePage) {
-      case 'dashboard':
-        return <DashboardPage />;
-      case 'pegawai':
-        return <PegawaiPage />;
-      case 'dokumen':
-        return <UploadPage />;
-      case 'arsip':
-        return <ArsipPage />;
-      case 'approval':
-        return <ApprovalPage />;
-      case 'laporan':
-        return <LaporanPage />;
-      case 'bup':
-        return <BupPage />;
-      case 'pengaturan':
-        return <PengaturanPage />;
-      default:
-        return <DashboardPage />;
+      case 'dashboard': return <DashboardPage />;
+      case 'pegawai': return <PegawaiPage />;
+      case 'dokumen': return <UploadPage />;
+      case 'arsip': return <ArsipPage />;
+      case 'approval': return <ApprovalPage />;
+      case 'laporan': return <LaporanPage />;
+      case 'bup': return <BupPage />;
+      case 'pengaturan': return <PengaturanPage />;
+      default: return <DashboardPage />;
     }
   };
 
