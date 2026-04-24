@@ -35,16 +35,28 @@ export function calculateRemainingDays(birthDate: string, bupAge: number): numbe
   if (!birthDate) return 0;
   const today = new Date();
   const birth = new Date(birthDate);
-  const bupDate = new Date(birth.getFullYear() + bupAge, birth.getMonth(), birth.getDate());
-  const diff = bupDate.getTime() - today.getTime();
+  // TMT Pensiun = 1 bulan setelah bulan lahir di tahun BUP
+  const bupYear = birth.getFullYear() + bupAge;
+  const tmtMonth = birth.getMonth() + 1;
+  const tmtYear = tmtMonth > 11 ? bupYear + 1 : bupYear;
+  const tmtMonthActual = tmtMonth > 11 ? 0 : tmtMonth;
+  const tmtDate = new Date(tmtYear, tmtMonthActual, 1);
+  const diff = tmtDate.getTime() - today.getTime();
   return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
 }
 
 export function calculateBMPPensiun(birthDate: string, bupAge: number): string {
   if (!birthDate) return '-';
   const birth = new Date(birthDate);
-  const bupDate = new Date(birth.getFullYear() + bupAge, birth.getMonth(), birth.getDate());
-  return formatDateShort(bupDate.toISOString().split('T')[0]);
+  // TMT Pensiun = tanggal 1, bulan berikutnya setelah bulan lahir, di tahun BUP
+  const bupYear = birth.getFullYear() + bupAge;
+  const tmtMonth = birth.getMonth() + 1;
+  const tmtYear = tmtMonth > 11 ? bupYear + 1 : bupYear;
+  const tmtMonthActual = tmtMonth > 11 ? 0 : tmtMonth;
+  const tmtDate = new Date(tmtYear, tmtMonthActual, 1);
+  const dd = String(tmtDate.getDate()).padStart(2, '0');
+  const mm = String(tmtDate.getMonth() + 1).padStart(2, '0');
+  return `${dd}/${mm}/${tmtDate.getFullYear()}`;
 }
 
 export function isExpired(expiry: string): boolean {
