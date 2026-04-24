@@ -9,6 +9,11 @@ export interface Pegawai {
   email: string;
   hp: string;
   tanggalLahir: string;
+  tempatLahir: string;
+  jenisKelamin: string;
+  agama: string;
+  alamat: string;
+  pendidikanTerakhir: string;
   status: 'Aktif' | 'Nonaktif';
 }
 

@@ -20,6 +20,16 @@ import {
   Moon,
   Sun,
   CheckCircle2,
+  Pencil,
+  Save,
+  ChevronDown,
+  ChevronUp,
+  MapPin,
+  GraduationCap,
+  Phone,
+  Mail,
+  Calendar,
+  Home,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -44,9 +54,21 @@ import { useTheme } from '@/app/providers';
 import { getASNType, getDokumenOptions, MAX_FILE_SIZE, ALLOWED_MIME_TYPES, DOKUMEN_UMUM, JENIS_ASN_BADGE } from '@/lib/constants';
 import { formatDate, formatFileSize, todayISO } from '@/lib/utils-arsip';
 import { analyzePDFQuality, getQualityLabel } from '@/lib/pdf-quality';
-import { fetchPegawaiByNIP, fetchDokumenByPegawaiId, uploadFileAndGetUrl, addDokumenToDB, addNotifikasiToDB } from '@/lib/db';
+import { fetchPegawaiByNIP, fetchDokumenByPegawaiId, uploadFileAndGetUrl, addDokumenToDB, addNotifikasiToDB, updatePegawaiInDB } from '@/lib/db';
 import type { Pegawai, Dokumen } from '@/lib/types';
 import type { PDFQualityResult } from '@/lib/pdf-quality';
+
+// ===== Profile Editable Fields =====
+interface ProfileFormData {
+  email: string;
+  hp: string;
+  tempatLahir: string;
+  tanggalLahir: string;
+  jenisKelamin: string;
+  agama: string;
+  alamat: string;
+  pendidikanTerakhir: string;
+}
 
 // ===== Share Upload Page =====
 
@@ -60,15 +82,24 @@ export default function ShareUploadPage() {
   const [dokumenList, setDokumenList] = useState<Dokumen[]>([]);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
-  const [uploading, setUploading] = useState(false);
 
-  // ===== Form state =====
+  // ===== Profile edit state =====
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
+  const [profileForm, setProfileForm] = useState<ProfileFormData>({
+    email: '', hp: '', tempatLahir: '', tanggalLahir: '',
+    jenisKelamin: '', agama: '', alamat: '', pendidikanTerakhir: '',
+  });
+  const [profileInitialized, setProfileInitialized] = useState(false);
+
+  // ===== Upload form state =====
   const [selectedJenisDokumen, setSelectedJenisDokumen] = useState<string>('');
   const [periode, setPeriode] = useState<string>('');
   const [tmtAwal, setTmtAwal] = useState<string>('');
   const [tmtAkhir, setTmtAkhir] = useState<string>('');
   const [masaBerlaku, setMasaBerlaku] = useState<string>('');
   const [keterangan, setKeterangan] = useState<string>('');
+  const [uploading, setUploading] = useState(false);
 
   // ===== File state =====
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -105,6 +136,19 @@ export default function ShareUploadPage() {
 
         setPegawai(pg);
 
+        // Initialize profile form with current data
+        setProfileForm({
+          email: pg.email || '',
+          hp: pg.hp || '',
+          tempatLahir: pg.tempatLahir || '',
+          tanggalLahir: pg.tanggalLahir || '',
+          jenisKelamin: pg.jenisKelamin || '',
+          agama: pg.agama || '',
+          alamat: pg.alamat || '',
+          pendidikanTerakhir: pg.pendidikanTerakhir || '',
+        });
+        setProfileInitialized(true);
+
         const docs = await fetchDokumenByPegawaiId(pg.id);
         setDokumenList(docs);
       } catch (err) {
@@ -117,6 +161,73 @@ export default function ShareUploadPage() {
 
     loadData();
   }, [nipParam]);
+
+  // ===== Profile handlers =====
+  const updateProfileField = useCallback((key: keyof ProfileFormData, value: string) => {
+    setProfileForm((prev) => ({ ...prev, [key]: value }));
+  }, []);
+
+  const hasProfileChanges = useMemo(() => {
+    if (!pegawai || !profileInitialized) return false;
+    return (
+      profileForm.email !== (pegawai.email || '') ||
+      profileForm.hp !== (pegawai.hp || '') ||
+      profileForm.tempatLahir !== (pegawai.tempatLahir || '') ||
+      profileForm.tanggalLahir !== (pegawai.tanggalLahir || '') ||
+      profileForm.jenisKelamin !== (pegawai.jenisKelamin || '') ||
+      profileForm.agama !== (pegawai.agama || '') ||
+      profileForm.alamat !== (pegawai.alamat || '') ||
+      profileForm.pendidikanTerakhir !== (pegawai.pendidikanTerakhir || '')
+    );
+  }, [pegawai, profileForm, profileInitialized]);
+
+  const handleSaveProfile = useCallback(async () => {
+    if (!pegawai) return;
+
+    setIsSavingProfile(true);
+    try {
+      const ok = await updatePegawaiInDB(pegawai.id, {
+        email: profileForm.email.trim(),
+        hp: profileForm.hp.trim(),
+        tempatLahir: profileForm.tempatLahir.trim(),
+        tanggalLahir: profileForm.tanggalLahir,
+        jenisKelamin: profileForm.jenisKelamin,
+        agama: profileForm.agama,
+        alamat: profileForm.alamat.trim(),
+        pendidikanTerakhir: profileForm.pendidikanTerakhir.trim(),
+      });
+
+      if (ok) {
+        // Refresh pegawai data from DB
+        const updated = await fetchPegawaiByNIP(nipParam);
+        if (updated) setPegawai(updated);
+        setIsEditingProfile(false);
+        toast.success('Profil berhasil diperbarui dan tersimpan di data admin.');
+      } else {
+        toast.error('Gagal menyimpan profil. Silakan coba lagi.');
+      }
+    } catch (err) {
+      console.error('Error saving profile:', err);
+      toast.error('Gagal menyimpan profil.');
+    } finally {
+      setIsSavingProfile(false);
+    }
+  }, [pegawai, profileForm, nipParam]);
+
+  const handleCancelEdit = useCallback(() => {
+    if (!pegawai) return;
+    setProfileForm({
+      email: pegawai.email || '',
+      hp: pegawai.hp || '',
+      tempatLahir: pegawai.tempatLahir || '',
+      tanggalLahir: pegawai.tanggalLahir || '',
+      jenisKelamin: pegawai.jenisKelamin || '',
+      agama: pegawai.agama || '',
+      alamat: pegawai.alamat || '',
+      pendidikanTerakhir: pegawai.pendidikanTerakhir || '',
+    });
+    setIsEditingProfile(false);
+  }, [pegawai]);
 
   // ===== Derived: ASN type & dokumen options =====
   const asnType = useMemo(() => {
@@ -255,7 +366,7 @@ export default function ShareUploadPage() {
       console.log('[Upload] Step 1: Uploading file to Supabase Storage...');
       const uploadResult = await uploadFileAndGetUrl(selectedFile, pegawai.id);
       if (!uploadResult) {
-        console.error('[Upload] FAILED: Could not upload file to storage. Check bucket exists and RLS policies allow upload.');
+        console.error('[Upload] FAILED: Could not upload file to storage.');
         toast.error('Gagal mengunggah file. Storage bucket mungkin belum disiapkan atau RLS memblokir.', { duration: 8000 });
         setUploading(false);
         return;
@@ -288,9 +399,8 @@ export default function ShareUploadPage() {
 
       const savedDoc = await addDokumenToDB(docData);
       if (!savedDoc) {
-        console.error('[Upload] FAILED: Could not save dokumen to database. Check RLS policies on dokumen table.');
+        console.error('[Upload] FAILED: Could not save dokumen to database.');
         toast.error('Gagal menyimpan data dokumen ke database. Periksa RLS policies di Supabase.', { duration: 8000 });
-        // Try cleanup uploaded file
         try {
           const { supabase } = await import('@/lib/supabase');
           await supabase.storage.from('dokumen').remove([uploadResult.filePath]);
@@ -314,7 +424,6 @@ export default function ShareUploadPage() {
       setDokumenList((prev) => [savedDoc, ...prev]);
       setUploadSuccess(true);
       toast.success('Dokumen berhasil diunggah! Menunggu approval admin.', { duration: 5000 });
-      console.log('[Upload] SUCCESS: Dokumen uploaded successfully.');
 
       // Reset form for next upload
       setSelectedJenisDokumen('');
@@ -366,8 +475,7 @@ export default function ShareUploadPage() {
 
   const ACCENT = '#3c6eff';
   const badgeClass = pegawai ? (JENIS_ASN_BADGE[pegawai.jenisASN] ?? 'bg-muted text-muted-foreground') : '';
-
-  // ===== Render: Main page =====
+    // ===== Render: Main page =====
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-100 to-slate-200 dark:from-zinc-950 dark:to-zinc-900">
       {/* ===== Top Header Bar ===== */}
@@ -399,6 +507,7 @@ export default function ShareUploadPage() {
       {/* ===== Main Content ===== */}
       <main className="mx-auto max-w-3xl px-4 py-6 sm:px-6 sm:py-8">
         {pegawai && (<>
+
         {/* ===== Pegawai Info Card ===== */}
         <Card className="mb-6 border-0 shadow-lg">
           <CardContent className="p-5">
@@ -407,7 +516,31 @@ export default function ShareUploadPage() {
                 <UserCircle className="h-6 w-6 text-[#3c6eff]" />
               </div>
               <div className="flex-1 min-w-0">
-                <h2 className="text-lg font-bold text-foreground">{pegawai.nama}</h2>
+                <div className="flex items-start justify-between gap-2">
+                  <h2 className="text-lg font-bold text-foreground">{pegawai.nama}</h2>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className={`h-8 gap-1.5 text-xs font-medium shrink-0 ${isEditingProfile ? 'text-green-600 hover:text-green-700 hover:bg-green-50 dark:text-green-400 dark:hover:bg-green-950/30' : 'text-[#3c6eff] hover:text-[#3c6eff] hover:bg-[#3c6eff]/10'}`}
+                    onClick={() => {
+                      if (isEditingProfile) {
+                        if (hasProfileChanges) handleSaveProfile();
+                        else setIsEditingProfile(false);
+                      } else {
+                        setIsEditingProfile(true);
+                      }
+                    }}
+                    disabled={isSavingProfile}
+                  >
+                    {isSavingProfile ? (
+                      <><Loader2 className="h-3.5 w-3.5 animate-spin" />Menyimpan...</>
+                    ) : isEditingProfile ? (
+                      <><Save className="h-3.5 w-3.5" />Simpan Profil</>
+                    ) : (
+                      <><Pencil className="h-3.5 w-3.5" />Edit Profil</>
+                    )}
+                  </Button>
+                </div>
                 <p className="text-xs text-muted-foreground mt-0.5 font-mono">{pegawai.nip}</p>
                 <div className="mt-2.5 flex flex-wrap items-center gap-2">
                   <Badge variant="secondary" className={`text-[11px] font-medium px-2 py-0.5 ${badgeClass}`}>
@@ -444,6 +577,166 @@ export default function ShareUploadPage() {
             </div>
           </CardContent>
         </Card>
+
+        {/* ===== Profile Edit Section ===== */}
+        {isEditingProfile && (
+          <Card className="mb-6 border-0 shadow-lg border-l-4 border-l-[#3c6eff]">
+            <CardHeader className="pb-3 px-5 pt-4">
+              <CardTitle className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                <UserCircle className="h-4 w-4 text-[#3c6eff]" />
+                Data Profil Pribadi
+              </CardTitle>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Perbarui data profil Anda. Perubahan akan langsung tersimpan di database administrator.
+              </p>
+            </CardHeader>
+            <CardContent className="px-5 pb-5">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                {/* Email */}
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+                    <Mail className="h-3.5 w-3.5" />Email
+                  </Label>
+                  <Input
+                    type="email"
+                    placeholder="contoh@email.com"
+                    value={profileForm.email}
+                    onChange={(e) => updateProfileField('email', e.target.value)}
+                    className="h-9 text-sm"
+                  />
+                </div>
+
+                {/* No HP */}
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+                    <Phone className="h-3.5 w-3.5" />No HP
+                  </Label>
+                  <Input
+                    placeholder="08xxxxxxxxxx"
+                    value={profileForm.hp}
+                    onChange={(e) => updateProfileField('hp', e.target.value)}
+                    className="h-9 text-sm"
+                  />
+                </div>
+
+                {/* Tempat Lahir */}
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+                    <MapPin className="h-3.5 w-3.5" />Tempat Lahir
+                  </Label>
+                  <Input
+                    placeholder="Kota / Kabupaten"
+                    value={profileForm.tempatLahir}
+                    onChange={(e) => updateProfileField('tempatLahir', e.target.value)}
+                    className="h-9 text-sm"
+                  />
+                </div>
+
+                {/* Tanggal Lahir */}
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+                    <Calendar className="h-3.5 w-3.5" />Tanggal Lahir
+                  </Label>
+                  <Input
+                    type="date"
+                    value={profileForm.tanggalLahir}
+                    onChange={(e) => updateProfileField('tanggalLahir', e.target.value)}
+                    className="h-9 text-sm"
+                  />
+                </div>
+
+                {/* Jenis Kelamin */}
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+                    <UserCircle className="h-3.5 w-3.5" />Jenis Kelamin
+                  </Label>
+                  <Select value={profileForm.jenisKelamin} onValueChange={(v) => updateProfileField('jenisKelamin', v)}>
+                    <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="Pilih..." /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Laki-laki">Laki-laki</SelectItem>
+                      <SelectItem value="Perempuan">Perempuan</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Agama */}
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-medium text-muted-foreground">Agama</Label>
+                  <Select value={profileForm.agama} onValueChange={(v) => updateProfileField('agama', v)}>
+                    <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="Pilih..." /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Islam">Islam</SelectItem>
+                      <SelectItem value="Kristen">Kristen</SelectItem>
+                      <SelectItem value="Katolik">Katolik</SelectItem>
+                      <SelectItem value="Hindu">Hindu</SelectItem>
+                      <SelectItem value="Buddha">Buddha</SelectItem>
+                      <SelectItem value="Konghucu">Konghucu</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Pendidikan Terakhir */}
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+                    <GraduationCap className="h-3.5 w-3.5" />Pendidikan Terakhir
+                  </Label>
+                  <Select value={profileForm.pendidikanTerakhir} onValueChange={(v) => updateProfileField('pendidikanTerakhir', v)}>
+                    <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="Pilih..." /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="SMA/SMK Sederajat">SMA/SMK Sederajat</SelectItem>
+                      <SelectItem value="Diploma I">Diploma I</SelectItem>
+                      <SelectItem value="Diploma II">Diploma II</SelectItem>
+                      <SelectItem value="Diploma III (D3)">Diploma III (D3)</SelectItem>
+                      <SelectItem value="Diploma IV (D4)">Diploma IV (D4)</SelectItem>
+                      <SelectItem value="Sarjana (S1)">Sarjana (S1)</SelectItem>
+                      <SelectItem value="Magister (S2)">Magister (S2)</SelectItem>
+                      <SelectItem value="Doktor (S3)">Doktor (S3)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Alamat — full width */}
+                <div className="space-y-1.5 sm:col-span-2">
+                  <Label className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+                    <Home className="h-3.5 w-3.5" />Alamat Lengkap
+                  </Label>
+                  <Textarea
+                    placeholder="Masukkan alamat lengkap..."
+                    value={profileForm.alamat}
+                    onChange={(e) => updateProfileField('alamat', e.target.value)}
+                    rows={2}
+                    className="text-sm resize-none"
+                  />
+                </div>
+              </div>
+
+              {/* Action buttons */}
+              <div className="flex items-center justify-end gap-2 mt-4 pt-3 border-t">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 text-xs"
+                  onClick={handleCancelEdit}
+                  disabled={isSavingProfile}
+                >
+                  Batal
+                </Button>
+                <Button
+                  size="sm"
+                  className="h-8 bg-[#3c6eff] hover:bg-[#3c6eff]/90 text-white text-xs gap-1.5"
+                  onClick={handleSaveProfile}
+                  disabled={isSavingProfile || !hasProfileChanges}
+                >
+                  {isSavingProfile ? (
+                    <><Loader2 className="h-3.5 w-3.5 animate-spin" />Menyimpan...</>
+                  ) : (
+                    <><Save className="h-3.5 w-3.5" />Simpan Perubahan</>
+                  )}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* ===== Upload Success Banner ===== */}
         {uploadSuccess && (
@@ -742,8 +1035,7 @@ export default function ShareUploadPage() {
             </Button>
           </CardContent>
         </Card>
-
-        {/* ===== Preview ===== */}
+		        {/* ===== Preview ===== */}
         {previewUrl && selectedFile && (
           <Card className="mt-6 border-0 shadow-lg">
             <CardHeader className="pb-3 px-5 pt-5">

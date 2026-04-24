@@ -1,7 +1,17 @@
 import { supabase } from './supabase';
 import type { Pegawai, Dokumen, Notifikasi } from './types';
 
-// COLUMN NAME MAPPING (Supabase uses camelCase, NOT snake_case!)
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://qvuieguqrifosiwhjmfu.supabase.co';
+function buildPublicUrl(filePath: string): string {
+  if (!filePath) return '';
+  if (filePath.startsWith('http')) return filePath;
+  return `${SUPABASE_URL}/storage/v1/object/public/dokumen/${filePath}`;
+}
+
+// COLUMN NAME MAPPING
+// pegawai: camelCase (jenisASN, unitKerja, tanggalLahir, ...)
+// dokumen: camelCase, tapi TIDAK punya kolom 'url' — digenerate dari filePath
+// notifikasi: camelCase, tapi kolom created_at (snake_case)
 function rowToPegawai(row: Record<string, unknown>): Pegawai {
   return {
     id: row.id as number,
@@ -14,6 +24,11 @@ function rowToPegawai(row: Record<string, unknown>): Pegawai {
     email: (row.email as string) || '',
     hp: (row.hp as string) || '',
     tanggalLahir: (row.tanggalLahir as string) || '',
+    tempatLahir: (row.tempatLahir as string) || '',
+    jenisKelamin: (row.jenisKelamin as string) || '',
+    agama: (row.agama as string) || '',
+    alamat: (row.alamat as string) || '',
+    pendidikanTerakhir: (row.pendidikanTerakhir as string) || '',
     status: (row.status as Pegawai['status']) || 'Aktif',
   };
 }
@@ -28,7 +43,7 @@ function rowToDokumen(row: Record<string, unknown>): Dokumen {
     jenisDokumen: (row.jenisDokumen as string) || '',
     tanggal: (row.tanggal as string) || '',
     status: (['Pending', 'Approved', 'Rejected'].includes(row.status as string) ? row.status : 'Pending') as Dokumen['status'],
-    url: (row.url as string) || '',
+    url: (row.filePath as string) ? buildPublicUrl(row.filePath as string) : '',
     expiry: (row.expiry as string) || '',
     fileName: (row.fileName as string) || '',
     keterangan: (row.keterangan as string) || '',
@@ -46,7 +61,7 @@ function rowToNotifikasi(row: Record<string, unknown>): Notifikasi {
     message: (row.message as string) || '',
     type: (['success', 'warning', 'error', 'info'].includes(row.type as string) ? row.type : 'info') as Notifikasi['type'],
     read: Boolean(row.read),
-    createdAt: (row.createdAt as string) || new Date().toISOString(),
+    createdAt: (row.created_at as string) || (row.createdAt as string) || new Date().toISOString(),
   };
 }
 
@@ -121,6 +136,11 @@ export async function updatePegawaiInDB(id: number, pg: Partial<Pegawai>): Promi
     if (pg.email !== undefined) row.email = pg.email;
     if (pg.hp !== undefined) row.hp = pg.hp;
     if (pg.tanggalLahir !== undefined) row.tanggalLahir = pg.tanggalLahir;
+    if (pg.tempatLahir !== undefined) row.tempatLahir = pg.tempatLahir;
+    if (pg.jenisKelamin !== undefined) row.jenisKelamin = pg.jenisKelamin;
+    if (pg.agama !== undefined) row.agama = pg.agama;
+    if (pg.alamat !== undefined) row.alamat = pg.alamat;
+    if (pg.pendidikanTerakhir !== undefined) row.pendidikanTerakhir = pg.pendidikanTerakhir;
     if (pg.status !== undefined) row.status = pg.status;
     const { error } = await supabase.from('pegawai').update(row).eq('id', id);
     if (error) { console.error('[DB] Error updating pegawai:', error.message); return false; }
@@ -174,7 +194,7 @@ export async function addDokumenToDB(doc: Omit<Dokumen, 'id'>): Promise<Dokumen 
   try {
     const row: Record<string, unknown> = {
       pegawaiId: doc.pegawaiId, pegawaiNama: doc.pegawaiNama, nip: doc.nip, jenisASN: doc.jenisASN,
-      jenisDokumen: doc.jenisDokumen, tanggal: doc.tanggal, status: doc.status, url: doc.url,
+      jenisDokumen: doc.jenisDokumen, tanggal: doc.tanggal, status: doc.status,
       expiry: doc.expiry, fileName: doc.fileName, keterangan: doc.keterangan,
     };
     if (doc.periode) row.periode = doc.periode;
@@ -217,7 +237,7 @@ export async function deleteDokumenFromDB(id: number, filePath?: string): Promis
 
 export async function fetchNotifikasi(): Promise<Notifikasi[]> {
   try {
-    const { data, error } = await supabase.from('notifikasi').select('*').order('createdAt', { ascending: false }).limit(50);
+    const { data, error } = await supabase.from('notifikasi').select('*').order('created_at', { ascending: false }).limit(50);
     if (error) { console.error('[DB] Error fetching notifikasi:', error.message); return []; }
     return (data || []).map((row) => rowToNotifikasi(row as Record<string, unknown>));
   } catch (err) { console.error('[DB] EXCEPTION fetching notifikasi:', err); return []; }
