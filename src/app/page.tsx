@@ -18,19 +18,14 @@ export default function Home() {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    // Restore login dari localStorage (bypass zustand persist)
     restoreAuth();
     setReady(true);
   }, []);
 
-  // Setelah ready, load data dari Supabase jika sudah login
   useEffect(() => {
-    if (ready && isLoggedIn) {
-      initializeData();
-    }
+    if (ready && isLoggedIn) { initializeData(); }
   }, [ready, isLoggedIn, initializeData]);
 
-  // Loading screen
   if (!ready) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-white dark:bg-zinc-950">
