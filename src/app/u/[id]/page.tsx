@@ -10,6 +10,7 @@ import {
   AlertCircle,
   UserCircle,
   X,
+  Briefcase,
   CalendarClock,
   AlertTriangle,
   RotateCcw,
@@ -51,23 +52,30 @@ import {
 } from '@/components/ui/select';
 
 import { useTheme } from '@/app/providers';
-import { getASNType, getDokumenOptions, MAX_FILE_SIZE, ALLOWED_MIME_TYPES, DOKUMEN_UMUM, JENIS_ASN_BADGE } from '@/lib/constants';
+import { getASNType, getDokumenOptions, getGolonganOptions, MAX_FILE_SIZE, ALLOWED_MIME_TYPES, DOKUMEN_UMUM, JENIS_ASN_BADGE, JENIS_ASN_OPTIONS, JABATAN_OPTIONS, UNIT_KERJA_OPTIONS } from '@/lib/constants';
 import { formatDate, formatFileSize, todayISO } from '@/lib/utils-arsip';
 import { analyzePDFQuality, getQualityLabel } from '@/lib/pdf-quality';
-import { fetchPegawaiByNIP, fetchDokumenByPegawaiId, uploadFileAndGetUrl, addDokumenToDB, addNotifikasiToDB, updatePegawaiInDB } from '@/lib/db';
+import { fetchPegawaiByNIP, fetchPegawai, fetchDokumenByPegawaiId, uploadFileAndGetUrl, addDokumenToDB, addNotifikasiToDB, addPegawaiToDB, updatePegawaiInDB } from '@/lib/db';
 import type { Pegawai, Dokumen } from '@/lib/types';
 import type { PDFQualityResult } from '@/lib/pdf-quality';
 
 // ===== Profile Editable Fields =====
 interface ProfileFormData {
+  nip: string;
+  nama: string;
+  jenisASN: string;
+  jabatan: string;
+  golongan: string;
+  unitKerja: string;
   email: string;
   hp: string;
-  tempatLahir: string;
   tanggalLahir: string;
+  tempatLahir: string;
   jenisKelamin: string;
   agama: string;
   alamat: string;
   pendidikanTerakhir: string;
+  status: 'Aktif' | 'Nonaktif';
 }
 
 // ===== Share Upload Page =====
@@ -83,12 +91,28 @@ export default function ShareUploadPage() {
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
 
+  // ===== NIP check & register state =====
+  const [nipCheckInput, setNipCheckInput] = useState('');
+  const [isCheckingNIP, setIsCheckingNIP] = useState(false);
+  const [nipCheckError, setNipCheckError] = useState('');
+  const [showRegisterForm, setShowRegisterForm] = useState(false);
+  const [isRegistering, setIsRegistering] = useState(false);
+  const [registerForm, setRegisterForm] = useState<ProfileFormData>({
+    nip: '', nama: '', jenisASN: '', jabatan: '', golongan: '',
+    unitKerja: '', email: '', hp: '', tanggalLahir: '',
+    tempatLahir: '', jenisKelamin: '', agama: '',
+    alamat: '', pendidikanTerakhir: '', status: 'Aktif',
+  });
+  const [nipDupInfo, setNipDupInfo] = useState<{ nama: string; unitKerja: string } | null>(null);
+
   // ===== Profile edit state =====
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [profileForm, setProfileForm] = useState<ProfileFormData>({
-    email: '', hp: '', tempatLahir: '', tanggalLahir: '',
-    jenisKelamin: '', agama: '', alamat: '', pendidikanTerakhir: '',
+    nip: '', nama: '', jenisASN: '', jabatan: '', golongan: '',
+    unitKerja: '', email: '', hp: '', tanggalLahir: '',
+    tempatLahir: '', jenisKelamin: '', agama: '',
+    alamat: '', pendidikanTerakhir: '', status: 'Aktif',
   });
   const [profileInitialized, setProfileInitialized] = useState(false);
 
@@ -122,6 +146,7 @@ export default function ShareUploadPage() {
     async function loadData() {
       if (!nipParam) {
         setNotFound(true);
+        setNipCheckInput('');
         setLoading(false);
         return;
       }
@@ -130,6 +155,7 @@ export default function ShareUploadPage() {
         const pg = await fetchPegawaiByNIP(nipParam);
         if (!pg) {
           setNotFound(true);
+          setNipCheckInput(nipParam);
           setLoading(false);
           return;
         }
@@ -138,14 +164,21 @@ export default function ShareUploadPage() {
 
         // Initialize profile form with current data
         setProfileForm({
+          nip: pg.nip || '',
+          nama: pg.nama || '',
+          jenisASN: pg.jenisASN || '',
+          jabatan: pg.jabatan || '',
+          golongan: pg.golongan || '',
+          unitKerja: pg.unitKerja || '',
           email: pg.email || '',
           hp: pg.hp || '',
-          tempatLahir: pg.tempatLahir || '',
           tanggalLahir: pg.tanggalLahir || '',
+          tempatLahir: pg.tempatLahir || '',
           jenisKelamin: pg.jenisKelamin || '',
           agama: pg.agama || '',
           alamat: pg.alamat || '',
           pendidikanTerakhir: pg.pendidikanTerakhir || '',
+          status: pg.status || 'Aktif',
         });
         setProfileInitialized(true);
 
@@ -161,8 +194,7 @@ export default function ShareUploadPage() {
 
     loadData();
   }, [nipParam]);
-
-  // ===== Profile handlers =====
+    // ===== Profile handlers =====
   const updateProfileField = useCallback((key: keyof ProfileFormData, value: string) => {
     setProfileForm((prev) => ({ ...prev, [key]: value }));
   }, []);
@@ -170,14 +202,21 @@ export default function ShareUploadPage() {
   const hasProfileChanges = useMemo(() => {
     if (!pegawai || !profileInitialized) return false;
     return (
+      profileForm.nip !== (pegawai.nip || '') ||
+      profileForm.nama !== (pegawai.nama || '') ||
+      profileForm.jenisASN !== (pegawai.jenisASN || '') ||
+      profileForm.jabatan !== (pegawai.jabatan || '') ||
+      profileForm.golongan !== (pegawai.golongan || '') ||
+      profileForm.unitKerja !== (pegawai.unitKerja || '') ||
       profileForm.email !== (pegawai.email || '') ||
       profileForm.hp !== (pegawai.hp || '') ||
-      profileForm.tempatLahir !== (pegawai.tempatLahir || '') ||
       profileForm.tanggalLahir !== (pegawai.tanggalLahir || '') ||
+      profileForm.tempatLahir !== (pegawai.tempatLahir || '') ||
       profileForm.jenisKelamin !== (pegawai.jenisKelamin || '') ||
       profileForm.agama !== (pegawai.agama || '') ||
       profileForm.alamat !== (pegawai.alamat || '') ||
-      profileForm.pendidikanTerakhir !== (pegawai.pendidikanTerakhir || '')
+      profileForm.pendidikanTerakhir !== (pegawai.pendidikanTerakhir || '') ||
+      profileForm.status !== (pegawai.status || 'Aktif')
     );
   }, [pegawai, profileForm, profileInitialized]);
 
@@ -187,19 +226,27 @@ export default function ShareUploadPage() {
     setIsSavingProfile(true);
     try {
       const ok = await updatePegawaiInDB(pegawai.id, {
+        nip: profileForm.nip.trim(),
+        nama: profileForm.nama.trim(),
+        jenisASN: profileForm.jenisASN,
+        jabatan: profileForm.jabatan,
+        golongan: profileForm.golongan,
+        unitKerja: profileForm.unitKerja,
         email: profileForm.email.trim(),
         hp: profileForm.hp.trim(),
-        tempatLahir: profileForm.tempatLahir.trim(),
         tanggalLahir: profileForm.tanggalLahir,
+        tempatLahir: profileForm.tempatLahir.trim(),
         jenisKelamin: profileForm.jenisKelamin,
         agama: profileForm.agama,
         alamat: profileForm.alamat.trim(),
         pendidikanTerakhir: profileForm.pendidikanTerakhir.trim(),
+        status: profileForm.status,
       });
 
       if (ok) {
-        // Refresh pegawai data from DB
-        const updated = await fetchPegawaiByNIP(nipParam);
+        // Refresh pegawai data from DB (use new NIP if changed)
+        const newNip = profileForm.nip.trim() || nipParam;
+        const updated = await fetchPegawaiByNIP(newNip);
         if (updated) setPegawai(updated);
         setIsEditingProfile(false);
         toast.success('Profil berhasil diperbarui dan tersimpan di data admin.');
@@ -217,17 +264,130 @@ export default function ShareUploadPage() {
   const handleCancelEdit = useCallback(() => {
     if (!pegawai) return;
     setProfileForm({
+      nip: pegawai.nip || '',
+      nama: pegawai.nama || '',
+      jenisASN: pegawai.jenisASN || '',
+      jabatan: pegawai.jabatan || '',
+      golongan: pegawai.golongan || '',
+      unitKerja: pegawai.unitKerja || '',
       email: pegawai.email || '',
       hp: pegawai.hp || '',
-      tempatLahir: pegawai.tempatLahir || '',
       tanggalLahir: pegawai.tanggalLahir || '',
+      tempatLahir: pegawai.tempatLahir || '',
       jenisKelamin: pegawai.jenisKelamin || '',
       agama: pegawai.agama || '',
       alamat: pegawai.alamat || '',
       pendidikanTerakhir: pegawai.pendidikanTerakhir || '',
+      status: pegawai.status || 'Aktif',
     });
     setIsEditingProfile(false);
   }, [pegawai]);
+
+  // ===== NIP Check Handler =====
+  const handleCheckNIP = useCallback(async () => {
+    const nip = nipCheckInput.replace(/\s/g, '').trim();
+    if (!nip) {
+      setNipCheckError('Masukkan NIP terlebih dahulu.');
+      return;
+    }
+    setIsCheckingNIP(true);
+    setNipCheckError('');
+    try {
+      const pg = await fetchPegawaiByNIP(nip);
+      if (pg) {
+        // NIP ditemukan — load pegawai data
+        setPegawai(pg);
+        setNotFound(false);
+        setShowRegisterForm(false);
+        setProfileForm({
+          nip: pg.nip || '', nama: pg.nama || '', jenisASN: pg.jenisASN || '',
+          jabatan: pg.jabatan || '', golongan: pg.golongan || '',
+          unitKerja: pg.unitKerja || '', email: pg.email || '', hp: pg.hp || '',
+          tanggalLahir: pg.tanggalLahir || '', tempatLahir: pg.tempatLahir || '',
+          jenisKelamin: pg.jenisKelamin || '', agama: pg.agama || '',
+          alamat: pg.alamat || '', pendidikanTerakhir: pg.pendidikanTerakhir || '',
+          status: pg.status || 'Aktif',
+        });
+        setProfileInitialized(true);
+        const docs = await fetchDokumenByPegawaiId(pg.id);
+        setDokumenList(docs);
+        toast.success(`NIP ditemukan! Selamat datang, ${pg.nama}.`);
+      } else {
+        setNipCheckError(`NIP "${nip}" tidak terdaftar dalam sistem. Pastikan NIP yang Anda masukkan sudah benar tanpa spasi.`);
+      }
+    } catch {
+      setNipCheckError('Gagal memeriksa NIP. Periksa koneksi internet Anda.');
+    } finally {
+      setIsCheckingNIP(false);
+    }
+  }, [nipCheckInput]);
+
+  // ===== Open Register Form =====
+  const handleOpenRegister = useCallback(() => {
+    const nip = nipCheckInput.replace(/\s/g, '').trim();
+    setRegisterForm((prev) => ({ ...prev, nip }));
+    setShowRegisterForm(true);
+    setNipDupInfo(null);
+  }, [nipCheckInput]);
+
+  // ===== Register Handler =====
+  const handleRegister = useCallback(async () => {
+    const nip = registerForm.nip.replace(/\s/g, '').trim();
+    if (!nip || !registerForm.nama.trim()) {
+      toast.error('NIP dan Nama wajib diisi.');
+      return;
+    }
+    setIsRegistering(true);
+    setNipDupInfo(null);
+    try {
+      // Double-check NIP tidak duplikat
+      const existing = await fetchPegawaiByNIP(nip);
+      if (existing) {
+        setNipDupInfo({ nama: existing.nama, unitKerja: existing.unitKerja || '-' });
+        toast.error(`NIP sudah terdaftar atas nama ${existing.nama}${existing.unitKerja ? ` dari ${existing.unitKerja}` : ''}.`);
+        setIsRegistering(false);
+        return;
+      }
+      const newPegawai: Pegawai = {
+        id: 0, nip, nama: registerForm.nama.trim(),
+        jenisASN: registerForm.jenisASN, jabatan: registerForm.jabatan,
+        golongan: registerForm.golongan, unitKerja: registerForm.unitKerja,
+        email: registerForm.email.trim(), hp: registerForm.hp.trim(),
+        tanggalLahir: registerForm.tanggalLahir, tempatLahir: registerForm.tempatLahir.trim(),
+        jenisKelamin: registerForm.jenisKelamin, agama: registerForm.agama,
+        alamat: registerForm.alamat.trim(), pendidikanTerakhir: registerForm.pendidikanTerakhir.trim(),
+        status: 'Aktif',
+      };
+      const saved = await addPegawaiToDB(newPegawai);
+      if (saved) {
+        await addNotifikasiToDB(`Pegawai baru "${saved.nama}" (NIP: ${saved.nip}) mendaftar via link share.`, 'info');
+        // Load data like normal
+        setPegawai(saved);
+        setNotFound(false);
+        setShowRegisterForm(false);
+        setProfileForm({
+          nip: saved.nip || '', nama: saved.nama || '', jenisASN: saved.jenisASN || '',
+          jabatan: saved.jabatan || '', golongan: saved.golongan || '',
+          unitKerja: saved.unitKerja || '', email: saved.email || '', hp: saved.hp || '',
+          tanggalLahir: saved.tanggalLahir || '', tempatLahir: saved.tempatLahir || '',
+          jenisKelamin: saved.jenisKelamin || '', agama: saved.agama || '',
+          alamat: saved.alamat || '', pendidikanTerakhir: saved.pendidikanTerakhir || '',
+          status: saved.status || 'Aktif',
+        });
+        setProfileInitialized(true);
+        const docs = await fetchDokumenByPegawaiId(saved.id);
+        setDokumenList(docs);
+        toast.success('Pendaftaran berhasil! Selamat datang, ' + saved.nama + '.');
+      } else {
+        toast.error('Gagal mendaftar. Silakan coba lagi.');
+      }
+    } catch (err) {
+      console.error('Register error:', err);
+      toast.error('Gagal mendaftar. Terjadi kesalahan server.');
+    } finally {
+      setIsRegistering(false);
+    }
+  }, [registerForm]);
 
   // ===== Derived: ASN type & dokumen options =====
   const asnType = useMemo(() => {
@@ -243,6 +403,11 @@ export default function ShareUploadPage() {
   const showPPPKPeriod = useMemo(() => {
     return !!dokumenConfig?.showPPPKPeriod && selectedJenisDokumen === 'SK PPPK';
   }, [dokumenConfig, selectedJenisDokumen]);
+
+  // ===== Derived: Golongan options based on jenisASN =====
+  const golonganOptions = useMemo(() => {
+    return getGolonganOptions(profileForm.jenisASN);
+  }, [profileForm.jenisASN]);
 
   // ===== Derived: Next PPPK period number =====
   const nextPPPKPeriode = useMemo(() => {
@@ -444,22 +609,384 @@ export default function ShareUploadPage() {
     showPPPKPeriod, periode, tmtAwal, tmtAkhir, masaBerlaku,
     keterangan, nextPPPKPeriode, removeFile,
   ]);
-
-  // ===== Render: Not found =====
+    // ===== Render: Not found / Check NIP / Register =====
   if (notFound) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-100 to-slate-200 dark:from-zinc-950 dark:to-zinc-900 p-4">
-        <Card className="w-full max-w-md border-0 shadow-2xl">
-          <CardContent className="flex flex-col items-center gap-4 p-8 text-center">
-            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-red-100 dark:bg-red-900/30">
-              <AlertCircle className="h-8 w-8 text-red-500" />
+      <div className="min-h-screen bg-gradient-to-br from-slate-100 to-slate-200 dark:from-zinc-950 dark:to-zinc-900">
+        {/* Header */}
+        <header className="sticky top-0 z-30 border-b bg-white/80 backdrop-blur-md dark:bg-zinc-950/80">
+          <div className="mx-auto flex h-14 max-w-3xl items-center justify-between px-4 sm:px-6">
+            <div className="flex items-center gap-3">
+              <img
+                src="https://i.pinimg.com/736x/76/39/2d/76392d91c9c22d8ec5563b1126cd55b8.jpg"
+                alt="Logo E-Arsip ASN"
+                className="h-9 w-9 rounded-xl object-cover shadow-sm"
+              />
+              <div className="flex flex-col">
+                <span className="text-sm font-bold tracking-tight text-foreground">E-Arsip ASN</span>
+                <span className="text-[10px] font-medium text-muted-foreground leading-tight">Dinas Pendidikan</span>
+              </div>
             </div>
-            <h2 className="text-xl font-bold text-foreground">Link Tidak Valid</h2>
-            <p className="text-sm text-muted-foreground">
-              Link yang Anda buka tidak ditemukan atau sudah tidak berlaku. Silakan hubungi administrator untuk mendapatkan link yang benar.
-            </p>
-          </CardContent>
-        </Card>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-9 w-9 text-muted-foreground hover:text-foreground"
+              onClick={toggleTheme}
+              aria-label="Toggle tema"
+            >
+              {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+            </Button>
+          </div>
+        </header>
+
+        <main className="mx-auto max-w-3xl px-4 py-10 sm:px-6">
+          {!showRegisterForm ? (
+            /* ===== NIP Check Card ===== */
+            <Card className="w-full border-0 shadow-2xl">
+              <CardContent className="flex flex-col items-center gap-5 p-8 text-center">
+                <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-amber-100 dark:bg-amber-900/30">
+                  <AlertCircle className="h-8 w-8 text-amber-600 dark:text-amber-400" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold text-foreground">NIP Tidak Ditemukan</h2>
+                  <p className="text-sm text-muted-foreground mt-2 max-w-sm mx-auto">
+                    NIP yang Anda gunakan belum terdaftar dalam sistem. Silakan periksa kembali NIP Anda dan pastikan tanpa spasi.
+                  </p>
+                </div>
+
+                {/* NIP Input */}
+                <div className="w-full max-w-sm space-y-3">
+                  <div className="relative">
+                    <Input
+                      placeholder="Masukkan NIP Anda (tanpa spasi)"
+                      value={nipCheckInput}
+                      onChange={(e) => {
+                        setNipCheckInput(e.target.value.replace(/\s/g, ''));
+                        setNipCheckError('');
+                      }}
+                      onKeyDown={(e) => { if (e.key === 'Enter') handleCheckNIP(); }}
+                      className="h-11 text-center text-base font-mono tracking-wider pr-12"
+                    />
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="absolute right-1 top-1/2 -translate-y-1/2 h-9 w-9"
+                      onClick={() => setNipCheckInput('')}
+                    >
+                      <X className="h-4 w-4 text-muted-foreground" />
+                    </Button>
+                  </div>
+                  <Button
+                    onClick={handleCheckNIP}
+                    disabled={isCheckingNIP || !nipCheckInput.trim()}
+                    className="w-full h-11 bg-[#3c6eff] hover:bg-[#3c6eff]/90 text-white font-semibold gap-2"
+                  >
+                    {isCheckingNIP ? (
+                      <><Loader2 className="h-4 w-4 animate-spin" />Memeriksa NIP...</>
+                    ) : (
+                      <><FileCheck className="h-4 w-4" />Periksa NIP</>
+                    )}
+                  </Button>
+                </div>
+
+                {/* Error message */}
+                {nipCheckError && (
+                  <div className="flex items-start gap-2.5 rounded-xl border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/20 p-4 text-left w-full max-w-sm">
+                    <ShieldAlert className="h-5 w-5 text-red-500 shrink-0 mt-0.5" />
+                    <p className="text-sm text-red-700 dark:text-red-300">{nipCheckError}</p>
+                  </div>
+                )}
+
+                {/* Divider */}
+                {nipCheckError && (
+                  <div className="flex items-center gap-3 w-full max-w-sm">
+                    <div className="flex-1 border-t" />
+                    <span className="text-xs text-muted-foreground font-medium">atau</span>
+                    <div className="flex-1 border-t" />
+                  </div>
+                )}
+
+                {/* Register button */}
+                {nipCheckError && (
+                  <Button
+                    onClick={handleOpenRegister}
+                    variant="outline"
+                    className="w-full max-w-sm h-11 border-dashed border-2 border-[#3c6eff]/40 text-[#3c6eff] hover:bg-[#3c6eff]/10 hover:border-[#3c6eff] font-semibold gap-2"
+                  >
+                    <UserCircle className="h-4 w-4" />
+                    Daftar sebagai Pegawai Baru
+                  </Button>
+                )}
+
+                <p className="text-[11px] text-muted-foreground/60 mt-2">
+                  Jika Anda yakin NIP sudah benar, hubungi administrator untuk verifikasi.
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
+            /* ===== Register Form ===== */
+            <Card className="w-full border-0 shadow-2xl">
+              <CardHeader className="pb-2 px-6 pt-6">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#3c6eff]/10">
+                    <UserCircle className="h-5 w-5 text-[#3c6eff]" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-base font-bold text-foreground">Pendaftaran Pegawai Baru</CardTitle>
+                    <p className="text-xs text-muted-foreground mt-0.5">Lengkapi data profil Anda untuk mendaftar ke sistem E-Arsip ASN.</p>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="px-6 pb-6">
+                {/* NIP dup warning */}
+                {nipDupInfo && (
+                  <div className="mb-4 flex items-start gap-2.5 rounded-xl border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/20 p-4">
+                    <ShieldAlert className="h-5 w-5 text-red-500 shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-sm font-semibold text-red-700 dark:text-red-300">NIP Sudah Terdaftar!</p>
+                      <p className="text-xs text-red-600/80 dark:text-red-400/80 mt-1">
+                        NIP ini sudah terdaftar atas nama <strong>{nipDupInfo.nama}</strong> dari <strong>{nipDupInfo.unitKerja}</strong>.
+                        Silakan hubungi administrator jika ini merupakan kesalahan.
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  {/* NIP */}
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+                      <FileCheck className="h-3.5 w-3.5" />NIP <span className="text-red-500">*</span>
+                    </Label>
+                    <Input
+                      placeholder="Nomor Induk Pegawai"
+                      value={registerForm.nip}
+                      onChange={(e) => setRegisterForm((p) => ({ ...p, nip: e.target.value.replace(/\s/g, '') }))}
+                      className="h-9 text-sm font-mono"
+                    />
+                  </div>
+
+                  {/* Nama */}
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+                      <UserCircle className="h-3.5 w-3.5" />Nama Lengkap <span className="text-red-500">*</span>
+                    </Label>
+                    <Input
+                      placeholder="Nama sesuai data kepegawaian"
+                      value={registerForm.nama}
+                      onChange={(e) => setRegisterForm((p) => ({ ...p, nama: e.target.value }))}
+                      className="h-9 text-sm"
+                    />
+                  </div>
+
+                  {/* Jenis ASN */}
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-medium text-muted-foreground">Jenis ASN</Label>
+                    <Select value={registerForm.jenisASN} onValueChange={(v) => setRegisterForm((p) => ({ ...p, jenisASN: v, golongan: '' }))}>
+                      <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="Pilih jenis ASN..." /></SelectTrigger>
+                      <SelectContent>
+                        {JENIS_ASN_OPTIONS.map((group) => (
+                          <SelectGroup key={group.group}>
+                            <SelectLabel className="font-semibold text-xs text-muted-foreground uppercase tracking-wider">{group.group}</SelectLabel>
+                            {group.items.map((item) => (
+                              <SelectItem key={item} value={item}>{item}</SelectItem>
+                            ))}
+                          </SelectGroup>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Jabatan */}
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+                      <Briefcase className="h-3.5 w-3.5" />Jabatan
+                    </Label>
+                    <Select value={registerForm.jabatan} onValueChange={(v) => setRegisterForm((p) => ({ ...p, jabatan: v }))}>
+                      <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="Pilih jabatan..." /></SelectTrigger>
+                      <SelectContent>
+                        {JABATAN_OPTIONS.map((group) => (
+                          <SelectGroup key={group.group}>
+                            <SelectLabel className="font-semibold text-xs text-muted-foreground uppercase tracking-wider">{group.group}</SelectLabel>
+                            {group.items.map((item) => (
+                              <SelectItem key={item} value={item}>{item}</SelectItem>
+                            ))}
+                          </SelectGroup>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Golongan */}
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-medium text-muted-foreground">Golongan</Label>
+                    <Select value={registerForm.golongan} onValueChange={(v) => setRegisterForm((p) => ({ ...p, golongan: v }))}>
+                      <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="Pilih golongan..." /></SelectTrigger>
+                      <SelectContent>
+                        {getGolonganOptions(registerForm.jenisASN).map((opt) => (
+                          <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Unit Kerja */}
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+                      <MapPin className="h-3.5 w-3.5" />Unit Kerja
+                    </Label>
+                    <Select value={registerForm.unitKerja} onValueChange={(v) => setRegisterForm((p) => ({ ...p, unitKerja: v }))}>
+                      <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="Pilih unit kerja..." /></SelectTrigger>
+                      <SelectContent>
+                        {UNIT_KERJA_OPTIONS.map((item) => (
+                          <SelectItem key={item} value={item}>{item}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Email */}
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+                      <Mail className="h-3.5 w-3.5" />Email
+                    </Label>
+                    <Input
+                      type="email"
+                      placeholder="contoh@email.com"
+                      value={registerForm.email}
+                      onChange={(e) => setRegisterForm((p) => ({ ...p, email: e.target.value }))}
+                      className="h-9 text-sm"
+                    />
+                  </div>
+
+                  {/* No HP */}
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+                      <Phone className="h-3.5 w-3.5" />No HP
+                    </Label>
+                    <Input
+                      placeholder="08xxxxxxxxxx"
+                      value={registerForm.hp}
+                      onChange={(e) => setRegisterForm((p) => ({ ...p, hp: e.target.value }))}
+                      className="h-9 text-sm"
+                    />
+                  </div>
+
+                  {/* Tempat Lahir */}
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+                      <Calendar className="h-3.5 w-3.5" />Tempat Lahir
+                    </Label>
+                    <Input
+                      placeholder="Kota / Kabupaten"
+                      value={registerForm.tempatLahir}
+                      onChange={(e) => setRegisterForm((p) => ({ ...p, tempatLahir: e.target.value }))}
+                      className="h-9 text-sm"
+                    />
+                  </div>
+
+                  {/* Tanggal Lahir */}
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+                      <CalendarClock className="h-3.5 w-3.5" />Tanggal Lahir
+                    </Label>
+                    <Input
+                      type="date"
+                      value={registerForm.tanggalLahir}
+                      onChange={(e) => setRegisterForm((p) => ({ ...p, tanggalLahir: e.target.value }))}
+                      className="h-9 text-sm"
+                    />
+                  </div>
+
+                  {/* Jenis Kelamin */}
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-medium text-muted-foreground">Jenis Kelamin</Label>
+                    <Select value={registerForm.jenisKelamin} onValueChange={(v) => setRegisterForm((p) => ({ ...p, jenisKelamin: v }))}>
+                      <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="Pilih..." /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Laki-laki">Laki-laki</SelectItem>
+                        <SelectItem value="Perempuan">Perempuan</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Agama */}
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-medium text-muted-foreground">Agama</Label>
+                    <Select value={registerForm.agama} onValueChange={(v) => setRegisterForm((p) => ({ ...p, agama: v }))}>
+                      <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="Pilih..." /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Islam">Islam</SelectItem>
+                        <SelectItem value="Kristen">Kristen</SelectItem>
+                        <SelectItem value="Katolik">Katolik</SelectItem>
+                        <SelectItem value="Hindu">Hindu</SelectItem>
+                        <SelectItem value="Buddha">Buddha</SelectItem>
+                        <SelectItem value="Konghucu">Konghucu</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Pendidikan Terakhir */}
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+                      <GraduationCap className="h-3.5 w-3.5" />Pendidikan Terakhir
+                    </Label>
+                    <Select value={registerForm.pendidikanTerakhir} onValueChange={(v) => setRegisterForm((p) => ({ ...p, pendidikanTerakhir: v }))}>
+                      <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="Pilih..." /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="SMA/SMK Sederajat">SMA/SMK Sederajat</SelectItem>
+                        <SelectItem value="Diploma I">Diploma I</SelectItem>
+                        <SelectItem value="Diploma II">Diploma II</SelectItem>
+                        <SelectItem value="Diploma III (D3)">Diploma III (D3)</SelectItem>
+                        <SelectItem value="Diploma IV (D4)">Diploma IV (D4)</SelectItem>
+                        <SelectItem value="Sarjana (S1)">Sarjana (S1)</SelectItem>
+                        <SelectItem value="Magister (S2)">Magister (S2)</SelectItem>
+                        <SelectItem value="Doktor (S3)">Doktor (S3)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Alamat — full width */}
+                  <div className="space-y-1.5 sm:col-span-2">
+                    <Label className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+                      <Home className="h-3.5 w-3.5" />Alamat Lengkap
+                    </Label>
+                    <Textarea
+                      placeholder="Masukkan alamat lengkap..."
+                      value={registerForm.alamat}
+                      onChange={(e) => setRegisterForm((p) => ({ ...p, alamat: e.target.value }))}
+                      rows={2}
+                      className="text-sm resize-none"
+                    />
+                  </div>
+                </div>
+
+                {/* Action buttons */}
+                <div className="flex items-center justify-between gap-3 mt-5 pt-4 border-t">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-9 text-xs text-muted-foreground"
+                    onClick={() => { setShowRegisterForm(false); setNipDupInfo(null); }}
+                  >
+                    <ChevronDown className="h-3.5 w-3.5 mr-1" />Kembali
+                  </Button>
+                  <Button
+                    className="h-10 bg-[#3c6eff] hover:bg-[#3c6eff]/90 text-white font-semibold gap-2 px-6"
+                    onClick={handleRegister}
+                    disabled={isRegistering || !registerForm.nip.trim() || !registerForm.nama.trim()}
+                  >
+                    {isRegistering ? (
+                      <><Loader2 className="h-4 w-4 animate-spin" />Mendaftar...</>
+                    ) : (
+                      <><UserCircle className="h-4 w-4" />Daftar Sekarang</>
+                    )}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </main>
       </div>
     );
   }
@@ -472,10 +999,10 @@ export default function ShareUploadPage() {
       </div>
     );
   }
-
-  const ACCENT = '#3c6eff';
+    const ACCENT = '#3c6eff';
   const badgeClass = pegawai ? (JENIS_ASN_BADGE[pegawai.jenisASN] ?? 'bg-muted text-muted-foreground') : '';
-    // ===== Render: Main page =====
+
+  // ===== Render: Main page =====
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-100 to-slate-200 dark:from-zinc-950 dark:to-zinc-900">
       {/* ===== Top Header Bar ===== */}
@@ -592,6 +1119,113 @@ export default function ShareUploadPage() {
             </CardHeader>
             <CardContent className="px-5 pb-5">
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                {/* NIP */}
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+                    <FileCheck className="h-3.5 w-3.5" />NIP
+                  </Label>
+                  <Input
+                    placeholder="Nomor Induk Pegawai"
+                    value={profileForm.nip}
+                    onChange={(e) => updateProfileField('nip', e.target.value)}
+                    className="h-9 text-sm font-mono"
+                  />
+                </div>
+
+                {/* Nama */}
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+                    <UserCircle className="h-3.5 w-3.5" />Nama Lengkap
+                  </Label>
+                  <Input
+                    placeholder="Nama sesuai data kepegawaian"
+                    value={profileForm.nama}
+                    onChange={(e) => updateProfileField('nama', e.target.value)}
+                    className="h-9 text-sm"
+                  />
+                </div>
+
+                {/* Jenis ASN */}
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-medium text-muted-foreground">Jenis ASN</Label>
+                  <Select value={profileForm.jenisASN} onValueChange={(v) => {
+                    updateProfileField('jenisASN', v);
+                    updateProfileField('golongan', '');
+                  }}>
+                    <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="Pilih jenis ASN..." /></SelectTrigger>
+                    <SelectContent>
+                      {JENIS_ASN_OPTIONS.map((group) => (
+                        <SelectGroup key={group.group}>
+                          <SelectLabel className="font-semibold text-xs text-muted-foreground uppercase tracking-wider">{group.group}</SelectLabel>
+                          {group.items.map((item) => (
+                            <SelectItem key={item} value={item}>{item}</SelectItem>
+                          ))}
+                        </SelectGroup>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Jabatan */}
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+                    <Briefcase className="h-3.5 w-3.5" />Jabatan
+                  </Label>
+                  <Select value={profileForm.jabatan} onValueChange={(v) => updateProfileField('jabatan', v)}>
+                    <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="Pilih jabatan..." /></SelectTrigger>
+                    <SelectContent>
+                      {JABATAN_OPTIONS.map((group) => (
+                        <SelectGroup key={group.group}>
+                          <SelectLabel className="font-semibold text-xs text-muted-foreground uppercase tracking-wider">{group.group}</SelectLabel>
+                          {group.items.map((item) => (
+                            <SelectItem key={item} value={item}>{item}</SelectItem>
+                          ))}
+                        </SelectGroup>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Golongan */}
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-medium text-muted-foreground">Golongan</Label>
+                  <Select value={profileForm.golongan} onValueChange={(v) => updateProfileField('golongan', v)}>
+                    <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="Pilih golongan..." /></SelectTrigger>
+                    <SelectContent>
+                      {golonganOptions.map((opt) => (
+                        <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Unit Kerja */}
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+                    <MapPin className="h-3.5 w-3.5" />Unit Kerja
+                  </Label>
+                  <Select value={profileForm.unitKerja} onValueChange={(v) => updateProfileField('unitKerja', v)}>
+                    <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="Pilih unit kerja..." /></SelectTrigger>
+                    <SelectContent>
+                      {UNIT_KERJA_OPTIONS.map((item) => (
+                        <SelectItem key={item} value={item}>{item}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Status */}
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-medium text-muted-foreground">Status Kepegawaian</Label>
+                  <Select value={profileForm.status} onValueChange={(v) => updateProfileField('status', v as 'Aktif' | 'Nonaktif')}>
+                    <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="Pilih status..." /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Aktif">Aktif</SelectItem>
+                      <SelectItem value="Nonaktif">Nonaktif</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
                 {/* Email */}
                 <div className="space-y-1.5">
                   <Label className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
@@ -622,7 +1256,7 @@ export default function ShareUploadPage() {
                 {/* Tempat Lahir */}
                 <div className="space-y-1.5">
                   <Label className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
-                    <MapPin className="h-3.5 w-3.5" />Tempat Lahir
+                    <Calendar className="h-3.5 w-3.5" />Tempat Lahir
                   </Label>
                   <Input
                     placeholder="Kota / Kabupaten"
@@ -635,7 +1269,7 @@ export default function ShareUploadPage() {
                 {/* Tanggal Lahir */}
                 <div className="space-y-1.5">
                   <Label className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
-                    <Calendar className="h-3.5 w-3.5" />Tanggal Lahir
+                    <CalendarClock className="h-3.5 w-3.5" />Tanggal Lahir
                   </Label>
                   <Input
                     type="date"
@@ -647,9 +1281,7 @@ export default function ShareUploadPage() {
 
                 {/* Jenis Kelamin */}
                 <div className="space-y-1.5">
-                  <Label className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
-                    <UserCircle className="h-3.5 w-3.5" />Jenis Kelamin
-                  </Label>
+                  <Label className="text-xs font-medium text-muted-foreground">Jenis Kelamin</Label>
                   <Select value={profileForm.jenisKelamin} onValueChange={(v) => updateProfileField('jenisKelamin', v)}>
                     <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="Pilih..." /></SelectTrigger>
                     <SelectContent>
@@ -1035,7 +1667,8 @@ export default function ShareUploadPage() {
             </Button>
           </CardContent>
         </Card>
-		        {/* ===== Preview ===== */}
+
+        {/* ===== Preview ===== */}
         {previewUrl && selectedFile && (
           <Card className="mt-6 border-0 shadow-lg">
             <CardHeader className="pb-3 px-5 pt-5">
