@@ -506,8 +506,7 @@ export default function ShareUploadPage() {
     setUploadSuccess(false);
     if (fileInputRef.current) fileInputRef.current.value = '';
   }, []);
-
-  // ===== Submit handler =====
+    // ===== Submit handler =====
   const handleSubmit = useCallback(async () => {
     if (!pegawai) return;
 
@@ -609,7 +608,8 @@ export default function ShareUploadPage() {
     showPPPKPeriod, periode, tmtAwal, tmtAkhir, masaBerlaku,
     keterangan, nextPPPKPeriode, removeFile,
   ]);
-    // ===== Render: Not found / Check NIP / Register =====
+
+  // ===== Render: Not found / Check NIP / Register =====
   if (notFound) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-100 to-slate-200 dark:from-zinc-950 dark:to-zinc-900">
@@ -830,19 +830,17 @@ export default function ShareUploadPage() {
                     </Select>
                   </div>
 
-                  {/* Unit Kerja */}
+                  {/* Unit Kerja — MANUAL INPUT */}
                   <div className="space-y-1.5">
                     <Label className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
                       <MapPin className="h-3.5 w-3.5" />Unit Kerja
                     </Label>
-                    <Select value={registerForm.unitKerja} onValueChange={(v) => setRegisterForm((p) => ({ ...p, unitKerja: v }))}>
-                      <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="Pilih unit kerja..." /></SelectTrigger>
-                      <SelectContent>
-                        {UNIT_KERJA_OPTIONS.map((item) => (
-                          <SelectItem key={item} value={item}>{item}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <Input
+                      placeholder="Contoh: SDN 1 Sukamaju"
+                      value={registerForm.unitKerja}
+                      onChange={(e) => setRegisterForm((p) => ({ ...p, unitKerja: e.target.value }))}
+                      className="h-9 text-sm"
+                    />
                   </div>
 
                   {/* Email */}
@@ -990,8 +988,7 @@ export default function ShareUploadPage() {
       </div>
     );
   }
-
-  // ===== Render: Loading =====
+    // ===== Render: Loading =====
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-100 to-slate-200 dark:from-zinc-950 dark:to-zinc-900">
@@ -999,7 +996,8 @@ export default function ShareUploadPage() {
       </div>
     );
   }
-    const ACCENT = '#3c6eff';
+
+  const ACCENT = '#3c6eff';
   const badgeClass = pegawai ? (JENIS_ASN_BADGE[pegawai.jenisASN] ?? 'bg-muted text-muted-foreground') : '';
 
   // ===== Render: Main page =====
@@ -1150,6 +1148,7 @@ export default function ShareUploadPage() {
                   <Label className="text-xs font-medium text-muted-foreground">Jenis ASN</Label>
                   <Select value={profileForm.jenisASN} onValueChange={(v) => {
                     updateProfileField('jenisASN', v);
+                    // Reset golongan when jenisASN changes
                     updateProfileField('golongan', '');
                   }}>
                     <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="Pilih jenis ASN..." /></SelectTrigger>
@@ -1199,19 +1198,17 @@ export default function ShareUploadPage() {
                   </Select>
                 </div>
 
-                {/* Unit Kerja */}
+                {/* Unit Kerja — MANUAL INPUT */}
                 <div className="space-y-1.5">
                   <Label className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
                     <MapPin className="h-3.5 w-3.5" />Unit Kerja
                   </Label>
-                  <Select value={profileForm.unitKerja} onValueChange={(v) => updateProfileField('unitKerja', v)}>
-                    <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="Pilih unit kerja..." /></SelectTrigger>
-                    <SelectContent>
-                      {UNIT_KERJA_OPTIONS.map((item) => (
-                        <SelectItem key={item} value={item}>{item}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Input
+                    placeholder="Contoh: SDN 1 Sukamaju"
+                    value={profileForm.unitKerja}
+                    onChange={(e) => updateProfileField('unitKerja', e.target.value)}
+                    className="h-9 text-sm"
+                  />
                 </div>
 
                 {/* Status */}
@@ -1382,8 +1379,7 @@ export default function ShareUploadPage() {
             </div>
           </div>
         )}
-
-        {/* ===== Upload Form ===== */}
+		        {/* ===== Upload Form ===== */}
         <Card className="border-0 shadow-lg">
           <CardHeader className="pb-4 px-5 pt-5">
             <CardTitle className="flex items-center gap-2 text-base font-semibold">
@@ -1686,8 +1682,7 @@ export default function ShareUploadPage() {
             </CardContent>
           </Card>
         )}
-
-        {/* ===== Uploaded Documents List ===== */}
+		        {/* ===== Uploaded Documents List ===== */}
         {pegawai && (
           <Card className="mt-6 border-0 shadow-lg">
             <CardHeader className="pb-3 px-5 pt-5">
