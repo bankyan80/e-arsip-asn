@@ -114,7 +114,12 @@ export default function PegawaiPage() {
       let successCount = 0;
       let errorCount = 0;
       const messages: string[] = [];
+      const newPegawaiList: Pegawai[] = [];
 
+      // Ambil daftar NIP yang sudah ada (sekali saja, bukan per baris)
+      const existingNips = new Set(useArsipStore.getState().pegawaiList.map((p) => p.nip));
+
+      // Validasi dan kumpulkan semua data baru (tanpa memanggil set() per baris)
       for (let idx = 0; idx < rows.length; idx++) {
         const row = rows[idx];
         const rowNum = idx + 2;
@@ -129,20 +134,47 @@ export default function PegawaiPage() {
         const tanggalLahir = (row['Tanggal Lahir'] || '').trim();
         const status = (row['Status'] || 'Aktif').trim() as 'Aktif' | 'Nonaktif';
 
-        if (!nip) { errorCount++; messages.push(`Baris ${rowNum}: NIP wajib diisi`); continue; }
-        if (!nama) { errorCount++; messages.push(`Baris ${rowNum}: Nama wajib diisi`); continue; }
-        if (jenisASN && !ALL_JENIS_ASN.includes(jenisASN)) { errorCount++; messages.push(`Baris ${rowNum}: Jenis ASN "${jenisASN}" tidak valid`); continue; }
-
-        const currentList = useArsipStore.getState().pegawaiList;
-        if (currentList.some((p) => p.nip === nip)) { errorCount++; messages.push(`Baris ${rowNum}: NIP "${nip}" sudah terdaftar`); continue; }
-
-        try {
-          await addPegawai({ id: Date.now() + idx, nip, nama, jenisASN: jenisASN || '', jabatan, golongan, unitKerja, email, hp, tanggalLahir, status });
-          successCount++;
-        } catch (err) {
+        if (!nip) {
           errorCount++;
-          messages.push(`Baris ${rowNum}: Gagal menyimpan - ${err instanceof Error ? err.message : 'Unknown error'}`);
+          messages.push(`Baris ${rowNum}: NIP wajib diisi`);
+          continue;
         }
+        if (!nama) {
+          errorCount++;
+          messages.push(`Baris ${rowNum}: Nama wajib diisi`);
+          continue;
+        }
+        if (jenisASN && !ALL_JENIS_ASN.includes(jenisASN)) {
+          errorCount++;
+          messages.push(`Baris ${rowNum}: Jenis ASN "${jenisASN}" tidak valid`);
+          continue;
+        }
+
+        // Check duplicate NIP via Set (O(1))
+        if (existingNips.has(nip)) {
+          errorCount++;
+          messages.push(`Baris ${rowNum}: NIP "${nip}" sudah terdaftar`);
+          continue;
+        }
+
+        // Kumpulkan ke batch
+        const pg: Pegawai = {
+          id: Date.now() + idx,
+          nip, nama,
+          jenisASN: jenisASN || '',
+          jabatan, golongan, unitKerja, email, hp,
+          tanggalLahir, status,
+        };
+        newPegawaiList.push(pg);
+        existingNips.add(nip);
+        successCount++;
+      }
+
+      // BATCH INSERT: satu set() saja → satu kali localStorage.setItem()
+      if (newPegawaiList.length > 0) {
+        useArsipStore.setState((s) => ({
+          pegawaiList: [...s.pegawaiList, ...newPegawaiList],
+        }));
       }
 
     };
