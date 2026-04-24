@@ -145,11 +145,6 @@ export default function PegawaiPage() {
         }
       }
 
-      if (successCount > 0) { await useArsipStore.getState().refreshData(); }
-      setIsImporting(false);
-      setImportResult({ success: successCount, errors: errorCount, messages });
-      if (errorCount === 0) toast.success(`${successCount} pegawai berhasil diimpor`);
-      else toast.warning(`${successCount} berhasil, ${errorCount} gagal diimpor`);
     };
     reader.onerror = () => { toast.error('Gagal membaca file'); setIsImporting(false); };
     reader.readAsArrayBuffer(file);
