@@ -38,6 +38,7 @@ import {
   calculateAge,
   calculateRemainingDays,
   calculateBMPPensiun,
+  extractBirthDateFromNIP,
 } from '@/lib/utils-arsip';
 
 // ===== Constants =====
@@ -203,13 +204,16 @@ export default function BUPPage() {
   const bupData = useMemo(() => {
     return pegawaiList.map((pg) => {
       const bupAge = getBUPAge(pg.jabatan, pg.golongan);
-      const remainingDays = calculateRemainingDays(pg.tanggalLahir, bupAge);
-      const tmtPensiun = calculateBMPPensiun(pg.tanggalLahir, bupAge);
-      const currentAge = calculateAge(pg.tanggalLahir);
+      // Jika tanggal lahir kosong, coba ekstrak dari NIP
+      const birthDate = pg.tanggalLahir || extractBirthDateFromNIP(pg.nip);
+      const remainingDays = calculateRemainingDays(birthDate, bupAge);
+      const tmtPensiun = calculateBMPPensiun(birthDate, bupAge);
+      const currentAge = calculateAge(birthDate);
       const category = categorizeBUP(remainingDays);
 
       return {
         ...pg,
+        tanggalLahir: birthDate || pg.tanggalLahir,
         bupAge,
         remainingDays,
         tmtPensiun,

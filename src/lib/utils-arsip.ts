@@ -230,6 +230,21 @@ export function isValidDateString(dateStr: string): boolean {
   return true;
 }
 
+// Ekstrak tanggal lahir dari NIP (8 digit pertama: yyyymmdd)
+export function extractBirthDateFromNIP(nip: string): string {
+  if (!nip || nip.length < 8) return '';
+  const digits = nip.replace(/\D/g, '');
+  if (digits.length < 8) return '';
+  const year = digits.substring(0, 4);
+  const month = digits.substring(4, 6);
+  const day = digits.substring(6, 8);
+  const y = parseInt(year, 10);
+  const m = parseInt(month, 10);
+  const d = parseInt(day, 10);
+  if (y < 1900 || y > 2100 || m < 1 || m > 12 || d < 1 || d > 31) return '';
+  return `${year}-${month}-${day}`;
+}
+
 export function formatFileSize(bytes: number): string {
   if (bytes < 1024) return bytes + ' B';
   if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
