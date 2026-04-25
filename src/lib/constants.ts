@@ -119,6 +119,26 @@ export const JENIS_ASN_BADGE: Record<string, string> = {
 // ===== File Upload =====
 export const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
 export const ALLOWED_FILE_TYPES = '.pdf,.jpg,.jpeg,.png';
+export const ALLOWED_MIME_TYPES = ['application/pdf', 'image/jpeg', 'image/png'];
+
+// ===== Golongan Options (dynamic based on jenisASN) =====
+export function getGolonganOptions(jenisASN: string): { value: string; label: string }[] {
+  if (jenisASN && jenisASN.includes('Paruh Waktu')) {
+    return [
+      { value: 'I/a', label: 'I/a' }, { value: 'I/b', label: 'I/b' },
+      { value: 'I/c', label: 'I/c' }, { value: 'I/d', label: 'I/d' },
+      { value: 'II/a', label: 'II/a' }, { value: 'II/b', label: 'II/b' },
+      { value: 'II/c', label: 'II/c' }, { value: 'II/d', label: 'II/d' },
+    ];
+  }
+  return GOLONGAN_OPTIONS.map((g) => ({ value: g, label: g }));
+}
+
+// ===== hasBUP Helper =====
+export function hasBUP(jenisASN: string): boolean {
+  const t = (jenisASN || '').toLowerCase();
+  return t.includes('pns') || t.includes('pppk penuh');
+}
 
 // ===== Dummy Data Generator =====
 export function generateDummyPegawai(): Pegawai[] {
