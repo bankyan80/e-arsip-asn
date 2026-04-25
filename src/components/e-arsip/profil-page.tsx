@@ -45,13 +45,6 @@ import { getGolonganOptions } from '@/lib/constants';
 
 const JENIS_ASN_OPTIONS = ['PNS', 'PPPK'];
 
-const GolonganList = [
-  'I/a', 'I/b', 'I/c', 'I/d',
-  'II/a', 'II/b', 'II/c', 'II/d',
-  'III/a', 'III/b', 'III/c', 'III/d',
-  'IV/a', 'IV/b', 'IV/c', 'IV/d', 'IV/e', 'IV/j',
-];
-
 // ===== Profil Page =====
 
 export default function ProfilPage() {
@@ -180,7 +173,20 @@ export default function ProfilPage() {
 
   if (!currentUser) return null;
 
-  const golonganOpts = pegawaiData ? getGolonganOptions(pegawaiData.jenisASN) : [];
+  // Dynamic golongan options based on selected jenisASN
+  const golonganOpts = useMemo(
+    () => getGolonganOptions(form.jenisASN),
+    [form.jenisASN]
+  );
+
+  // When jenisASN changes, reset golongan if current value is invalid for new type
+  const handleJenisASNChange = (value: string) => {
+    updateField('jenisASN', value);
+    const newOpts = getGolonganOptions(value);
+    if (form.golongan && !newOpts.some((g) => g.value === form.golongan)) {
+      updateField('golongan', '');
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -307,7 +313,7 @@ export default function ProfilPage() {
                 </Label>
                 <Select
                   value={form.jenisASN}
-                  onValueChange={(v) => updateField('jenisASN', v)}
+                  onValueChange={handleJenisASNChange}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Pilih Jenis ASN" />
@@ -322,7 +328,7 @@ export default function ProfilPage() {
                 </Select>
               </div>
 
-              {/* Golongan */}
+              {/* Golongan — dinamis sesuai jenisASN */}
               <div className="space-y-2">
                 <Label className="text-sm font-medium">
                   <span className="flex items-center gap-1">
@@ -338,9 +344,9 @@ export default function ProfilPage() {
                     <SelectValue placeholder="Pilih Golongan" />
                   </SelectTrigger>
                   <SelectContent>
-                    {GolonganList.map((g) => (
-                      <SelectItem key={g} value={g}>
-                        {g}
+                    {golonganOpts.map((g) => (
+                      <SelectItem key={g.value} value={g.value}>
+                        {g.label}
                       </SelectItem>
                     ))}
                   </SelectContent>
