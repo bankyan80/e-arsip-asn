@@ -1,4 +1,4 @@
-import type { ASNType, DokumenConfig, Pegawai } from './types';
+import type { ASNType, DokumenConfig } from './types';
 
 // ===== Jenis ASN Options =====
 export const JENIS_ASN_OPTIONS = [
@@ -148,34 +148,4 @@ export function getGolonganOptions(jenisASN: string): { value: string; label: st
   }
   // Default (PNS & lainnya): golongan I/a s/d IV/e
   return GOLONGAN_OPTIONS.map((g) => ({ value: g, label: g }));
-}
-
-// ===== Dummy Data Generator =====
-export function generateDummyPegawai(): Pegawai[] {
-  const namaList = [
-    'Ahmad Fauzi', 'Siti Nurhaliza', 'Budi Santoso', 'Dewi Sartika', 'Eko Prasetyo',
-    'Fitri Handayani', 'Gunawan Wibowo', 'Herlina Putri', 'Irfan Hakim', 'Joko Widodo',
-    'Kartini Rahayu', 'Lukman Hakim', 'Mega Wati', 'Nur Hidayah', 'Oscar Pratama',
-  ];
-  const jenisList = ALL_JENIS_ASN;
-  const jabatanList = JABATAN_OPTIONS.flatMap(g => g.items);
-  const golonganList = GOLONGAN_OPTIONS;
-  const unitList = UNIT_KERJA_OPTIONS;
-
-  const kecamatanList = KECAMATAN_OPTIONS;
-
-  return namaList.map((nama, i) => ({
-    id: Date.now() + i,
-    nip: '19850' + String(i + 1).padStart(4, '0') + '2020011' + String(Math.floor(Math.random() * 4)),
-    nama,
-    jenisASN: jenisList[i % jenisList.length],
-    jabatan: jabatanList[i % jabatanList.length],
-    golongan: golonganList[i % golonganList.length],
-    kecamatan: i < 5 ? 'Kec. Lemahabang' : kecamatanList[i % kecamatanList.length],
-    unitKerja: unitList[i % unitList.length],
-    email: nama.toLowerCase().replace(' ', '.') + '@dinaspendidikan.go.id',
-    hp: '0812' + String(Math.floor(Math.random() * 90000000 + 10000000)),
-    tanggalLahir: `19${80 + (i % 10)}-${String((i % 12) + 1).padStart(2, '0')}-${String((i % 28) + 1).padStart(2, '0')}`,
-    status: (i < 13 ? 'Aktif' : 'Nonaktif') as 'Aktif' | 'Nonaktif',
-  }));
 }

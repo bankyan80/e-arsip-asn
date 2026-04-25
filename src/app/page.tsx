@@ -15,18 +15,21 @@ import PengaturanPage from '@/components/e-arsip/pengaturan-page';
 import ProfilPage from '@/components/e-arsip/profil-page';
 
 export default function Home() {
-  const { isLoggedIn, activePage, initializeData } = useArsipStore();
+  const { isLoggedIn, activePage, fetchData, pegawaiList } = useArsipStore();
 
+  // Fetch data dari Supabase saat login dan data masih kosong
   useEffect(() => {
-    initializeData();
-  }, [initializeData]);
+    if (isLoggedIn && pegawaiList.length === 0) {
+      fetchData();
+    }
+  }, [isLoggedIn, pegawaiList.length, fetchData]);
 
-  // Not logged in - show login form
+  // Belum login - tampilkan form login
   if (!isLoggedIn) {
     return <LoginForm />;
   }
 
-  // Logged in - show app layout with active page content
+  // Sudah login - tampilkan layout dengan halaman aktif
   const renderPage = () => {
     switch (activePage) {
       case 'dashboard':
