@@ -35,7 +35,7 @@ function mapPegawaiToDb(p: Partial<Pegawai>): Record<string, any> {
   if (p.jabatan !== undefined) obj.jabatan = p.jabatan;
   if (p.golongan !== undefined) obj.golongan = p.golongan;
   if (p.kecamatan !== undefined) obj.kecamatan = p.kecamatan;
-  if (p.unitKerja !== undefined) obj.unit_kerka = p.unitKerja;
+  if (p.unitKerja !== undefined) obj.unit_kerja = p.unitKerja;
   if (p.email !== undefined) obj.email = p.email;
   if (p.hp !== undefined) obj.hp = p.hp;
   if (p.tanggalLahir !== undefined) obj.tanggal_lahir = p.tanggalLahir || null;
