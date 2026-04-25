@@ -1,3 +1,5 @@
+// ===== E-Arsip ASN Types =====
+
 export interface Pegawai {
   id: number;
   nip: string;
@@ -5,15 +7,11 @@ export interface Pegawai {
   jenisASN: string;
   jabatan: string;
   golongan: string;
+  kecamatan: string;
   unitKerja: string;
   email: string;
   hp: string;
   tanggalLahir: string;
-  tempatLahir: string;
-  jenisKelamin: string;
-  agama: string;
-  alamat: string;
-  pendidikanTerakhir: string;
   status: 'Aktif' | 'Nonaktif';
 }
 
@@ -33,8 +31,6 @@ export interface Dokumen {
   periode?: string;
   tmtAwal?: string;
   tmtAkhir?: string;
-  filePath: string;
-  fileSize: number;
 }
 
 export interface Notifikasi {
@@ -69,21 +65,4 @@ export interface DokumenConfig {
   contractDuration?: number;
 }
 
-export interface SuratMasuk {
-  id: number;
-  asalSurat: string;
-  nomorSurat: string;
-  tanggalSurat: string;
-  createdAt: string;
-}
-
-export interface SuratKeluar {
-  id: number;
-  jenisSurat: string;
-  ditujukanKe: string;
-  nomorSurat: string;
-  perihal: string;
-  tanggalSurat: string;
-  createdAt: string;
-}
-export type PageType = 'dashboard' | 'pegawai' | 'dokumen' | 'arsip' | 'approval' | 'laporan' | 'bup' | 'pengaturan' | 'surat-masuk' | 'surat-keluar' | 'arsip-surat';
+export type PageType = 'dashboard' | 'pegawai' | 'dokumen' | 'arsip' | 'approval' | 'laporan' | 'bup' | 'pengaturan';

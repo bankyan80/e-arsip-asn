@@ -109,7 +109,7 @@ function getASNCategory(jenisASN: string): string {
 // ===== Arsip Page Component =====
 
 export default function ArsipPage() {
-  const { currentUser, dokumenList, deleteDokumen, addNotifikasi } = useArsipStore();
+  const { currentUser, dokumenList, pegawaiList, deleteDokumen, addNotifikasi } = useArsipStore();
 
   // ===== Filter state =====
   const [filters, setFilters] = useState<FilterState>(INITIAL_FILTERS);
@@ -122,6 +122,24 @@ export default function ArsipPage() {
   const [deleteTarget, setDeleteTarget] = useState<Dokumen | null>(null);
 
   const isAdmin = currentUser?.role === 'admin';
+
+  // ===== Pegawai role: dapatkan unit kerja =====
+  const isPegawaiRole = currentUser?.role === 'pegawai';
+  const pegawaiId = currentUser?.pegawaiId;
+
+  // Dapatkan pegawai milik user saat ini untuk ambil unitKerja
+  const myPegawai = useMemo(() => {
+    if (!isPegawaiRole || !pegawaiId) return null;
+    return pegawaiList.find((p) => p.id === pegawaiId) || null;
+  }, [isPegawaiRole, pegawaiId, pegawaiList]);
+
+  const myUnitKerja = myPegawai?.unitKerja || '';
+
+  // Dapatkan semua pegawaiId di unit kerja yang sama
+  const unitPegawaiIds = useMemo(() => {
+    if (!isPegawaiRole || !myUnitKerja) return [];
+    return pegawaiList.filter((p) => p.unitKerja === myUnitKerja).map((p) => p.id);
+  }, [isPegawaiRole, myUnitKerja, pegawaiList]);
 
   // ===== Update a single filter =====
   const updateFilter = useCallback(<K extends keyof FilterState>(key: K, value: string) => {
@@ -138,6 +156,11 @@ export default function ArsipPage() {
   // ===== Filtered & sorted documents =====
   const filteredDocs = useMemo(() => {
     let result = [...dokumenList];
+
+    // Jika pegawai, filter hanya dokumen dari unit kerja yang sama
+    if (isPegawaiRole && unitPegawaiIds.length > 0) {
+      result = result.filter((d) => unitPegawaiIds.includes(d.pegawaiId));
+    }
 
     // Filter by nama
     if (filters.nama.trim()) {
@@ -218,7 +241,11 @@ export default function ArsipPage() {
       <div>
         <h2 className="text-xl font-bold text-foreground tracking-tight">Pencarian Arsip</h2>
         <p className="text-sm text-muted-foreground mt-1">
-          Cari dan kelola dokumen arsip pegawai yang telah diunggah.
+          {isPegawaiRole && myUnitKerja
+            ? `Dokumen arsip dari unit kerja: ${myUnitKerja}`
+            : isPegawaiRole
+              ? 'Lihat dokumen arsip milik Anda yang telah diunggah.'
+              : 'Cari dan kelola dokumen arsip pegawai yang telah diunggah.'}
         </p>
       </div>
 
@@ -245,7 +272,8 @@ export default function ArsipPage() {
         </CardHeader>
         <CardContent className="px-5 pb-5">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-            {/* Search Nama */}
+            {/* Search Nama (hidden for pegawai) */}
+            {!isPegawaiRole && (
             <div className="space-y-1.5">
               <Label className="text-xs font-medium text-muted-foreground">Nama Pegawai</Label>
               <div className="relative">
@@ -258,8 +286,10 @@ export default function ArsipPage() {
                 />
               </div>
             </div>
+            )}
 
-            {/* Search NIP */}
+            {/* Search NIP (hidden for pegawai) */}
+            {!isPegawaiRole && (
             <div className="space-y-1.5">
               <Label className="text-xs font-medium text-muted-foreground">NIP</Label>
               <div className="relative">
@@ -272,8 +302,10 @@ export default function ArsipPage() {
                 />
               </div>
             </div>
+            )}
 
-            {/* Filter Jenis ASN */}
+            {/* Filter Jenis ASN (hidden for pegawai) */}
+            {!isPegawaiRole && (
             <div className="space-y-1.5">
               <Label className="text-xs font-medium text-muted-foreground">Jenis ASN</Label>
               <Select value={filters.jenisASN} onValueChange={(v) => updateFilter('jenisASN', v)}>
@@ -301,6 +333,7 @@ export default function ArsipPage() {
                 </SelectContent>
               </Select>
             </div>
+            )}
 
             {/* Filter Kategori Dokumen */}
             <div className="space-y-1.5">
@@ -440,7 +473,6 @@ export default function ArsipPage() {
                             <span className="text-sm font-medium text-foreground leading-tight truncate max-w-[180px]">
                               {doc.pegawaiNama}
                             </span>
-                            {/* Show NIP on mobile when column is hidden */}
                             <span className="md:hidden text-[11px] text-muted-foreground truncate max-w-[180px]">
                               NIP: {doc.nip}
                             </span>
@@ -470,7 +502,6 @@ export default function ArsipPage() {
                             <span className="text-sm text-foreground leading-tight">
                               {doc.jenisDokumen}
                             </span>
-                            {/* Periode badge for PPPK */}
                             {doc.periode && doc.jenisDokumen === 'SK PPPK' && (
                               <div className="flex items-center gap-1.5 flex-wrap">
                                 <Badge
@@ -510,7 +541,6 @@ export default function ArsipPage() {
                         {/* Aksi */}
                         <TableCell className="px-4 py-3">
                           <div className="flex items-center justify-center gap-1.5">
-                            {/* View button */}
                             <Button
                               variant="ghost"
                               size="icon"
@@ -561,7 +591,6 @@ export default function ArsipPage() {
                   <ChevronLeft className="h-4 w-4" />
                 </Button>
 
-                {/* Page numbers */}
                 {generatePageNumbers(currentPage, totalPages).map((page, idx) =>
                   page === '...' ? (
                     <span
@@ -620,7 +649,6 @@ export default function ArsipPage() {
 
           {previewDoc && (
             <div className="mt-2">
-              {/* Document metadata */}
               <div className="flex items-center gap-2 flex-wrap mb-4">
                 {previewDoc.periode && previewDoc.jenisDokumen === 'SK PPPK' && (
                   <Badge
@@ -641,7 +669,6 @@ export default function ArsipPage() {
                 </span>
               </div>
 
-              {/* Document preview */}
               <div className="flex items-center justify-center rounded-lg border bg-muted/30 overflow-hidden" style={{ minHeight: '400px', maxHeight: '70vh' }}>
                 {previewDoc.url ? (
                   previewDoc.url.startsWith('data:application/pdf') || previewDoc.url.startsWith('http') ? (
@@ -664,7 +691,6 @@ export default function ArsipPage() {
                 )}
               </div>
 
-              {/* File info */}
               {previewDoc.fileName && (
                 <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
                   <FileText className="h-3.5 w-3.5 shrink-0" />

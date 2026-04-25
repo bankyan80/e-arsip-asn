@@ -18,46 +18,26 @@ export const JABATAN_OPTIONS = [
 ];
 
 // ===== Golongan Options =====
-export const GOLONGAN_PNS_OPTIONS = [
+export const GOLONGAN_OPTIONS = [
   'I/a', 'I/b', 'I/c', 'I/d',
   'II/a', 'II/b', 'II/c', 'II/d',
   'III/a', 'III/b', 'III/c', 'III/d',
   'IV/a', 'IV/b', 'IV/c', 'IV/d', 'IV/e',
 ];
 
-export const GOLONGAN_PPPK_OPTIONS = [
-  { value: 'I', label: 'Golongan I — SD Sederajat' },
-  { value: 'IV', label: 'Golongan IV — SMP Sederajat' },
-  { value: 'V', label: 'Golongan V — SMA/SLTA/Diploma I Sederajat' },
-  { value: 'VI', label: 'Golongan VI — Diploma II' },
-  { value: 'VII', label: 'Golongan VII — Diploma III' },
-  { value: 'IX', label: 'Golongan IX — Sarjana (S1)/Diploma IV' },
-  { value: 'X', label: 'Golongan X — Magister (S2)' },
-  { value: 'XI', label: 'Golongan XI — Doktor (S3)' },
+// ===== Kecamatan Options (40 Kecamatan Kabupaten Cirebon) =====
+export const KECAMATAN_OPTIONS = [
+  'Kec. Arjawinangun', 'Kec. Astanajapura', 'Kec. Babakan', 'Kec. Beber',
+  'Kec. Ciledug', 'Kec. Ciwaringin', 'Kec. Depok', 'Kec. Dukupuntang',
+  'Kec. Gebang', 'Kec. Gegesik', 'Kec. Gempol', 'Kec. Greged',
+  'Kec. Gunungjati', 'Kec. Jamblang', 'Kec. Kaliwedi', 'Kec. Kapetakan',
+  'Kec. Karangsembung', 'Kec. Karangwareng', 'Kec. Kedawung', 'Kec. Klangenan',
+  'Kec. Lemahabang', 'Kec. Losari', 'Kec. Mundu', 'Kec. Pabedilan',
+  'Kec. Pabuaran', 'Kec. Palimanan', 'Kec. Pangenan', 'Kec. Panguragan',
+  'Kec. Pasaleman', 'Kec. Plered', 'Kec. Plumbon', 'Kec. Sedong',
+  'Kec. Sumber', 'Kec. Suranenggala', 'Kec. Susukan', 'Kec. Susukanlebak',
+  'Kec. Talun', 'Kec. Tengahtani', 'Kec. Waled', 'Kec. Weru',
 ];
-
-export const GOLONGAN_OPTIONS = [
-  ...GOLONGAN_PNS_OPTIONS,
-  ...GOLONGAN_PPPK_OPTIONS.map(g => g.value),
-];
-
-export function getGolonganOptions(jenisASN: string): { value: string; label: string }[] {
-  const asnType = getASNType(jenisASN);
-  if (asnType === 'PNS') {
-    return GOLONGAN_PNS_OPTIONS.map(g => ({ value: g, label: g }));
-  } else if (asnType === 'PPPK_PENUH' || asnType === 'PPPK_PARUH') {
-    return GOLONGAN_PPPK_OPTIONS;
-  }
-  return [
-    ...GOLONGAN_PNS_OPTIONS.map(g => ({ value: g, label: 'PNS — ' + g })),
-    ...GOLONGAN_PPPK_OPTIONS,
-  ];
-}
-
-export function isValidGolongan(jenisASN: string, golongan: string): boolean {
-  const options = getGolonganOptions(jenisASN);
-  return options.some(o => o.value === golongan);
-}
 
 // ===== Unit Kerja Options =====
 export const UNIT_KERJA_OPTIONS = [
@@ -84,13 +64,13 @@ export function getDokumenOptions(asnType: ASNType): DokumenConfig {
   if (asnType === 'PNS') {
     return {
       required: 'SK CPNS',
-      options: ['SK CPNS', 'SK PNS', 'SK Kenaikan Pangkat', 'SK Kenaikan Gaji Berkala', 'SK Jabatan', '---', 'Dokumen Umum'],
+      options: ['SK CPNS', 'SK PNS', 'SK Kenaikan Pangkat', 'SK Kenaikan Gaji Berkala', 'SK Jabatan', '---', 'Dokumen Umum'].concat(umum),
       hint: 'SK CPNS wajib diisi. Upload riwayat SK Kenaikan Pangkat dan SK Kenaikan Gaji Berkala dari awal sampai akhir karir.',
     };
   } else if (asnType === 'PPPK_PENUH') {
     return {
       required: 'SK PPPK',
-      options: ['SK PPPK', 'SK Kenaikan Gaji Berkala', 'SK Jabatan', '---', 'Dokumen Umum'],
+      options: ['SK PPPK', 'SK Kenaikan Gaji Berkala', 'SK Jabatan', '---', 'Dokumen Umum'].concat(umum),
       hint: 'SK PPPK berlaku 5 tahun per periode (TMT awal s/d akhir). Lanjut ke periode berikutnya. Upload juga riwayat SK Kenaikan Gaji Berkala.',
       showPPPKPeriod: true,
       periodNote: 'PPPK Penuh Waktu: Setiap periode kontrak berlaku 5 tahun.',
@@ -99,7 +79,7 @@ export function getDokumenOptions(asnType: ASNType): DokumenConfig {
   } else if (asnType === 'PPPK_PARUH') {
     return {
       required: 'SK PPPK',
-      options: ['SK PPPK', 'SK Jabatan', '---', 'Dokumen Umum'],
+      options: ['SK PPPK', 'SK Jabatan', '---', 'Dokumen Umum'].concat(umum.filter(x => x !== 'Taspen')),
       hint: 'SK PPPK Paruh Waktu berlaku 1 tahun. Selanjutnya bisa menjadi PPPK Penuh Waktu atau diperpanjang 1 tahun.',
       showPPPKPeriod: true,
       periodNote: 'PPPK Paruh Waktu: Setiap kontrak berlaku 1 tahun. Selanjutnya bisa naik ke PPPK Penuh Waktu atau diperpanjang.',
@@ -108,7 +88,7 @@ export function getDokumenOptions(asnType: ASNType): DokumenConfig {
   }
   return {
     required: '',
-    options: ['SK CPNS', 'SK PNS', 'SK PPPK', 'SK Kenaikan Pangkat', 'SK Kenaikan Gaji Berkala', 'SK Jabatan', '---', 'Dokumen Umum'],
+    options: ['SK CPNS', 'SK PNS', 'SK PPPK', 'SK Kenaikan Pangkat', 'SK Kenaikan Gaji Berkala', 'SK Jabatan', '---', 'Dokumen Umum'].concat(umum),
     hint: '',
   };
 }
@@ -117,20 +97,10 @@ export function getDokumenOptions(asnType: ASNType): DokumenConfig {
 export function getBUPAge(jabatan: string, golongan: string): number {
   const j = (jabatan || '').toLowerCase();
   const g = (golongan || '').toLowerCase();
-  // Pejabat pimpinan tinggi / jabatan administratif tinggi
-  if (j.includes('kepala dinas') || j.includes('sekretaris')) return 58;
-  // Kepala Sekolah dan Guru → 60 tahun
-  if (j.includes('kepala sekolah') || j.includes('guru')) return 60;
-  // Kepala UPT, Kepala Bidang, Kepala Seksi, Kepala Sub Bagian → 59 tahun
-  if (j.includes('kepala upt') || j.includes('kepala bidang') || j.includes('kepala seksi') || j.includes('kepala sub')) return 59;
-  // Golongan III/IV → 60 tahun
+  if (j.includes('kepala dinas') || j.includes('sekretaris') || g.startsWith('iv/')) return 58;
+  if (j.includes('kepala sekolah') || j.includes('kepala upt') || j.includes('kepala bidang') || j.includes('kepala seksi') || j.includes('kepala sub')) return 59;
   if (g.startsWith('iii/') || g.startsWith('iv/')) return 60;
-  // Default
   return 62;
-}
-
-export function hasBUP(jenisASN: string): boolean {
-  return getASNType(jenisASN) === 'PNS';
 }
 
 // ===== Badge Color Map =====
@@ -147,9 +117,8 @@ export const JENIS_ASN_BADGE: Record<string, string> = {
 };
 
 // ===== File Upload =====
-export const MAX_FILE_SIZE = 5 * 1024 * 1024;
-export const ALLOWED_FILE_TYPES = '.pdf';
-export const ALLOWED_MIME_TYPES = ['application/pdf'];
+export const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
+export const ALLOWED_FILE_TYPES = '.pdf,.jpg,.jpeg,.png';
 
 // ===== Dummy Data Generator =====
 export function generateDummyPegawai(): Pegawai[] {
@@ -160,26 +129,23 @@ export function generateDummyPegawai(): Pegawai[] {
   ];
   const jenisList = ALL_JENIS_ASN;
   const jabatanList = JABATAN_OPTIONS.flatMap(g => g.items);
-  const golonganPNSList = GOLONGAN_PNS_OPTIONS;
-  const golonganPPPKList = GOLONGAN_PPPK_OPTIONS.map(g => g.value);
+  const golonganList = GOLONGAN_OPTIONS;
   const unitList = UNIT_KERJA_OPTIONS;
 
-  return namaList.map((nama, i) => {
-    const currentJenisASN = jenisList[i % jenisList.length];
-    return {
-      id: Date.now() + i,
-      nip: '19850' + String(i + 1).padStart(4, '0') + '2020011' + String(Math.floor(Math.random() * 4)),
-      nama,
-      jenisASN: currentJenisASN,
-      jabatan: jabatanList[i % jabatanList.length],
-      golongan: currentJenisASN.startsWith('PNS')
-        ? golonganPNSList[i % golonganPNSList.length]
-        : golonganPPPKList[i % golonganPPPKList.length],
-      unitKerja: unitList[i % unitList.length],
-      email: nama.toLowerCase().replace(' ', '.') + '@dinaspendidikan.go.id',
-      hp: '0812' + String(Math.floor(Math.random() * 90000000 + 10000000)),
-      tanggalLahir: `19${80 + (i % 10)}-${String((i % 12) + 1).padStart(2, '0')}-${String((i % 28) + 1).padStart(2, '0')}`,
-      status: (i < 13 ? 'Aktif' : 'Nonaktif') as 'Aktif' | 'Nonaktif',
-    };
-  });
+  const kecamatanList = KECAMATAN_OPTIONS;
+
+  return namaList.map((nama, i) => ({
+    id: Date.now() + i,
+    nip: '19850' + String(i + 1).padStart(4, '0') + '2020011' + String(Math.floor(Math.random() * 4)),
+    nama,
+    jenisASN: jenisList[i % jenisList.length],
+    jabatan: jabatanList[i % jabatanList.length],
+    golongan: golonganList[i % golonganList.length],
+    kecamatan: i < 5 ? 'Kec. Lemahabang' : kecamatanList[i % kecamatanList.length],
+    unitKerja: unitList[i % unitList.length],
+    email: nama.toLowerCase().replace(' ', '.') + '@dinaspendidikan.go.id',
+    hp: '0812' + String(Math.floor(Math.random() * 90000000 + 10000000)),
+    tanggalLahir: `19${80 + (i % 10)}-${String((i % 12) + 1).padStart(2, '0')}-${String((i % 28) + 1).padStart(2, '0')}`,
+    status: (i < 13 ? 'Aktif' : 'Nonaktif') as 'Aktif' | 'Nonaktif',
+  }));
 }
