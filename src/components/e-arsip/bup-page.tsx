@@ -32,8 +32,6 @@ import {
   JENIS_ASN_OPTIONS,
   JENIS_ASN_BADGE,
   getBUPAge,
-  hasBUP,
-  getASNType,
 } from '@/lib/constants';
 import {
   formatDate,
@@ -201,11 +199,9 @@ export default function BUPPage() {
   const [filterJenisASN, setFilterJenisASN] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
 
-  // ===== Compute BUP data for PNS only (PPPK tidak memiliki BUP) =====
+  // ===== Compute BUP data for all pegawai =====
   const bupData = useMemo(() => {
-    return pegawaiList
-      .filter((pg) => hasBUP(pg.jenisASN))
-      .map((pg) => {
+    return pegawaiList.map((pg) => {
       const bupAge = getBUPAge(pg.jabatan, pg.golongan);
       const remainingDays = calculateRemainingDays(pg.tanggalLahir, bupAge);
       const tmtPensiun = calculateBMPPensiun(pg.tanggalLahir, bupAge);

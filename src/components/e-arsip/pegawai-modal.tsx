@@ -18,9 +18,9 @@ import { useArsipStore } from '@/lib/store';
 import {
   JENIS_ASN_OPTIONS,
   JABATAN_OPTIONS,
-  GOLONGAN_OPTIONS,
   KECAMATAN_OPTIONS,
   ALL_JENIS_ASN,
+  getGolonganOptions,
 } from '@/lib/constants';
 import type { Pegawai } from '@/lib/types';
 
@@ -64,6 +64,7 @@ const INITIAL_FORM: FormData = {
 
 export default function PegawaiModal({ open, onClose, pegawai }: PegawaiModalProps) {
   const { addPegawai, updatePegawai } = useArsipStore();
+  // Sync form state with pegawai prop when it changes (key-based reset)
   const [prevPegawaiId, setPrevPegawaiId] = useState<number | null>(pegawai?.id ?? null);
   const [form, setForm] = useState<FormData>(() =>
     pegawai
@@ -102,6 +103,7 @@ export default function PegawaiModal({ open, onClose, pegawai }: PegawaiModalPro
     );
   }
 
+  // Merge existing jenis ASN options with pegawai's value if not in dropdown
   const jenisASNOptions =
     pegawai?.jenisASN && !ALL_JENIS_ASN.includes(pegawai.jenisASN)
       ? [
@@ -110,21 +112,40 @@ export default function PegawaiModal({ open, onClose, pegawai }: PegawaiModalPro
         ]
       : JENIS_ASN_OPTIONS;
 
+  // Dynamic golongan options based on jenis ASN
+  const golonganOpts = getGolonganOptions(form.jenisASN);
+
+  // Update a single field (reset golongan when jenisASN changes)
   const updateField = <K extends keyof FormData>(key: K, value: FormData[K]) => {
-    setForm((prev) => ({ ...prev, [key]: value }));
+    setForm((prev) => {
+      if (key === 'jenisASN') return { ...prev, [key]: value, golongan: '' };
+      return { ...prev, [key]: value };
+    });
   };
 
+  // Validation
   const validate = (): boolean => {
-    if (!form.nip.trim()) { toast.error('NIP/NIK wajib diisi'); return false; }
-    if (!form.nama.trim()) { toast.error('Nama Lengkap wajib diisi'); return false; }
-    if (!form.jenisASN) { toast.error('Jenis ASN wajib dipilih'); return false; }
+    if (!form.nip.trim()) {
+      toast.error('NIP/NIK wajib diisi');
+      return false;
+    }
+    if (!form.nama.trim()) {
+      toast.error('Nama Lengkap wajib diisi');
+      return false;
+    }
+    if (!form.jenisASN) {
+      toast.error('Jenis ASN wajib dipilih');
+      return false;
+    }
     return true;
   };
 
+  // Save handler
   const handleSave = () => {
     if (!validate()) return;
 
     if (pegawai) {
+      // Update existing
       updatePegawai(pegawai.id, {
         nip: form.nip.trim(),
         nama: form.nama.trim(),
@@ -139,6 +160,7 @@ export default function PegawaiModal({ open, onClose, pegawai }: PegawaiModalPro
       });
       toast.success('Data pegawai berhasil diperbarui');
     } else {
+      // Add new
       const newPegawai: Pegawai = {
         id: Date.now(),
         nip: form.nip.trim(),
@@ -156,6 +178,7 @@ export default function PegawaiModal({ open, onClose, pegawai }: PegawaiModalPro
       addPegawai(newPegawai);
       toast.success('Pegawai baru berhasil ditambahkan');
     }
+
     onClose();
   };
 
@@ -171,29 +194,48 @@ export default function PegawaiModal({ open, onClose, pegawai }: PegawaiModalPro
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 py-2">
           {/* NIP/NIK */}
           <div className="space-y-2">
-            <Label htmlFor="nip">NIP/NIK <span className="text-red-500">*</span></Label>
-            <Input id="nip" placeholder="Masukkan NIP atau NIK" value={form.nip}
-              onChange={(e) => updateField('nip', e.target.value)} />
+            <Label htmlFor="nip">
+              NIP/NIK <span className="text-red-500">*</span>
+            </Label>
+            <Input
+              id="nip"
+              placeholder="Masukkan NIP atau NIK"
+              value={form.nip}
+              onChange={(e) => updateField('nip', e.target.value)}
+            />
           </div>
 
           {/* Nama Lengkap */}
           <div className="space-y-2">
-            <Label htmlFor="nama">Nama Lengkap <span className="text-red-500">*</span></Label>
-            <Input id="nama" placeholder="Masukkan nama lengkap" value={form.nama}
-              onChange={(e) => updateField('nama', e.target.value)} />
+            <Label htmlFor="nama">
+              Nama Lengkap <span className="text-red-500">*</span>
+            </Label>
+            <Input
+              id="nama"
+              placeholder="Masukkan nama lengkap"
+              value={form.nama}
+              onChange={(e) => updateField('nama', e.target.value)}
+            />
           </div>
 
           {/* Jenis ASN */}
           <div className="space-y-2">
-            <Label htmlFor="jenisASN">Jenis ASN <span className="text-red-500">*</span></Label>
-            <select id="jenisASN" value={form.jenisASN}
+            <Label htmlFor="jenisASN">
+              Jenis ASN <span className="text-red-500">*</span>
+            </Label>
+            <select
+              id="jenisASN"
+              value={form.jenisASN}
               onChange={(e) => updateField('jenisASN', e.target.value)}
-              className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50">
+              className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+            >
               <option value="">-- Pilih Jenis ASN --</option>
               {jenisASNOptions.map((group) => (
                 <optgroup key={group.group} label={group.group}>
                   {group.items.map((item) => (
-                    <option key={item} value={item}>{item}</option>
+                    <option key={item} value={item}>
+                      {item}
+                    </option>
                   ))}
                 </optgroup>
               ))}
@@ -203,14 +245,19 @@ export default function PegawaiModal({ open, onClose, pegawai }: PegawaiModalPro
           {/* Jabatan/Pangkat */}
           <div className="space-y-2">
             <Label htmlFor="jabatan">Jabatan/Pangkat</Label>
-            <select id="jabatan" value={form.jabatan}
+            <select
+              id="jabatan"
+              value={form.jabatan}
               onChange={(e) => updateField('jabatan', e.target.value)}
-              className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50">
+              className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+            >
               <option value="">-- Pilih Jabatan --</option>
               {JABATAN_OPTIONS.map((group) => (
                 <optgroup key={group.group} label={group.group}>
                   {group.items.map((item) => (
-                    <option key={item} value={item}>{item}</option>
+                    <option key={item} value={item}>
+                      {item}
+                    </option>
                   ))}
                 </optgroup>
               ))}
@@ -220,12 +267,17 @@ export default function PegawaiModal({ open, onClose, pegawai }: PegawaiModalPro
           {/* Golongan */}
           <div className="space-y-2">
             <Label htmlFor="golongan">Golongan</Label>
-            <select id="golongan" value={form.golongan}
+            <select
+              id="golongan"
+              value={form.golongan}
               onChange={(e) => updateField('golongan', e.target.value)}
-              className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50">
+              className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+            >
               <option value="">-- Pilih Golongan --</option>
-              {GOLONGAN_OPTIONS.map((g) => (
-                <option key={g} value={g}>{g}</option>
+              {golonganOpts.map((g) => (
+                <option key={g.value} value={g.value}>
+                  {g.label}
+                </option>
               ))}
             </select>
           </div>
@@ -233,12 +285,17 @@ export default function PegawaiModal({ open, onClose, pegawai }: PegawaiModalPro
           {/* Kecamatan */}
           <div className="space-y-2">
             <Label htmlFor="kecamatan">Kecamatan</Label>
-            <select id="kecamatan" value={form.kecamatan}
+            <select
+              id="kecamatan"
+              value={form.kecamatan}
               onChange={(e) => updateField('kecamatan', e.target.value)}
-              className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50">
+              className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+            >
               <option value="">-- Pilih Kecamatan --</option>
               {KECAMATAN_OPTIONS.map((k) => (
-                <option key={k} value={k}>{k}</option>
+                <option key={k} value={k}>
+                  {k}
+                </option>
               ))}
             </select>
           </div>
@@ -246,30 +303,48 @@ export default function PegawaiModal({ open, onClose, pegawai }: PegawaiModalPro
           {/* Unit Kerja */}
           <div className="space-y-2">
             <Label htmlFor="unitKerja">Unit Kerja</Label>
-            <Input id="unitKerja" placeholder="Masukkan unit kerja" value={form.unitKerja}
-              onChange={(e) => updateField('unitKerja', e.target.value)} />
+            <Input
+              id="unitKerja"
+              placeholder="Masukkan unit kerja"
+              value={form.unitKerja}
+              onChange={(e) => updateField('unitKerja', e.target.value)}
+            />
           </div>
 
           {/* Email */}
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
-            <Input id="email" type="email" placeholder="contoh@email.com" value={form.email}
-              onChange={(e) => updateField('email', e.target.value)} />
+            <Input
+              id="email"
+              type="email"
+              placeholder="contoh@email.com"
+              value={form.email}
+              onChange={(e) => updateField('email', e.target.value)}
+            />
           </div>
 
           {/* No HP */}
           <div className="space-y-2">
             <Label htmlFor="hp">No HP</Label>
-            <Input id="hp" placeholder="08xxxxxxxxxx" value={form.hp}
-              onChange={(e) => updateField('hp', e.target.value)} />
+            <Input
+              id="hp"
+              placeholder="08xxxxxxxxxx"
+              value={form.hp}
+              onChange={(e) => updateField('hp', e.target.value)}
+            />
           </div>
 
           {/* Status - full width */}
           <div className="space-y-2 sm:col-span-2">
             <Label htmlFor="status">Status</Label>
-            <select id="status" value={form.status}
-              onChange={(e) => updateField('status', e.target.value as 'Aktif' | 'Nonaktif')}
-              className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50">
+            <select
+              id="status"
+              value={form.status}
+              onChange={(e) =>
+                updateField('status', e.target.value as 'Aktif' | 'Nonaktif')
+              }
+              className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+            >
               <option value="Aktif">Aktif</option>
               <option value="Nonaktif">Nonaktif</option>
             </select>
@@ -277,9 +352,15 @@ export default function PegawaiModal({ open, onClose, pegawai }: PegawaiModalPro
         </div>
 
         <DialogFooter className="gap-2 pt-2">
-          <Button variant="outline" onClick={onClose}>Batal</Button>
-          <Button onClick={handleSave}
-            className="bg-[#3c6eff] hover:bg-[#3c6eff]/90 text-white">Simpan</Button>
+          <Button variant="outline" onClick={onClose}>
+            Batal
+          </Button>
+          <Button
+            onClick={handleSave}
+            className="bg-[#3c6eff] hover:bg-[#3c6eff]/90 text-white"
+          >
+            Simpan
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

@@ -26,6 +26,7 @@ import {
   AlertCircle,
   Info,
   ChevronRight,
+  UserCircle,
 } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
@@ -55,6 +56,7 @@ interface NavItem {
   label: string;
   page: PageType;
   adminOnly?: boolean;
+  separate?: boolean; // show separator before this item
 }
 
 interface SuratSubItem {
@@ -67,12 +69,13 @@ interface SuratSubItem {
 
 const NAV_ITEMS: NavItem[] = [
   { icon: LayoutDashboard, label: 'Dashboard', page: 'dashboard' },
-  { icon: Users, label: 'Data Pegawai', page: 'pegawai', adminOnly: true },
+  { icon: Users, label: 'Data Pegawai', page: 'pegawai' },
   { icon: FileUp, label: 'Upload Dokumen', page: 'dokumen' },
   { icon: Search, label: 'Pencarian Arsip', page: 'arsip' },
   { icon: CheckCircle, label: 'Approval', page: 'approval', adminOnly: true },
   { icon: BarChart3, label: 'Laporan', page: 'laporan', adminOnly: true },
   { icon: Hourglass, label: 'BUP Pensiun', page: 'bup', adminOnly: true },
+  { icon: UserCircle, label: 'Edit Profil', page: 'profil', separate: true },
 ];
 
 const SURAT_SUB_ITEMS: SuratSubItem[] = [
@@ -89,6 +92,7 @@ const PAGE_TITLES: Record<PageType, string> = {
   approval: 'Approval',
   laporan: 'Laporan',
   bup: 'BUP Pensiun',
+  profil: 'Edit Profil',
   pengaturan: 'Pengaturan',
 };
 
@@ -191,6 +195,9 @@ function SidebarContent({
           <span className="text-[11px] leading-tight font-medium text-muted-foreground">
             Dinas Pendidikan
           </span>
+          <span className="text-[10px] leading-tight text-muted-foreground/70">
+            Kabupaten Cirebon
+          </span>
         </div>
       </div>
 
@@ -204,44 +211,48 @@ function SidebarContent({
             const Icon = item.icon;
 
             return (
-              <button
-                key={item.page}
-                onClick={() => handleNav(item.page)}
-                className={cn(
-                  'group relative flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-150 outline-none',
-                  'focus-visible:ring-2 focus-visible:ring-[#3c6eff]/40 focus-visible:ring-offset-1',
-                  isActive
-                    ? 'font-semibold text-[#3c6eff]'
-                    : 'text-muted-foreground hover:bg-muted/70 hover:text-foreground'
-                )}
-                aria-current={isActive ? 'page' : undefined}
-              >
-                {isActive && (
-                  <motion.div
-                    layoutId="sidebar-active-bar"
-                    className="absolute right-0 top-1/2 h-6 w-[3px] -translate-y-1/2 rounded-l-full"
-                    style={{ backgroundColor: ACCENT }}
-                    transition={{ type: 'spring', stiffness: 350, damping: 30 }}
-                  />
-                )}
-
-                {isActive && (
-                  <motion.div
-                    layoutId="sidebar-active-bg"
-                    className="absolute inset-0 rounded-lg"
-                    style={{ backgroundColor: `${ACCENT}0D` }}
-                    transition={{ type: 'spring', stiffness: 350, damping: 30 }}
-                  />
-                )}
-
-                <Icon
+              <div key={item.page}>
+                {item.separate && <Separator className="my-1.5" />}
+                <button
+                  onClick={() => handleNav(item.page)}
                   className={cn(
-                    'relative z-10 h-[18px] w-[18px] shrink-0 transition-colors',
-                    isActive ? 'text-[#3c6eff]' : 'text-muted-foreground group-hover:text-foreground'
+                    'group relative flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-150 outline-none',
+                    'focus-visible:ring-2 focus-visible:ring-[#3c6eff]/40 focus-visible:ring-offset-1',
+                    isActive
+                      ? 'font-semibold text-[#3c6eff]'
+                      : 'text-muted-foreground hover:bg-muted/70 hover:text-foreground'
                   )}
-                />
-                <span className="relative z-10 truncate">{item.label}</span>
-              </button>
+                  aria-current={isActive ? 'page' : undefined}
+                >
+                  {/* Active right accent bar */}
+                  {isActive && (
+                    <motion.div
+                      layoutId="sidebar-active-bar"
+                      className="absolute right-0 top-1/2 h-6 w-[3px] -translate-y-1/2 rounded-l-full"
+                      style={{ backgroundColor: ACCENT }}
+                      transition={{ type: 'spring', stiffness: 350, damping: 30 }}
+                    />
+                  )}
+
+                  {/* Active background highlight */}
+                  {isActive && (
+                    <motion.div
+                      layoutId="sidebar-active-bg"
+                      className="absolute inset-0 rounded-lg"
+                      style={{ backgroundColor: `${ACCENT}0D` }}
+                      transition={{ type: 'spring', stiffness: 350, damping: 30 }}
+                    />
+                  )}
+
+                  <Icon
+                    className={cn(
+                      'relative z-10 h-[18px] w-[18px] shrink-0 transition-colors',
+                      isActive ? 'text-[#3c6eff]' : 'text-muted-foreground group-hover:text-foreground'
+                    )}
+                  />
+                  <span className="relative z-10 truncate">{item.label}</span>
+                </button>
+              </div>
             );
           })}
           {/* ===== Manajemen Surat (Collapsible - Admin Only) ===== */}
@@ -388,6 +399,7 @@ function NotificationPopover() {
         </Button>
       </PopoverTrigger>
       <PopoverContent align="end" sideOffset={8} className="w-80 p-0">
+        {/* Header */}
         <div className="flex items-center justify-between border-b px-4 py-3">
           <span className="text-sm font-semibold text-foreground">Notifikasi</span>
           {notifikasiList.length > 0 && (
@@ -400,6 +412,7 @@ function NotificationPopover() {
           )}
         </div>
 
+        {/* List */}
         <div className="max-h-72 overflow-y-auto">
           {visibleNotifs.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-10 text-center">
@@ -453,6 +466,7 @@ function ThemeToggle() {
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
+  // Avoid hydration mismatch
   useState(() => {
     setMounted(true);
   });
@@ -506,6 +520,7 @@ function Topbar({
 
   return (
     <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center gap-3 border-b bg-white/80 px-4 backdrop-blur-md dark:border-zinc-800 dark:bg-zinc-950/80 sm:px-6">
+      {/* Mobile hamburger */}
       <Sheet open={mobileSidebarOpen} onOpenChange={setMobileSidebarOpen}>
         <SheetTrigger asChild>
           <Button
@@ -518,17 +533,20 @@ function Topbar({
           </Button>
         </SheetTrigger>
         <SheetContent side="left" className="w-64 p-0 sm:max-w-[256px]">
+          {/* Sheet title for accessibility */}
           <SheetTitle className="sr-only">Menu navigasi</SheetTitle>
           <MobileSidebar onNavigate={() => setMobileSidebarOpen(false)} />
         </SheetContent>
       </Sheet>
 
+      {/* Page title */}
       <div className="flex min-w-0 flex-1 items-center">
         <h1 className="truncate text-base font-semibold text-foreground sm:text-lg">
           {PAGE_TITLES[activePage]}
         </h1>
       </div>
 
+      {/* Right actions */}
       <div className="flex shrink-0 items-center gap-1">
         <ThemeToggle />
         <NotificationPopover />
@@ -578,6 +596,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   const currentPath = typeof window !== 'undefined' ? window.location.pathname : '';
 
+  // Auto-expand surat menu when on e-surat route
   useState(() => {
     if (currentPath.startsWith('/e-surat')) {
       setSuratExpanded(true);
@@ -593,6 +612,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex h-screen overflow-hidden bg-muted/30 dark:bg-zinc-900/30">
+      {/* Desktop Sidebar */}
       <aside className="hidden w-64 shrink-0 border-r bg-white dark:border-zinc-800 dark:bg-zinc-950 lg:block">
         <SidebarContent
           activePage={activePage}
@@ -606,12 +626,14 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         />
       </aside>
 
+      {/* Main area */}
       <div className="flex min-w-0 flex-1 flex-col">
         <Topbar
           mobileSidebarOpen={mobileSidebarOpen}
           setMobileSidebarOpen={setMobileSidebarOpen}
         />
 
+        {/* Content */}
         <main className="flex-1 overflow-y-auto p-4 sm:p-6">
           <motion.div
             key={activePage}

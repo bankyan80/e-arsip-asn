@@ -13,6 +13,12 @@ export interface Pegawai {
   hp: string;
   tanggalLahir: string;
   status: 'Aktif' | 'Nonaktif';
+  // Field tambahan untuk share link page
+  tempatLahir?: string;
+  jenisKelamin?: string;
+  agama?: string;
+  alamat?: string;
+  pendidikanTerakhir?: string;
 }
 
 export interface Dokumen {
@@ -62,7 +68,7 @@ export interface DokumenConfig {
   hint: string;
   showPPPKPeriod?: boolean;
   periodNote?: string;
-  contractDuration?: number;
+  contractDuration?: number; // years
 }
 
-export type PageType = 'dashboard' | 'pegawai' | 'dokumen' | 'arsip' | 'approval' | 'laporan' | 'bup' | 'pengaturan';
+export type PageType = 'dashboard' | 'pegawai' | 'dokumen' | 'arsip' | 'approval' | 'laporan' | 'bup' | 'profil' | 'pengaturan';

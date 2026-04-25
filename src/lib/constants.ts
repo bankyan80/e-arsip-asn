@@ -122,22 +122,32 @@ export const ALLOWED_FILE_TYPES = '.pdf,.jpg,.jpeg,.png';
 export const ALLOWED_MIME_TYPES = ['application/pdf', 'image/jpeg', 'image/png'];
 
 // ===== Golongan Options (dynamic based on jenisASN) =====
-export function getGolonganOptions(jenisASN: string): { value: string; label: string }[] {
-  if (jenisASN && jenisASN.includes('Paruh Waktu')) {
-    return [
-      { value: 'I/a', label: 'I/a' }, { value: 'I/b', label: 'I/b' },
-      { value: 'I/c', label: 'I/c' }, { value: 'I/d', label: 'I/d' },
-      { value: 'II/a', label: 'II/a' }, { value: 'II/b', label: 'II/b' },
-      { value: 'II/c', label: 'II/c' }, { value: 'II/d', label: 'II/d' },
-    ];
-  }
-  return GOLONGAN_OPTIONS.map((g) => ({ value: g, label: g }));
-}
+export const GOLONGAN_PPPK_OPTIONS: { value: string; label: string }[] = [
+  { value: 'I', label: 'Golongan I - SD hingga SMP sederajat' },
+  { value: 'II', label: 'Golongan II - SD hingga SMP sederajat' },
+  { value: 'III', label: 'Golongan III - SD hingga SMP sederajat' },
+  { value: 'IV', label: 'Golongan IV - SD hingga SMP sederajat' },
+  { value: 'V', label: 'Golongan V - SLTA/Diploma I sederajat' },
+  { value: 'VI', label: 'Golongan VI - Diploma II' },
+  { value: 'VII', label: 'Golongan VII - Diploma III' },
+  { value: 'IX', label: 'Golongan IX - Sarjana (S1)/Diploma IV (D4)' },
+  { value: 'X', label: 'Golongan X - Magister (S2)' },
+  { value: 'XI', label: 'Golongan XI - Tingkat Ahli Muda' },
+  { value: 'XII', label: 'Golongan XII - Tingkat Ahli Muda' },
+  { value: 'XIII', label: 'Golongan XIII - Tingkat Ahli Madya' },
+  { value: 'XIV', label: 'Golongan XIV - Tingkat Ahli Madya' },
+  { value: 'XV', label: 'Golongan XV - Tingkat Ahli Utama' },
+  { value: 'XVI', label: 'Golongan XVI - Tingkat Ahli Utama' },
+  { value: 'XVII', label: 'Golongan XVII - Tingkat Ahli Utama' },
+];
 
-// ===== hasBUP Helper =====
-export function hasBUP(jenisASN: string): boolean {
-  const t = (jenisASN || '').toLowerCase();
-  return t.includes('pns') || t.includes('pppk penuh');
+export function getGolonganOptions(jenisASN: string): { value: string; label: string }[] {
+  // For PPPK (Penuh Waktu & Paruh Waktu) - golongan PPPK khusus
+  if (jenisASN && jenisASN.includes('PPPK')) {
+    return GOLONGAN_PPPK_OPTIONS;
+  }
+  // Default (PNS & lainnya): golongan I/a s/d IV/e
+  return GOLONGAN_OPTIONS.map((g) => ({ value: g, label: g }));
 }
 
 // ===== Dummy Data Generator =====
