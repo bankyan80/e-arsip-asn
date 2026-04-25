@@ -14,6 +14,7 @@ import {
   Briefcase,
   Shield,
   IdCard,
+  Award,
 } from 'lucide-react';
 
 import {
@@ -29,9 +30,27 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 import { useArsipStore } from '@/lib/store';
 import { getGolonganOptions } from '@/lib/constants';
+
+// ===== Constants =====
+
+const JENIS_ASN_OPTIONS = ['PNS', 'PPPK'];
+
+const GolonganList = [
+  'I/a', 'I/b', 'I/c', 'I/d',
+  'II/a', 'II/b', 'II/c', 'II/d',
+  'III/a', 'III/b', 'III/c', 'III/d',
+  'IV/a', 'IV/b', 'IV/c', 'IV/d', 'IV/e', 'IV/j',
+];
 
 // ===== Profil Page =====
 
@@ -49,9 +68,15 @@ export default function ProfilPage() {
     return pegawaiList.find((p) => p.id === currentUser.pegawaiId) || null;
   }, [currentUser, pegawaiList]);
 
-  // Form state
+  // Form state — semua field pegawai bisa diedit
   const [form, setForm] = useState({
+    nip: '',
     nama: '',
+    jenisASN: '',
+    jabatan: '',
+    golongan: '',
+    kecamatan: '',
+    unitKerja: '',
     email: '',
     hp: '',
     tanggalLahir: '',
@@ -68,7 +93,13 @@ export default function ProfilPage() {
   useEffect(() => {
     if (pegawaiData) {
       setForm({
+        nip: pegawaiData.nip || '',
         nama: pegawaiData.nama || '',
+        jenisASN: pegawaiData.jenisASN || '',
+        jabatan: pegawaiData.jabatan || '',
+        golongan: pegawaiData.golongan || '',
+        kecamatan: pegawaiData.kecamatan || '',
+        unitKerja: pegawaiData.unitKerja || '',
         email: pegawaiData.email || '',
         hp: pegawaiData.hp || '',
         tanggalLahir: pegawaiData.tanggalLahir || '',
@@ -92,21 +123,23 @@ export default function ProfilPage() {
       toast.error('Nama wajib diisi');
       return;
     }
+    if (!form.nip.trim() || form.nip.trim().length < 5) {
+      toast.error('NIP harus diisi minimal 5 karakter');
+      return;
+    }
 
     setIsSaving(true);
 
-    // Simulate brief delay for UX
-    await new Promise((r) => setTimeout(r, 300));
-
     try {
       if (currentUser?.role === 'pegawai' && pegawaiData) {
-        // Update pegawai in pegawaiList
-        const golonganOpts = getGolonganOptions(pegawaiData.jenisASN);
-        const currentGolongan = pegawaiData.golongan;
-        const golonganLabel = golonganOpts.find((g) => g.value === currentGolongan)?.label || currentGolongan;
-
         updatePegawai(pegawaiData.id, {
+          nip: form.nip.trim(),
           nama: form.nama.trim(),
+          jenisASN: form.jenisASN || '-',
+          jabatan: form.jabatan.trim() || '-',
+          golongan: form.golongan || '-',
+          kecamatan: form.kecamatan.trim() || '-',
+          unitKerja: form.unitKerja.trim() || '-',
           email: form.email.trim(),
           hp: form.hp.trim(),
           tanggalLahir: form.tanggalLahir,
@@ -117,13 +150,12 @@ export default function ProfilPage() {
           pendidikanTerakhir: form.pendidikanTerakhir.trim(),
         });
 
-        // Also update currentUser.nama so sidebar reflects the change
-        updateCurrentUser({ nama: form.nama.trim() });
+        // Update currentUser agar sidebar & login reflect change
+        updateCurrentUser({
+          nama: form.nama.trim(),
+          nip: form.nip.trim(),
+        });
 
-        toast.success('Profil berhasil diperbarui');
-      } else if (currentUser?.role === 'admin') {
-        // Admin can update their display name
-        updateCurrentUser({ nama: form.nama.trim() });
         toast.success('Profil berhasil diperbarui');
       }
     } finally {
@@ -131,12 +163,24 @@ export default function ProfilPage() {
     }
   };
 
+  // Auto-extract tanggal lahir dari NIP
+  const handleNipChange = (value: string) => {
+    updateField('nip', value);
+    if (value.trim().length === 18) {
+      const dateStr = value.trim().substring(0, 8);
+      const year = dateStr.substring(0, 4);
+      const month = dateStr.substring(4, 6);
+      const day = dateStr.substring(6, 8);
+      const date = `${year}-${month}-${day}`;
+      if (/^\d{4}-\d{2}-\d{2}$/.test(date) && !isNaN(Date.parse(date))) {
+        updateField('tanggalLahir', date);
+      }
+    }
+  };
+
   if (!currentUser) return null;
 
   const golonganOpts = pegawaiData ? getGolonganOptions(pegawaiData.jenisASN) : [];
-  const golonganLabel = pegawaiData
-    ? golonganOpts.find((g) => g.value === pegawaiData.golongan)?.label || pegawaiData.golongan
-    : '';
 
   return (
     <div className="space-y-6">
@@ -155,7 +199,7 @@ export default function ProfilPage() {
         </div>
       </section>
 
-      {/* ===== Profile Card - Avatar & Info Summary ===== */}
+      {/* ===== Profile Card - Avatar & Summary ===== */}
       <motion.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
@@ -175,7 +219,7 @@ export default function ProfilPage() {
             <div className="relative -mt-12 mb-4">
               <Avatar className="h-24 w-24 border-4 border-white dark:border-zinc-950 shadow-lg">
                 <AvatarFallback className="bg-[#3c6eff]/15 text-2xl font-bold text-[#3c6eff]">
-                  {(currentUser.nama || 'U')
+                  {(form.nama || 'U')
                     .split(' ')
                     .map((w) => w[0])
                     .filter(Boolean)
@@ -186,42 +230,176 @@ export default function ProfilPage() {
               </Avatar>
               <Badge
                 className="absolute -bottom-1 left-1/2 -translate-x-1/2 shadow-sm"
-                variant={currentUser.role === 'admin' ? 'default' : 'secondary'}
+                variant="secondary"
               >
                 <Shield className="mr-1 h-3 w-3" />
-                {currentUser.role === 'admin' ? 'Administrator' : 'Pegawai'}
+                Pegawai
               </Badge>
-            </div>
-
-            {/* Summary info (read-only) */}
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              {currentUser.role === 'pegawai' && (
-                <InfoChip icon={IdCard} label="NIP" value={currentUser.nip} />
-              )}
-              {pegawaiData?.jenisASN && (
-                <InfoChip icon={Briefcase} label="Jenis ASN" value={pegawaiData.jenisASN} />
-              )}
-              {pegawaiData?.jabatan && (
-                <InfoChip icon={Briefcase} label="Jabatan" value={pegawaiData.jabatan} />
-              )}
-              {pegawaiData?.golongan && (
-                <InfoChip icon={Shield} label="Golongan" value={golonganLabel || pegawaiData.golongan} />
-              )}
-              {pegawaiData?.kecamatan && (
-                <InfoChip icon={MapPin} label="Kecamatan" value={pegawaiData.kecamatan} />
-              )}
-              {pegawaiData?.unitKerja && (
-                <InfoChip icon={Building} label="Unit Kerja" value={pegawaiData.unitKerja} />
-              )}
-              {!pegawaiData && currentUser.role === 'admin' && (
-                <InfoChip icon={Shield} label="Role" value="Administrator" />
-              )}
             </div>
           </div>
         </Card>
       </motion.div>
 
-      {/* ===== Edit Form ===== */}
+      {/* ===== Edit Form: Data Kepegawaian ===== */}
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, delay: 0.05 }}
+      >
+        <Card className="border-border/60 bg-white dark:bg-zinc-950">
+          <CardHeader className="pb-3">
+            <div className="flex items-center gap-2">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-900/30">
+                <Briefcase className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+              </div>
+              <div>
+                <CardTitle className="text-sm font-semibold">Data Kepegawaian</CardTitle>
+                <CardDescription className="text-xs">
+                  Informasi kepegawaian Anda
+                </CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              {/* NIP */}
+              <div className="space-y-2">
+                <Label htmlFor="profil-nip" className="text-sm font-medium">
+                  <span className="flex items-center gap-1">
+                    <IdCard className="h-3.5 w-3.5" />
+                    NIP <span className="text-red-500">*</span>
+                  </span>
+                </Label>
+                <Input
+                  id="profil-nip"
+                  placeholder="Masukkan NIP"
+                  value={form.nip}
+                  onChange={(e) => handleNipChange(e.target.value)}
+                />
+                <p className="text-[10px] text-muted-foreground">
+                  Jika NIP 18 digit, tanggal lahir akan otomatis terisi.
+                </p>
+              </div>
+
+              {/* Nama */}
+              <div className="space-y-2">
+                <Label htmlFor="profil-nama" className="text-sm font-medium">
+                  <span className="flex items-center gap-1">
+                    <UserCircle className="h-3.5 w-3.5" />
+                    Nama Lengkap <span className="text-red-500">*</span>
+                  </span>
+                </Label>
+                <Input
+                  id="profil-nama"
+                  placeholder="Masukkan nama lengkap"
+                  value={form.nama}
+                  onChange={(e) => updateField('nama', e.target.value)}
+                />
+              </div>
+
+              {/* Jenis ASN */}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">
+                  <span className="flex items-center gap-1">
+                    <Award className="h-3.5 w-3.5" />
+                    Jenis ASN
+                  </span>
+                </Label>
+                <Select
+                  value={form.jenisASN}
+                  onValueChange={(v) => updateField('jenisASN', v)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Pilih Jenis ASN" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {JENIS_ASN_OPTIONS.map((j) => (
+                      <SelectItem key={j} value={j}>
+                        {j}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Golongan */}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">
+                  <span className="flex items-center gap-1">
+                    <Shield className="h-3.5 w-3.5" />
+                    Golongan
+                  </span>
+                </Label>
+                <Select
+                  value={form.golongan}
+                  onValueChange={(v) => updateField('golongan', v)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Pilih Golongan" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {GolonganList.map((g) => (
+                      <SelectItem key={g} value={g}>
+                        {g}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Jabatan */}
+              <div className="space-y-2">
+                <Label htmlFor="profil-jabatan" className="text-sm font-medium">
+                  <span className="flex items-center gap-1">
+                    <Briefcase className="h-3.5 w-3.5" />
+                    Jabatan
+                  </span>
+                </Label>
+                <Input
+                  id="profil-jabatan"
+                  placeholder="Contoh: Guru, Kepala Sekolah, Staff"
+                  value={form.jabatan}
+                  onChange={(e) => updateField('jabatan', e.target.value)}
+                />
+              </div>
+
+              {/* Kecamatan */}
+              <div className="space-y-2">
+                <Label htmlFor="profil-kecamatan" className="text-sm font-medium">
+                  <span className="flex items-center gap-1">
+                    <MapPin className="h-3.5 w-3.5" />
+                    Kecamatan
+                  </span>
+                </Label>
+                <Input
+                  id="profil-kecamatan"
+                  placeholder="Kecamatan"
+                  value={form.kecamatan}
+                  onChange={(e) => updateField('kecamatan', e.target.value)}
+                />
+              </div>
+
+              {/* Unit Kerja */}
+              <div className="space-y-2 sm:col-span-2">
+                <Label htmlFor="profil-unit" className="text-sm font-medium">
+                  <span className="flex items-center gap-1">
+                    <Building className="h-3.5 w-3.5" />
+                    Unit Kerja
+                  </span>
+                </Label>
+                <Input
+                  id="profil-unit"
+                  placeholder="Nama unit kerja / sekolah"
+                  value={form.unitKerja}
+                  onChange={(e) => updateField('unitKerja', e.target.value)}
+                />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </motion.div>
+
+      {/* ===== Edit Form: Data Pribadi ===== */}
       <motion.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
@@ -230,8 +408,8 @@ export default function ProfilPage() {
         <Card className="border-border/60 bg-white dark:bg-zinc-950">
           <CardHeader className="pb-3">
             <div className="flex items-center gap-2">
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-900/30">
-                <UserCircle className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-green-100 dark:bg-green-900/30">
+                <UserCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
               </div>
               <div>
                 <CardTitle className="text-sm font-semibold">Data Pribadi</CardTitle>
@@ -243,99 +421,36 @@ export default function ProfilPage() {
           </CardHeader>
           <CardContent className="pt-0">
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              {/* Nama Lengkap */}
+              {/* Tanggal Lahir */}
               <div className="space-y-2">
-                <Label htmlFor="profil-nama" className="text-sm font-medium">
-                  Nama Lengkap <span className="text-red-500">*</span>
+                <Label htmlFor="profil-tanggal-lahir" className="text-sm font-medium">
+                  <span className="flex items-center gap-1">
+                    <Calendar className="h-3.5 w-3.5" />
+                    Tanggal Lahir
+                  </span>
                 </Label>
-                <div className="relative">
-                  <UserCircle className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                  <Input
-                    id="profil-nama"
-                    placeholder="Masukkan nama lengkap"
-                    value={form.nama}
-                    onChange={(e) => updateField('nama', e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
-              </div>
-
-              {/* Email */}
-              <div className="space-y-2">
-                <Label htmlFor="profil-email" className="text-sm font-medium">
-                  Email
-                </Label>
-                <div className="relative">
-                  <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                  <Input
-                    id="profil-email"
-                    type="email"
-                    placeholder="contoh@email.com"
-                    value={form.email}
-                    onChange={(e) => updateField('email', e.target.value)}
-                    className="pl-10"
-                    disabled={currentUser.role === 'admin'}
-                  />
-                </div>
-                {currentUser.role === 'admin' && (
-                  <p className="text-xs text-muted-foreground">
-                    Email admin tidak dapat diubah
-                  </p>
-                )}
-              </div>
-
-              {/* No HP */}
-              <div className="space-y-2">
-                <Label htmlFor="profil-hp" className="text-sm font-medium">
-                  No HP
-                </Label>
-                <div className="relative">
-                  <Phone className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                  <Input
-                    id="profil-hp"
-                    placeholder="08xxxxxxxxxx"
-                    value={form.hp}
-                    onChange={(e) => updateField('hp', e.target.value)}
-                    className="pl-10"
-                    disabled={currentUser.role === 'admin'}
-                  />
-                </div>
+                <Input
+                  id="profil-tanggal-lahir"
+                  type="date"
+                  value={form.tanggalLahir}
+                  onChange={(e) => updateField('tanggalLahir', e.target.value)}
+                />
               </div>
 
               {/* Tempat Lahir */}
               <div className="space-y-2">
                 <Label htmlFor="profil-tempat-lahir" className="text-sm font-medium">
-                  Tempat Lahir
+                  <span className="flex items-center gap-1">
+                    <MapPin className="h-3.5 w-3.5" />
+                    Tempat Lahir
+                  </span>
                 </Label>
-                <div className="relative">
-                  <MapPin className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                  <Input
-                    id="profil-tempat-lahir"
-                    placeholder="Kota tempat lahir"
-                    value={form.tempatLahir}
-                    onChange={(e) => updateField('tempatLahir', e.target.value)}
-                    className="pl-10"
-                    disabled={currentUser.role === 'admin'}
-                  />
-                </div>
-              </div>
-
-              {/* Tanggal Lahir */}
-              <div className="space-y-2">
-                <Label htmlFor="profil-tanggal-lahir" className="text-sm font-medium">
-                  Tanggal Lahir
-                </Label>
-                <div className="relative">
-                  <Calendar className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                  <Input
-                    id="profil-tanggal-lahir"
-                    type="date"
-                    value={form.tanggalLahir}
-                    onChange={(e) => updateField('tanggalLahir', e.target.value)}
-                    className="pl-10"
-                    disabled={currentUser.role === 'admin'}
-                  />
-                </div>
+                <Input
+                  id="profil-tempat-lahir"
+                  placeholder="Kota tempat lahir"
+                  value={form.tempatLahir}
+                  onChange={(e) => updateField('tempatLahir', e.target.value)}
+                />
               </div>
 
               {/* Jenis Kelamin */}
@@ -348,7 +463,6 @@ export default function ProfilPage() {
                   value={form.jenisKelamin}
                   onChange={(e) => updateField('jenisKelamin', e.target.value)}
                   className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
-                  disabled={currentUser.role === 'admin'}
                 >
                   <option value="">-- Pilih --</option>
                   <option value="Laki-laki">Laki-laki</option>
@@ -366,7 +480,6 @@ export default function ProfilPage() {
                   value={form.agama}
                   onChange={(e) => updateField('agama', e.target.value)}
                   className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
-                  disabled={currentUser.role === 'admin'}
                 >
                   <option value="">-- Pilih --</option>
                   <option value="Islam">Islam</option>
@@ -388,7 +501,6 @@ export default function ProfilPage() {
                   value={form.pendidikanTerakhir}
                   onChange={(e) => updateField('pendidikanTerakhir', e.target.value)}
                   className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
-                  disabled={currentUser.role === 'admin'}
                 >
                   <option value="">-- Pilih --</option>
                   <option value="SLTA/Sederajat">SLTA/Sederajat</option>
@@ -401,6 +513,39 @@ export default function ProfilPage() {
                 </select>
               </div>
 
+              {/* Email */}
+              <div className="space-y-2">
+                <Label htmlFor="profil-email" className="text-sm font-medium">
+                  <span className="flex items-center gap-1">
+                    <Mail className="h-3.5 w-3.5" />
+                    Email
+                  </span>
+                </Label>
+                <Input
+                  id="profil-email"
+                  type="email"
+                  placeholder="contoh@email.com"
+                  value={form.email}
+                  onChange={(e) => updateField('email', e.target.value)}
+                />
+              </div>
+
+              {/* No HP */}
+              <div className="space-y-2">
+                <Label htmlFor="profil-hp" className="text-sm font-medium">
+                  <span className="flex items-center gap-1">
+                    <Phone className="h-3.5 w-3.5" />
+                    No. HP
+                  </span>
+                </Label>
+                <Input
+                  id="profil-hp"
+                  placeholder="08xxxxxxxxxx"
+                  value={form.hp}
+                  onChange={(e) => updateField('hp', e.target.value)}
+                />
+              </div>
+
               {/* Alamat - full width */}
               <div className="space-y-2 sm:col-span-2">
                 <Label htmlFor="profil-alamat" className="text-sm font-medium">
@@ -411,7 +556,6 @@ export default function ProfilPage() {
                   placeholder="Masukkan alamat lengkap"
                   value={form.alamat}
                   onChange={(e) => updateField('alamat', e.target.value)}
-                  disabled={currentUser.role === 'admin'}
                 />
               </div>
             </div>
@@ -444,28 +588,6 @@ export default function ProfilPage() {
           </CardContent>
         </Card>
       </motion.div>
-    </div>
-  );
-}
-
-// ===== Info Chip Helper =====
-
-function InfoChip({
-  icon: Icon,
-  label,
-  value,
-}: {
-  icon: React.ElementType;
-  label: string;
-  value: string;
-}) {
-  return (
-    <div className="flex items-center gap-2.5 rounded-lg border border-border/60 bg-muted/30 px-3 py-2.5">
-      <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />
-      <div className="min-w-0 flex-1">
-        <p className="text-[11px] font-medium text-muted-foreground">{label}</p>
-        <p className="truncate text-sm font-semibold text-foreground">{value || '-'}</p>
-      </div>
     </div>
   );
 }
