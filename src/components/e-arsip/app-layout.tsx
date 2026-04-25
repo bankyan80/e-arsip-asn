@@ -58,7 +58,8 @@ interface NavItem {
   label: string;
   page: PageType;
   adminOnly?: boolean;
-  separate?: boolean;
+  pegawaiOnly?: boolean; // hanya tampil untuk pegawai (bukan admin)
+  separate?: boolean; // show separator before this item
 }
 
 interface SuratSubItem {
@@ -77,7 +78,7 @@ const NAV_ITEMS: NavItem[] = [
   { icon: CheckCircle, label: 'Approval', page: 'approval', adminOnly: true },
   { icon: BarChart3, label: 'Laporan', page: 'laporan', adminOnly: true },
   { icon: Hourglass, label: 'BUP Pensiun', page: 'bup', adminOnly: true },
-  { icon: UserCircle, label: 'Edit Profil', page: 'profil', separate: true },
+  { icon: UserCircle, label: 'Edit Profil', page: 'profil', pegawaiOnly: true, separate: true },
 ];
 
 const SURAT_SUB_ITEMS: SuratSubItem[] = [
@@ -150,7 +151,7 @@ function getNotifIcon(type: Notifikasi['type']) {
   }
 }
 
-// ===== Sidebar Content =====
+// ===== Sidebar Content (shared between desktop & mobile) =====
 
 function SidebarContent({
   activePage,
@@ -226,6 +227,7 @@ function SidebarContent({
                   )}
                   aria-current={isActive ? 'page' : undefined}
                 >
+                  {/* Active right accent bar */}
                   {isActive && (
                     <motion.div
                       layoutId="sidebar-active-bar"
@@ -234,6 +236,8 @@ function SidebarContent({
                       transition={{ type: 'spring', stiffness: 350, damping: 30 }}
                     />
                   )}
+
+                  {/* Active background highlight */}
                   {isActive && (
                     <motion.div
                       layoutId="sidebar-active-bg"
@@ -242,6 +246,7 @@ function SidebarContent({
                       transition={{ type: 'spring', stiffness: 350, damping: 30 }}
                     />
                   )}
+
                   <Icon
                     className={cn(
                       'relative z-10 h-[18px] w-[18px] shrink-0 transition-colors',
@@ -253,7 +258,7 @@ function SidebarContent({
               </div>
             );
           })}
-          {/* Manajemen Surat (Admin Only) */}
+          {/* ===== Manajemen Surat (Collapsible - Admin Only) ===== */}
           {currentUser.role === 'admin' && (
             <div className="mt-1">
               <button
@@ -375,6 +380,7 @@ function SidebarContent({
 
 function NotificationPopover() {
   const { notifikasiList, markNotifRead, clearNotifikasi } = useArsipStore();
+
   const unreadCount = notifikasiList.filter((n) => !n.read).length;
   const visibleNotifs = notifikasiList.slice(0, 8);
 
@@ -396,6 +402,7 @@ function NotificationPopover() {
         </Button>
       </PopoverTrigger>
       <PopoverContent align="end" sideOffset={8} className="w-80 p-0">
+        {/* Header */}
         <div className="flex items-center justify-between border-b px-4 py-3">
           <span className="text-sm font-semibold text-foreground">Notifikasi</span>
           {notifikasiList.length > 0 && (
@@ -407,6 +414,8 @@ function NotificationPopover() {
             </button>
           )}
         </div>
+
+        {/* List */}
         <div className="max-h-72 overflow-y-auto">
           {visibleNotifs.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-10 text-center">
@@ -460,6 +469,7 @@ function ThemeToggle() {
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
+  // Avoid hydration mismatch
   useState(() => {
     setMounted(true);
   });
@@ -530,6 +540,7 @@ function Topbar({
           </Button>
         </SheetTrigger>
         <SheetContent side="left" className="w-64 p-0 sm:max-w-[256px]">
+          {/* Sheet title for accessibility */}
           <SheetTitle className="sr-only">Menu navigasi</SheetTitle>
           <MobileSidebar onNavigate={() => setMobileSidebarOpen(false)} />
         </SheetContent>
@@ -577,7 +588,7 @@ function Topbar({
   );
 }
 
-// ===== Mobile Sidebar =====
+// ===== Mobile Sidebar (inside Sheet) =====
 
 function MobileSidebar({ onNavigate }: { onNavigate?: () => void }) {
   const { activePage, setActivePage, currentUser, logout } = useArsipStore();
@@ -587,7 +598,12 @@ function MobileSidebar({ onNavigate }: { onNavigate?: () => void }) {
   const [suratExpanded, setSuratExpanded] = useState(currentPath.startsWith('/e-surat'));
 
   const filteredItems = useMemo(
-    () => NAV_ITEMS.filter((item) => !item.adminOnly || currentUser?.role === 'admin'),
+    () =>
+      NAV_ITEMS.filter(
+        (item) =>
+          (!item.adminOnly || currentUser?.role === 'admin') &&
+          (!item.pegawaiOnly || currentUser?.role !== 'admin')
+      ),
     [currentUser?.role]
   );
 
@@ -619,6 +635,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   const currentPath = typeof window !== 'undefined' ? window.location.pathname : '';
 
+  // Auto-expand surat menu when on e-surat route
   useState(() => {
     if (currentPath.startsWith('/e-surat')) {
       setSuratExpanded(true);
@@ -626,7 +643,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   });
 
   const filteredItems = useMemo(
-    () => NAV_ITEMS.filter((item) => !item.adminOnly || currentUser?.role === 'admin'),
+    () =>
+      NAV_ITEMS.filter(
+        (item) =>
+          (!item.adminOnly || currentUser?.role === 'admin') &&
+          (!item.pegawaiOnly || currentUser?.role !== 'admin')
+      ),
     [currentUser?.role]
   );
 
