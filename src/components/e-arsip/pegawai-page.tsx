@@ -54,6 +54,7 @@ import {
   groupDocsByType,
   downloadTemplateXLS,
   parseXLSTemplate,
+  isValidDateString,
 } from '@/lib/utils-arsip';
 import type { Pegawai } from '@/lib/types';
 
@@ -273,6 +274,13 @@ export default function PegawaiPage() {
         if (jenisASN && !ALL_JENIS_ASN.includes(jenisASN)) {
           errorCount++;
           messages.push(`Baris ${rowNum}: Jenis ASN "${jenisASN}" tidak valid`);
+          return;
+        }
+
+        // Validasi format tanggal lahir
+        if (tanggalLahir && !isValidDateString(tanggalLahir)) {
+          errorCount++;
+          messages.push(`Baris ${rowNum}: Format Tanggal Lahir "${tanggalLahir}" tidak valid (gunakan yyyy-mm-dd)`);
           return;
         }
 

@@ -124,7 +124,8 @@ export const useArsipStore = create<ArsipStore>()(
           })
           .catch((e) => {
             console.error('Gagal menyimpan pegawai ke Supabase:', e);
-            toast.error('Gagal menyimpan pegawai ke database');
+            const errMsg = e?.message || String(e);
+            toast.error('Gagal menyimpan pegawai ke database: ' + errMsg);
             // Revert optimistic update
             set((s) => ({
               pegawaiList: s.pegawaiList.filter((pg) => pg.id !== p.id),
@@ -140,7 +141,7 @@ export const useArsipStore = create<ArsipStore>()(
         // Sync to Supabase
         db.updatePegawaiInDB(id, data).catch((e) => {
           console.error('Gagal update pegawai:', e);
-          toast.error('Gagal memperbarui data pegawai');
+          toast.error('Gagal memperbarui data pegawai: ' + (e?.message || String(e)));
         });
       },
 
@@ -153,7 +154,7 @@ export const useArsipStore = create<ArsipStore>()(
         // Sync to Supabase (cascade will handle dokumen)
         db.deletePegawaiFromDB(id).catch((e) => {
           console.error('Gagal hapus pegawai:', e);
-          toast.error('Gagal menghapus pegawai dari database');
+          toast.error('Gagal menghapus pegawai dari database: ' + (e?.message || String(e)));
         });
       },
 
@@ -172,7 +173,7 @@ export const useArsipStore = create<ArsipStore>()(
           })
           .catch((e) => {
             console.error('Gagal menyimpan dokumen:', e);
-            toast.error('Gagal menyimpan dokumen ke database');
+            toast.error('Gagal menyimpan dokumen ke database: ' + (e?.message || String(e)));
             set((s) => ({
               dokumenList: s.dokumenList.filter((doc) => doc.id !== d.id),
             }));
@@ -185,7 +186,7 @@ export const useArsipStore = create<ArsipStore>()(
         }));
         db.updateDokumenStatusInDB(id, status).catch((e) => {
           console.error('Gagal update status dokumen:', e);
-          toast.error('Gagal memperbarui status dokumen');
+          toast.error('Gagal memperbarui status dokumen: ' + (e?.message || String(e)));
         });
       },
 
@@ -195,7 +196,7 @@ export const useArsipStore = create<ArsipStore>()(
         }));
         db.deleteDokumenFromDB(id).catch((e) => {
           console.error('Gagal hapus dokumen:', e);
-          toast.error('Gagal menghapus dokumen dari database');
+          toast.error('Gagal menghapus dokumen dari database: ' + (e?.message || String(e)));
         });
       },
 

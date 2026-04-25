@@ -131,19 +131,18 @@ export function downloadTemplateXLS(): void {
   const wsData = [headers, ...exampleData];
   const ws = XLSX.utils.aoa_to_sheet(wsData);
 
-  // Set column widths
   ws['!cols'] = [
-    { wch: 22 }, // NIP
-    { wch: 25 }, // Nama
-    { wch: 15 }, // Jenis ASN
-    { wch: 20 }, // Jabatan
-    { wch: 12 }, // Golongan
-    { wch: 20 }, // Kecamatan
-    { wch: 30 }, // Unit Kerja
-    { wch: 25 }, // Email
-    { wch: 18 }, // No HP
-    { wch: 15 }, // Tanggal Lahir
-    { wch: 10 }, // Status
+    { wch: 22 },
+    { wch: 25 },
+    { wch: 15 },
+    { wch: 20 },
+    { wch: 12 },
+    { wch: 20 },
+    { wch: 30 },
+    { wch: 25 },
+    { wch: 18 },
+    { wch: 15 },
+    { wch: 10 },
   ];
 
   const wb = XLSX.utils.book_new();
@@ -157,15 +156,70 @@ export function parseXLSTemplate(buffer: ArrayBuffer): Record<string, string>[] 
   const wb = XLSX.read(buffer, { type: 'array' });
   const ws = wb.Sheets[wb.SheetNames[0]];
   if (!ws) return [];
-  const rows = XLSX.utils.sheet_to_json<Record<string, string>>(ws, { defval: '' });
+  // raw: false agar tanggal diformat sebagai string, bukan angka serial Excel
+  const rows = XLSX.utils.sheet_to_json<Record<string, string>>(ws, { defval: '', raw: false });
   return rows.map((row) => {
     const obj: Record<string, string> = {};
-    // Ensure all values are strings and trimmed
     Object.entries(row).forEach(([key, val]) => {
-      obj[key.trim()] = String(val).trim();
+      const str = String(val).trim();
+      // Konversi tanggal yang masih dalam format Excel ke yyyy-mm-dd
+      if (key.trim() === 'Tanggal Lahir' && str) {
+        const normalized = normalizeExcelDate(str);
+        obj[key.trim()] = normalized;
+      } else {
+        obj[key.trim()] = str;
+      }
     });
     return obj;
   });
+}
+
+// Normalisasi berbagai format tanggal Excel ke format yyyy-mm-dd
+function normalizeExcelDate(dateStr: string): string {
+  // Jika sudah format yyyy-mm-dd, kembalikan langsung
+  const isoMatch = dateStr.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (isoMatch) return dateStr;
+
+  // Coba parse format dd/mm/yyyy atau dd-mm-yyyy
+  const dmyMatch = dateStr.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+  if (dmyMatch) {
+    const [, d, m, y] = dmyMatch;
+    return `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
+  }
+
+  // Coba parse format mm/dd/yyyy atau mm-dd-yyyy
+  const mdyMatch = dateStr.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+  if (mdyMatch) {
+    const [, m, d, y] = mdyMatch;
+    return `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
+  }
+
+  // Coba parse sebagai tanggal JavaScript (fallback)
+  try {
+    const parsed = new Date(dateStr);
+    if (!isNaN(parsed.getTime())) {
+      return parsed.toISOString().split('T')[0];
+    }
+  } catch {
+    // ignore
+  }
+
+  // Jika semua gagal, kembalikan string asli (akan divalidasi lebih lanjut)
+  return dateStr;
+}
+
+// Validasi format tanggal yyyy-mm-dd
+export function isValidDateString(dateStr: string): boolean {
+  if (!dateStr) return true; // kosong diizinkan (nullable)
+  const match = dateStr.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!match) return false;
+  const year = parseInt(match[1]);
+  const month = parseInt(match[2]);
+  const day = parseInt(match[3]);
+  if (year < 1900 || year > 2100) return false;
+  if (month < 1 || month > 12) return false;
+  if (day < 1 || day > 31) return false;
+  return true;
 }
 
 export function formatFileSize(bytes: number): string {
