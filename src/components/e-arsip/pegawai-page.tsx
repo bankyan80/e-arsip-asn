@@ -41,10 +41,6 @@ import {
 import { useArsipStore } from '@/lib/store';
 import {
   JENIS_ASN_OPTIONS,
-  JABATAN_OPTIONS,
-  GOLONGAN_OPTIONS,
-  KECAMATAN_OPTIONS,
-  UNIT_KERJA_OPTIONS,
   ALL_JENIS_ASN,
   JENIS_ASN_BADGE,
 } from '@/lib/constants';
@@ -117,6 +113,19 @@ export default function PegawaiPage() {
   }, [isPegawaiRole, pegawaiId, pegawaiList]);
 
   const myUnitKerja = myPegawai?.unitKerja || '';
+
+  // ===== Dynamic filter options dari data pegawai yang terdaftar =====
+  const dynamicKecamatanOptions = useMemo(() => {
+    const set = new Set<string>();
+    pegawaiList.forEach((p) => { if (p.kecamatan) set.add(p.kecamatan); });
+    return Array.from(set).sort();
+  }, [pegawaiList]);
+
+  const dynamicUnitKerjaOptions = useMemo(() => {
+    const set = new Set<string>();
+    pegawaiList.forEach((p) => { if (p.unitKerja) set.add(p.unitKerja); });
+    return Array.from(set).sort();
+  }, [pegawaiList]);
 
   // ===== Filtered & paginated data =====
   const filteredData = useMemo(() => {
@@ -428,7 +437,7 @@ export default function PegawaiPage() {
               className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
             >
               <option value="">Semua Kecamatan</option>
-              {KECAMATAN_OPTIONS.map((k) => (
+              {dynamicKecamatanOptions.map((k) => (
                 <option key={k} value={k}>
                   {k}
                 </option>
@@ -444,7 +453,7 @@ export default function PegawaiPage() {
               className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
             >
               <option value="">Semua Unit Kerja</option>
-              {UNIT_KERJA_OPTIONS.map((unit) => (
+              {dynamicUnitKerjaOptions.map((unit) => (
                 <option key={unit} value={unit}>
                   {unit}
                 </option>
