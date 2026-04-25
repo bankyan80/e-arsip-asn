@@ -47,7 +47,7 @@ export default function LoginForm() {
 
     try {
       // --- Admin login ---
-      if (username === 'admin' && password === 'admin123') {
+      if (username === 'admin' && password === 'admin456') {
         await initializeData();
         login({ role: 'admin', nip: 'admin', nama: 'Administrator' });
         toast.success('Selamat datang, Administrator!', {
@@ -250,19 +250,12 @@ export default function LoginForm() {
               </Button>
             </form>
 
-            {/* Hint */}
+            {/* Info login */}
             <div className="mt-6 rounded-lg bg-muted/60 px-4 py-3">
               <p className="text-center text-xs leading-relaxed text-muted-foreground">
-                <span className="font-semibold">Demo:</span>{' '}
-                <span className="text-foreground/80">
-                  Admin: <span className="font-mono font-semibold">admin</span> /{' '}
-                  <span className="font-mono font-semibold">admin123</span>
-                </span>
-                <br />
                 <span className="font-semibold">Pegawai:</span>{' '}
                 <span className="text-foreground/80">
-                  NIP (min. 5 karakter) /{' '}
-                  <span className="font-mono font-semibold">123456</span>
+                  Masukkan NIP (min. 5 karakter) dan password Anda
                 </span>
               </p>
             </div>
