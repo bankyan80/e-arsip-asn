@@ -1,3 +1,4 @@
+import * as XLSX from 'xlsx';
 import type { Dokumen, Pegawai } from './types';
 
 export function formatDate(dateStr: string | undefined): string {
@@ -119,27 +120,50 @@ export function getUploadPerMonth(docs: Dokumen[]): number[] {
   return counts;
 }
 
-// Template generation for bulk import
+// Template generation for bulk import (Excel .xlsx)
 export function downloadTemplateXLS(): void {
   const headers = ['NIP', 'Nama', 'Jenis ASN', 'Jabatan', 'Golongan', 'Kecamatan', 'Unit Kerja', 'Email', 'No HP', 'Tanggal Lahir', 'Status'];
-  const csvContent = headers.join(',') + '\n' + '198501012020011001,Contoh Nama,PNS Guru,Guru Kelas,III/a,Kec. Lemahabang,SD Negeri 1,contoh@email.com,081234567890,1985-01-01,Aktif';
-  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = 'template_pegawai.csv';
-  link.click();
-  URL.revokeObjectURL(url);
+
+  const exampleData = [
+    ['198501012020011001', 'Contoh Nama Pegawai', 'PNS Guru', 'Guru Kelas', 'III/a', 'Kec. Lemahabang', 'SD Negeri 1 Lemahabang', 'contoh@email.com', '081234567890', '1985-01-01', 'Aktif'],
+  ];
+
+  const wsData = [headers, ...exampleData];
+  const ws = XLSX.utils.aoa_to_sheet(wsData);
+
+  // Set column widths
+  ws['!cols'] = [
+    { wch: 22 }, // NIP
+    { wch: 25 }, // Nama
+    { wch: 15 }, // Jenis ASN
+    { wch: 20 }, // Jabatan
+    { wch: 12 }, // Golongan
+    { wch: 20 }, // Kecamatan
+    { wch: 30 }, // Unit Kerja
+    { wch: 25 }, // Email
+    { wch: 18 }, // No HP
+    { wch: 15 }, // Tanggal Lahir
+    { wch: 10 }, // Status
+  ];
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Data Pegawai');
+
+  XLSX.writeFile(wb, 'template_pegawai.xlsx');
 }
 
-export function parseCSVTemplate(text: string): Record<string, string>[] {
-  const lines = text.split('\n').filter((l) => l.trim());
-  if (lines.length < 2) return [];
-  const headers = lines[0].split(',').map((h) => h.trim());
-  return lines.slice(1).map((line) => {
-    const values = line.split(',').map((v) => v.trim());
+// Parse Excel file to array of row objects
+export function parseXLSTemplate(buffer: ArrayBuffer): Record<string, string>[] {
+  const wb = XLSX.read(buffer, { type: 'array' });
+  const ws = wb.Sheets[wb.SheetNames[0]];
+  if (!ws) return [];
+  const rows = XLSX.utils.sheet_to_json<Record<string, string>>(ws, { defval: '' });
+  return rows.map((row) => {
     const obj: Record<string, string> = {};
-    headers.forEach((h, i) => { obj[h] = values[i] || ''; });
+    // Ensure all values are strings and trimmed
+    Object.entries(row).forEach(([key, val]) => {
+      obj[key.trim()] = String(val).trim();
+    });
     return obj;
   });
 }

@@ -53,7 +53,7 @@ import {
   getStatusBadgeClass,
   groupDocsByType,
   downloadTemplateXLS,
-  parseCSVTemplate,
+  parseXLSTemplate,
 } from '@/lib/utils-arsip';
 import type { Pegawai } from '@/lib/types';
 
@@ -229,15 +229,15 @@ export default function PegawaiPage() {
 
     const reader = new FileReader();
     reader.onload = (ev) => {
-      const text = ev.target?.result as string;
-      if (!text) {
-        toast.error('Gagal membaca file CSV');
+      const buffer = ev.target?.result as ArrayBuffer;
+      if (!buffer) {
+        toast.error('Gagal membaca file Excel');
         return;
       }
 
-      const rows = parseCSVTemplate(text);
+      const rows = parseXLSTemplate(buffer);
       if (rows.length === 0) {
-        toast.error('File CSV kosong atau format tidak valid');
+        toast.error('File Excel kosong atau format tidak valid');
         return;
       }
 
@@ -310,10 +310,10 @@ export default function PegawaiPage() {
     };
 
     reader.onerror = () => {
-      toast.error('Gagal membaca file');
+      toast.error('Gagal membaca file Excel');
     };
 
-    reader.readAsText(file);
+    reader.readAsArrayBuffer(file);
 
     // Reset input
     if (fileInputRef.current) {
@@ -781,7 +781,7 @@ export default function PegawaiPage() {
               <>
                 <div className="space-y-2">
                   <p className="text-sm text-muted-foreground">
-                    Upload file CSV sesuai template yang telah diunduh. Format kolom:
+                    Upload file Excel (.xlsx) sesuai template yang telah diunduh. Format kolom:
                   </p>
                   <div className="rounded-lg bg-muted/50 p-3">
                     <p className="text-xs font-mono text-foreground break-all">
@@ -796,12 +796,12 @@ export default function PegawaiPage() {
                     Drag & drop atau klik untuk memilih file
                   </p>
                   <p className="text-xs text-muted-foreground/70">
-                    Format: CSV (comma-separated values)
+                    Format: Excel (.xlsx)
                   </p>
                   <input
                     ref={fileInputRef}
                     type="file"
-                    accept=".csv"
+                    accept=".xlsx,.xls"
                     className="hidden"
                     onChange={handleFileChange}
                   />
@@ -812,7 +812,7 @@ export default function PegawaiPage() {
                     className="gap-2"
                   >
                     <FileSpreadsheet className="h-4 w-4" />
-                    Pilih File CSV
+                    Pilih File Excel
                   </Button>
                 </div>
               </>
