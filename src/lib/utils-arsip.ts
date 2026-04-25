@@ -47,16 +47,23 @@ export function calculateRemainingDays(birthDate: string, bupAge: number): numbe
   if (!birthDate) return 0;
   const today = new Date();
   const birth = new Date(birthDate);
+  // Hitung tanggal BUP (ulang tahun ke-bupAge)
   const bupDate = new Date(birth.getFullYear() + bupAge, birth.getMonth(), birth.getDate());
-  const diff = bupDate.getTime() - today.getTime();
+  // TMT pensiun = tanggal 1 bulan berikutnya setelah tanggal BUP
+  const tmtDate = new Date(bupDate.getFullYear(), bupDate.getMonth() + 1, 1);
+  const diff = tmtDate.getTime() - today.getTime();
   return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
 }
 
 export function calculateBMPPensiun(birthDate: string, bupAge: number): string {
   if (!birthDate) return '-';
   const birth = new Date(birthDate);
+  // Hitung tanggal BUP (ulang tahun ke-bupAge)
   const bupDate = new Date(birth.getFullYear() + bupAge, birth.getMonth(), birth.getDate());
-  return formatDateShort(bupDate.toISOString().split('T')[0]);
+  // TMT pensiun = tanggal 1 bulan berikutnya setelah tanggal BUP
+  // Contoh: BUP 09/05/2026 → TMT 01/06/2026
+  const tmtDate = new Date(bupDate.getFullYear(), bupDate.getMonth() + 1, 1);
+  return formatDateShort(tmtDate.toISOString().split('T')[0]);
 }
 
 export function isExpired(expiry: string): boolean {
@@ -131,18 +138,19 @@ export function downloadTemplateXLS(): void {
   const wsData = [headers, ...exampleData];
   const ws = XLSX.utils.aoa_to_sheet(wsData);
 
+  // Set column widths
   ws['!cols'] = [
-    { wch: 22 },
-    { wch: 25 },
-    { wch: 15 },
-    { wch: 20 },
-    { wch: 12 },
-    { wch: 20 },
-    { wch: 30 },
-    { wch: 25 },
-    { wch: 18 },
-    { wch: 15 },
-    { wch: 10 },
+    { wch: 22 }, // NIP
+    { wch: 25 }, // Nama
+    { wch: 15 }, // Jenis ASN
+    { wch: 20 }, // Jabatan
+    { wch: 12 }, // Golongan
+    { wch: 20 }, // Kecamatan
+    { wch: 30 }, // Unit Kerja
+    { wch: 25 }, // Email
+    { wch: 18 }, // No HP
+    { wch: 15 }, // Tanggal Lahir
+    { wch: 10 }, // Status
   ];
 
   const wb = XLSX.utils.book_new();
@@ -162,7 +170,7 @@ export function parseXLSTemplate(buffer: ArrayBuffer): Record<string, string>[] 
     const obj: Record<string, string> = {};
     Object.entries(row).forEach(([key, val]) => {
       const str = String(val).trim();
-      // Konversi tanggal yang masih dalam format Excel ke yyyy-mm-dd
+      // Konversi tanggal yang masih dalam format Excel (dd/mm/yyyy atau mm/dd/yyyy) ke yyyy-mm-dd
       if (key.trim() === 'Tanggal Lahir' && str) {
         const normalized = normalizeExcelDate(str);
         obj[key.trim()] = normalized;

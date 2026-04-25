@@ -97,9 +97,20 @@ export function getDokumenOptions(asnType: ASNType): DokumenConfig {
 export function getBUPAge(jabatan: string, golongan: string): number {
   const j = (jabatan || '').toLowerCase();
   const g = (golongan || '').toLowerCase();
-  if (j.includes('kepala dinas') || j.includes('sekretaris') || g.startsWith('iv/')) return 58;
-  if (j.includes('kepala sekolah') || j.includes('kepala upt') || j.includes('kepala bidang') || j.includes('kepala seksi') || j.includes('kepala sub')) return 59;
+
+  // Pimpinan tinggi: Kepala Dinas, Sekretaris Dinas → 58
+  if (j.includes('kepala dinas') || j.includes('sekretaris')) return 58;
+
+  // Guru dan Kepala Sekolah → 60 tahun
+  if (j.includes('guru') || j.includes('kepala sekolah')) return 60;
+
+  // Kepala UPT, Kepala Bidang, Kepala Seksi, Kepala Sub Bagian → 59
+  if (j.includes('kepala upt') || j.includes('kepala bidang') || j.includes('kepala seksi') || j.includes('kepala sub')) return 59;
+
+  // Golongan III/a ke atas → 60
   if (g.startsWith('iii/') || g.startsWith('iv/')) return 60;
+
+  // Default (golongan I/II atau lainnya) → 62
   return 62;
 }
 
