@@ -58,8 +58,8 @@ interface NavItem {
   label: string;
   page: PageType;
   adminOnly?: boolean;
-  pegawaiOnly?: boolean; // hanya tampil untuk pegawai (bukan admin)
-  separate?: boolean; // show separator before this item
+  pegawaiOnly?: boolean;
+  separate?: boolean;
 }
 
 interface SuratSubItem {
@@ -227,7 +227,6 @@ function SidebarContent({
                   )}
                   aria-current={isActive ? 'page' : undefined}
                 >
-                  {/* Active right accent bar */}
                   {isActive && (
                     <motion.div
                       layoutId="sidebar-active-bar"
@@ -237,7 +236,6 @@ function SidebarContent({
                     />
                   )}
 
-                  {/* Active background highlight */}
                   {isActive && (
                     <motion.div
                       layoutId="sidebar-active-bg"
@@ -402,7 +400,6 @@ function NotificationPopover() {
         </Button>
       </PopoverTrigger>
       <PopoverContent align="end" sideOffset={8} className="w-80 p-0">
-        {/* Header */}
         <div className="flex items-center justify-between border-b px-4 py-3">
           <span className="text-sm font-semibold text-foreground">Notifikasi</span>
           {notifikasiList.length > 0 && (
@@ -415,7 +412,6 @@ function NotificationPopover() {
           )}
         </div>
 
-        {/* List */}
         <div className="max-h-72 overflow-y-auto">
           {visibleNotifs.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-10 text-center">
@@ -469,7 +465,6 @@ function ThemeToggle() {
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
-  // Avoid hydration mismatch
   useState(() => {
     setMounted(true);
   });
@@ -540,7 +535,6 @@ function Topbar({
           </Button>
         </SheetTrigger>
         <SheetContent side="left" className="w-64 p-0 sm:max-w-[256px]">
-          {/* Sheet title for accessibility */}
           <SheetTitle className="sr-only">Menu navigasi</SheetTitle>
           <MobileSidebar onNavigate={() => setMobileSidebarOpen(false)} />
         </SheetContent>
@@ -635,7 +629,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   const currentPath = typeof window !== 'undefined' ? window.location.pathname : '';
 
-  // Auto-expand surat menu when on e-surat route
   useState(() => {
     if (currentPath.startsWith('/e-surat')) {
       setSuratExpanded(true);
@@ -691,7 +684,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           setSidebarCollapsed={setSidebarCollapsed}
         />
 
-        {/* Content */}
         <main className="flex-1 overflow-y-auto p-4 sm:p-6">
           <motion.div
             key={activePage}
