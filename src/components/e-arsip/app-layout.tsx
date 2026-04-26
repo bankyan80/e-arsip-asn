@@ -99,12 +99,6 @@ const PAGE_TITLES: Record<PageType, string> = {
   pengaturan: 'Pengaturan',
 };
 
-const SURAT_URL_MAP: Record<string, PageType> = {
-  '/e-surat/masuk': 'dashboard',
-  '/e-surat/keluar': 'dashboard',
-  '/e-surat/arsip': 'dashboard',
-};
-
 const ACCENT = '#3c6eff';
 
 // ===== Helpers =====
@@ -174,8 +168,15 @@ function SidebarContent({
   setSuratExpanded: (v: boolean) => void;
   currentPath: string;
 }) {
+  const router = useRouter();
+
   const handleNav = (page: PageType) => {
     setActivePage(page);
+    onNavigate?.();
+  };
+
+  const handleSuratNav = (href: string) => {
+    router.push(href);
     onNavigate?.();
   };
 
@@ -186,10 +187,14 @@ function SidebarContent({
       {/* Logo Area */}
       <div className="flex shrink-0 items-center gap-3 px-5 py-5">
         <div
-          className="flex h-10 w-10 items-center justify-center rounded-xl shadow-md"
+          className="flex h-10 w-10 items-center justify-center rounded-xl shadow-md overflow-hidden"
           style={{ backgroundColor: ACCENT, boxShadow: `0 4px 14px ${ACCENT}33` }}
         >
-          <Archive className="h-5 w-5 text-white" strokeWidth={2.2} />
+          <img
+            src="/logo.jpg"
+            alt="Logo"
+            className="h-full w-full object-cover"
+          />
         </div>
         <div className="flex flex-col">
           <span className="text-base font-bold tracking-tight text-foreground">
@@ -256,6 +261,7 @@ function SidebarContent({
               </div>
             );
           })}
+
           {/* ===== Manajemen Surat (Collapsible - Admin Only) ===== */}
           {currentUser.role === 'admin' && (
             <div className="mt-1">
@@ -315,11 +321,11 @@ function SidebarContent({
                         const subActive = currentPath === sub.href;
                         const SubIcon = sub.icon;
                         return (
-                          <a
+                          <button
                             key={sub.href}
-                            href={sub.href}
+                            onClick={() => handleSuratNav(sub.href)}
                             className={cn(
-                              'flex items-center gap-2.5 rounded-md px-3 py-2 text-[13px] font-medium transition-colors',
+                              'flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-[13px] font-medium transition-colors text-left',
                               subActive
                                 ? 'bg-[#3c6eff]/10 text-[#3c6eff] font-semibold'
                                 : 'text-muted-foreground hover:bg-muted/60 hover:text-foreground'
@@ -327,7 +333,7 @@ function SidebarContent({
                           >
                             <SubIcon className="h-4 w-4 shrink-0" />
                             <span>{sub.label}</span>
-                          </a>
+                          </button>
                         );
                       })}
                     </div>
@@ -586,7 +592,6 @@ function Topbar({
 
 function MobileSidebar({ onNavigate }: { onNavigate?: () => void }) {
   const { activePage, setActivePage, currentUser, logout } = useArsipStore();
-  const router = useRouter();
   const currentPath = typeof window !== 'undefined' ? window.location.pathname : '';
 
   const [suratExpanded, setSuratExpanded] = useState(currentPath.startsWith('/e-surat'));
@@ -622,7 +627,6 @@ function MobileSidebar({ onNavigate }: { onNavigate?: () => void }) {
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { activePage, setActivePage, currentUser, logout } = useArsipStore();
-  const router = useRouter();
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [suratExpanded, setSuratExpanded] = useState(false);
