@@ -46,15 +46,17 @@ function mapPegawaiToDb(p: Partial<Pegawai>): Record<string, any> {
   if (p.alamat !== undefined) obj.alamat = p.alamat;
   if (p.pendidikanTerakhir !== undefined) obj.pendidikan_terakhir = p.pendidikanTerakhir;
   if (p.status !== undefined) obj.status = p.status;
-  // tgl_pensiun: auto-hitung dari tanggal_lahir + 60 tahun, atau gunakan nilai eksplisit
+  // tgl_pensiun: auto-hitung dari tanggal_lahir + 60 tahun, TMT tanggal 1 bulan berikutnya
   if (p.tglPensiun !== undefined) {
     obj.tgl_pensiun = p.tglPensiun || null;
   } else if (p.tanggalLahir) {
-    // Auto-hitung jika tidak diberikan
     const lahir = new Date(p.tanggalLahir);
     if (!isNaN(lahir.getTime())) {
+      // Tambah 60 tahun
       lahir.setFullYear(lahir.getFullYear() + 60);
-      obj.tgl_pensiun = lahir.toISOString().split('T')[0];
+      // TMT = tanggal 1 bulan berikutnya setelah ultah ke-60
+      const tmt = new Date(lahir.getFullYear(), lahir.getMonth() + 1, 1);
+      obj.tgl_pensiun = tmt.toISOString().split('T')[0];
     }
   }
   return obj;
