@@ -20,19 +20,26 @@ interface ArsipStore {
 
   // Loading state
   isLoading: boolean;
+  isLoadingMore: boolean;
+
+  // Pagination
+  dokumenPage: number;
+  dokumenTotal: number;
+  hasMoreDokumen: boolean;
 
   // Actions - Data fetching
   fetchData: () => Promise<void>;
+  loadMoreDokumen: () => Promise<void>;
 
   // Actions - Pegawai
-  addPegawai: (p: Pegawai) => void;
-  updatePegawai: (id: number, data: Partial<Pegawai>) => void;
-  deletePegawai: (id: number) => void;
+  addPegawai: (p: Pegawai) => Promise<boolean>;
+  updatePegawai: (id: number, data: Partial<Pegawai>) => Promise<void>;
+  deletePegawai: (id: number) => Promise<void>;
 
   // Actions - Dokumen
-  addDokumen: (d: Dokumen) => void;
-  updateDokumenStatus: (id: number, status: 'Approved' | 'Rejected') => void;
-  deleteDokumen: (id: number) => void;
+  addDokumen: (d: Dokumen) => Promise<boolean>;
+  updateDokumenStatus: (id: number, status: 'Approved' | 'Rejected') => Promise<void>;
+  deleteDokumen: (id: number) => Promise<void>;
 
   // Actions - Notifikasi
   addNotifikasi: (message: string, type: Notifikasi['type']) => void;
@@ -80,6 +87,12 @@ export const useArsipStore = create<ArsipStore>()(
         telegramChatId: '',
       },
       isLoading: false,
+      isLoadingMore: false,
+
+      // Pagination
+      dokumenPage: 1,
+      dokumenTotal: 0,
+      hasMoreDokumen: true,
 
       // ===== Fetch all data from Supabase =====
       fetchData: async () => {
@@ -97,6 +110,9 @@ export const useArsipStore = create<ArsipStore>()(
             pegawaiList: pegawai,
             dokumenList: dokumen,
             notifikasiList: notifikasi,
+            dokumenPage: 1,
+            dokumenTotal: dokumenResult.total,
+            hasMoreDokumen: dokumen.length < dokumenResult.total,
             isLoading: false,
           });
         } catch (e: any) {
@@ -106,94 +122,204 @@ export const useArsipStore = create<ArsipStore>()(
         }
       },
 
-      // ===== Pegawai CRUD =====
-      addPegawai: (p) => {
-        set((s) => ({ pegawaiList: [...s.pegawaiList, p] }));
-        db.insertPegawai(p)
-          .then((result) => {
-            if (result && result.id !== p.id) {
-              set((s) => ({
-                pegawaiList: s.pegawaiList.map((pg) =>
-                  pg.id === p.id ? { ...pg, id: result.id } : pg
-                ),
-              }));
-              const curr = get().currentUser;
-              if (curr && curr.pegawaiId === p.id) {
-                set({ currentUser: { ...curr, pegawaiId: result.id } });
-              }
-            }
-          })
-          .catch((e) => {
-            console.error('Gagal menyimpan pegawai ke Supabase:', e);
-            const errMsg = e?.message || String(e);
-            toast.error('Gagal menyimpan pegawai ke database: ' + errMsg);
-            set((s) => ({
-              pegawaiList: s.pegawaiList.filter((pg) => pg.id !== p.id),
-            }));
-          });
+      // Load more dokumen (pagination)
+      loadMoreDokumen: async () => {
+        const { isLoadingMore, hasMoreDokumen, dokumenPage } = get();
+        if (isLoadingMore || !hasMoreDokumen) return;
+
+        set({ isLoadingMore: true });
+        try {
+          const nextPage = dokumenPage + 1;
+          const result = await db.fetchAllDokumen(nextPage, 20);
+
+          set((s) => ({
+            dokumenList: [...s.dokumenList, ...result.data],
+            dokumenPage: nextPage,
+            dokumenTotal: result.total,
+            hasMoreDokumen: s.dokumenList.length + result.data.length < result.total,
+            isLoadingMore: false,
+          }));
+        } catch (e: any) {
+          console.error('Gagal memuat dokumen berikutnya:', e);
+          toast.error('Gagal memuat data dokumen tambahan');
+          set({ isLoadingMore: false });
+        }
       },
 
-      updatePegawai: (id, data) => {
+      // ===== Pegawai CRUD =====
+      addPegawai: async (p) => {
+        // Optimistic: tambah dulu ke UI
+        set((s) => ({ pegawaiList: [...s.pegawaiList, p] }));
+
+        try {
+          const result = await db.insertPegawai(p);
+          if (result && result.id !== p.id) {
+            set((s) => ({
+              pegawaiList: s.pegawaiList.map((pg) =>
+                pg.id === p.id ? { ...pg, id: result.id } : pg
+              ),
+            }));
+            const curr = get().currentUser;
+            if (curr && curr.pegawaiId === p.id) {
+              set({ currentUser: { ...curr, pegawaiId: result.id } });
+            }
+          }
+          // Refresh data dari server
+          const freshData = await db.fetchAllPegawai();
+          set({ pegawaiList: freshData });
+          return true;
+        } catch (e: any) {
+          console.error('Gagal menyimpan pegawai ke Supabase:', e);
+          const errMsg = e?.message || String(e);
+          toast.error('Gagal menyimpan pegawai ke database: ' + errMsg);
+          // Revert optimistic update
+          set((s) => ({
+            pegawaiList: s.pegawaiList.filter((pg) => pg.id !== p.id),
+          }));
+          return false;
+        }
+      },
+
+      updatePegawai: async (id, data) => {
+        // Optimistic update
         set((s) => ({
           pegawaiList: s.pegawaiList.map((p) => (p.id === id ? { ...p, ...data } : p)),
         }));
-        db.updatePegawaiInDB(id, data).catch((e) => {
+
+        try {
+          await db.updatePegawaiInDB(id, data);
+          // Refresh dari server
+          const freshData = await db.fetchAllPegawai();
+          set({ pegawaiList: freshData });
+        } catch (e: any) {
           console.error('Gagal update pegawai:', e);
           toast.error('Gagal memperbarui data pegawai: ' + (e?.message || String(e)));
-        });
+          // Revert dengan refresh dari server
+          try {
+            const freshData = await db.fetchAllPegawai();
+            set({ pegawaiList: freshData });
+          } catch {
+            // Jika gagal refresh, biarkan saja
+          }
+        }
       },
 
-      deletePegawai: (id) => {
+      deletePegawai: async (id) => {
+        // Simpan data lama untuk rollback
+        const previousList = get().pegawaiList;
+
+        // Optimistic update
         set((s) => ({
           pegawaiList: s.pegawaiList.filter((p) => p.id !== id),
           dokumenList: s.dokumenList.filter((d) => d.pegawaiId !== id),
         }));
-        db.deletePegawaiFromDB(id).catch((e) => {
+
+        try {
+          await db.deletePegawaiFromDB(id);
+          // Refresh dari server
+          const freshData = await db.fetchAllPegawai();
+          set({ pegawaiList: freshData });
+        } catch (e: any) {
           console.error('Gagal hapus pegawai:', e);
           toast.error('Gagal menghapus pegawai dari database: ' + (e?.message || String(e)));
-        });
+          // Rollback
+          set({ pegawaiList: previousList });
+        }
       },
 
       // ===== Dokumen CRUD =====
-      addDokumen: (d) => {
-        set((s) => ({ dokumenList: [...s.dokumenList, d] }));
-        db.insertDokumen(d)
-          .then((result) => {
-            if (result && result.id !== d.id) {
-              set((s) => ({
-                dokumenList: s.dokumenList.map((doc) =>
-                  doc.id === d.id ? { ...doc, id: result.id } : doc
-                ),
-              }));
-            }
-          })
-          .catch((e) => {
-            console.error('Gagal menyimpan dokumen:', e);
-            toast.error('Gagal menyimpan dokumen ke database: ' + (e?.message || String(e)));
+      addDokumen: async (d) => {
+        // Optimistic: tambah dulu ke UI
+        set((s) => ({ dokumenList: [d, ...s.dokumenList] }));
+
+        try {
+          const result = await db.insertDokumen(d);
+          if (result && result.id !== d.id) {
             set((s) => ({
-              dokumenList: s.dokumenList.filter((doc) => doc.id !== d.id),
+              dokumenList: s.dokumenList.map((doc) =>
+                doc.id === d.id ? { ...doc, id: result.id } : doc
+              ),
             }));
+          }
+          // Refresh dokumen dari server
+          const freshResult = await db.fetchAllDokumen(1, 20);
+          set({
+            dokumenList: freshResult.data,
+            dokumenPage: 1,
+            dokumenTotal: freshResult.total,
+            hasMoreDokumen: freshResult.data.length < freshResult.total,
           });
+          toast.success('Dokumen berhasil disimpan ke database');
+          return true;
+        } catch (e: any) {
+          console.error('Gagal menyimpan dokumen ke Supabase:', e);
+          const errMsg = e?.message || String(e);
+          toast.error('Gagal menyimpan dokumen ke database: ' + errMsg);
+          // Revert optimistic update
+          set((s) => ({
+            dokumenList: s.dokumenList.filter((doc) => doc.id !== d.id),
+          }));
+          return false;
+        }
       },
 
-      updateDokumenStatus: (id, status) => {
+      updateDokumenStatus: async (id, status) => {
+        // Optimistic update
         set((s) => ({
           dokumenList: s.dokumenList.map((d) => (d.id === id ? { ...d, status } : d)),
         }));
-        db.updateDokumenStatusInDB(id, status).catch((e) => {
+
+        try {
+          await db.updateDokumenStatusInDB(id, status);
+          // Refresh dari server
+          const freshResult = await db.fetchAllDokumen(1, 20);
+          set({
+            dokumenList: freshResult.data,
+            dokumenTotal: freshResult.total,
+            hasMoreDokumen: freshResult.data.length < freshResult.total,
+          });
+        } catch (e: any) {
           console.error('Gagal update status dokumen:', e);
           toast.error('Gagal memperbarui status dokumen: ' + (e?.message || String(e)));
-        });
+          // Refresh dari server untuk dapat state terkini
+          try {
+            const freshResult = await db.fetchAllDokumen(1, 20);
+            set({
+              dokumenList: freshResult.data,
+              dokumenTotal: freshResult.total,
+              hasMoreDokumen: freshResult.data.length < freshResult.total,
+            });
+          } catch {
+            // Biarkan saja
+          }
+        }
       },
 
-      deleteDokumen: (id) => {
+      deleteDokumen: async (id) => {
+        // Simpan data lama untuk rollback
+        const previousList = get().dokumenList;
+
+        // Optimistic update
         set((s) => ({
           dokumenList: s.dokumenList.filter((d) => d.id !== id),
         }));
-        db.deleteDokumenFromDB(id).catch((e) => {
+
+        try {
+          await db.deleteDokumenFromDB(id);
+          // Refresh dari server
+          const freshResult = await db.fetchAllDokumen(1, 20);
+          set({
+            dokumenList: freshResult.data,
+            dokumenTotal: freshResult.total,
+            hasMoreDokumen: freshResult.data.length < freshResult.total,
+          });
+          toast.success('Dokumen berhasil dihapus');
+        } catch (e: any) {
           console.error('Gagal hapus dokumen:', e);
           toast.error('Gagal menghapus dokumen dari database: ' + (e?.message || String(e)));
-        });
+          // Rollback
+          set({ dokumenList: previousList });
+        }
       },
 
       // ===== Notifikasi =====
