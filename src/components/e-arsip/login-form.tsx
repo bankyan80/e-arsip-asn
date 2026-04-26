@@ -40,14 +40,21 @@ import type { Pegawai } from '@/lib/types';
 
 type Mode = 'login' | 'register';
 
-const JENIS_ASN_OPTIONS = ['PNS', 'PPPK'];
+const JENIS_ASN_OPTIONS = [
+  { value: 'PNS', label: 'PNS' },
+  { value: 'PPPK_PENUH', label: 'PPPK Penuh' },
+  { value: 'PPPK_PARUH', label: 'PPPK Paruh Waktu' },
+  { value: 'OTHER', label: 'Lainnya' },
+];
 
-const GolonganList = [
+const GOLONGAN_PNS = [
   'I/a', 'I/b', 'I/c', 'I/d',
   'II/a', 'II/b', 'II/c', 'II/d',
   'III/a', 'III/b', 'III/c', 'III/d',
   'IV/a', 'IV/b', 'IV/c', 'IV/d', 'IV/e', 'IV/j',
 ];
+
+const GOLONGAN_PPPK = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14', '15', '16', '17'];
 
 export default function LoginForm() {
   const { login, fetchData, addPegawai } = useArsipStore();
@@ -433,7 +440,7 @@ export default function LoginForm() {
                     <p className="text-center text-xs leading-relaxed text-muted-foreground">
                       <span className="font-semibold">Pegawai:</span>{' '}
                       <span className="text-foreground/80">
-                        Masukkan NIP (min. 5 karakter) dan password Anda
+                        Masukan NIP (tanpa spasi) dan Masukan kata sandi &quot;123456&quot;
                       </span>
                     </p>
                   </div>
@@ -525,16 +532,20 @@ export default function LoginForm() {
                         </Label>
                         <Select
                           value={regJenisASN}
-                          onValueChange={setRegJenisASN}
+                          onValueChange={(value) => {
+                            setRegJenisASN(value);
+                            // Reset golongan saat jenis ASN berubah
+                            setRegGolongan('');
+                          }}
                           disabled={isRegLoading}
                         >
                           <SelectTrigger className="h-10 focus:ring-[#3c6eff]">
-                            <SelectValue />
+                            <SelectValue placeholder="Pilih Jenis ASN" />
                           </SelectTrigger>
                           <SelectContent>
                             {JENIS_ASN_OPTIONS.map((j) => (
-                              <SelectItem key={j} value={j}>
-                                {j}
+                              <SelectItem key={j.value} value={j.value}>
+                                {j.label}
                               </SelectItem>
                             ))}
                           </SelectContent>
@@ -551,15 +562,21 @@ export default function LoginForm() {
                         <Select
                           value={regGolongan}
                           onValueChange={setRegGolongan}
-                          disabled={isRegLoading}
+                          disabled={isRegLoading || !regJenisASN}
                         >
                           <SelectTrigger className="h-10 focus:ring-[#3c6eff]">
-                            <SelectValue placeholder="Pilih" />
+                            <SelectValue placeholder={
+                              !regJenisASN ? 'Pilih ASN dulu' : 
+                              regJenisASN === 'PNS' ? 'Pilih Golongan' : 'Pilih Level'
+                            } />
                           </SelectTrigger>
                           <SelectContent>
-                            {GolonganList.map((g) => (
+                            {(regJenisASN === 'PNS' || regJenisASN === 'OTHER'
+                              ? GOLONGAN_PNS
+                              : GOLONGAN_PPPK
+                            ).map((g) => (
                               <SelectItem key={g} value={g}>
-                                {g}
+                                {regJenisASN === 'PNS' || regJenisASN === 'OTHER' ? g : `Level ${g}`}
                               </SelectItem>
                             ))}
                           </SelectContent>
