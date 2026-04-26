@@ -19,6 +19,8 @@ export interface Pegawai {
   agama?: string;
   alamat?: string;
   pendidikanTerakhir?: string;
+  // Tanggal pensiun (tanggal_lahir + 60 tahun)
+  tglPensiun?: string;
 }
 
 export interface Dokumen {

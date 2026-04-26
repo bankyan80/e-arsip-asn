@@ -24,6 +24,7 @@ function mapDbToPegawai(row: Record<string, any>): Pegawai {
     alamat: row.alamat ?? '',
     pendidikanTerakhir: row.pendidikan_terakhir ?? '',
     status: row.status ?? 'Aktif',
+    tglPensiun: row.tgl_pensiun ?? '',
   };
 }
 
@@ -45,6 +46,17 @@ function mapPegawaiToDb(p: Partial<Pegawai>): Record<string, any> {
   if (p.alamat !== undefined) obj.alamat = p.alamat;
   if (p.pendidikanTerakhir !== undefined) obj.pendidikan_terakhir = p.pendidikanTerakhir;
   if (p.status !== undefined) obj.status = p.status;
+  // tgl_pensiun: auto-hitung dari tanggal_lahir + 60 tahun, atau gunakan nilai eksplisit
+  if (p.tglPensiun !== undefined) {
+    obj.tgl_pensiun = p.tglPensiun || null;
+  } else if (p.tanggalLahir) {
+    // Auto-hitung jika tidak diberikan
+    const lahir = new Date(p.tanggalLahir);
+    if (!isNaN(lahir.getTime())) {
+      lahir.setFullYear(lahir.getFullYear() + 60);
+      obj.tgl_pensiun = lahir.toISOString().split('T')[0];
+    }
+  }
   return obj;
 }
 
@@ -156,6 +168,26 @@ export async function deletePegawaiFromDB(id: number): Promise<void> {
     .delete()
     .eq('id', id);
   if (error) throw new Error(error.message);
+}
+
+// ============================================================
+// BUP (Batas Usia Pensiun) Queries
+// ============================================================
+
+/** Ambil pegawai yang sudah atau akan pensiun dalam N tahun ke depan */
+export async function fetchPegawaiMenujuPensiun(tahun: number = 5): Promise<Pegawai[]> {
+  const today = new Date();
+  const batas = new Date();
+  batas.setFullYear(today.getFullYear() + tahun);
+
+  const { data, error } = await supabase
+    .from('pegawai')
+    .select('*')
+    .lte('tgl_pensiun', batas.toISOString().split('T')[0])
+    .order('tgl_pensiun', { ascending: true });
+
+  if (error) throw new Error(error.message);
+  return (data || []).map(mapDbToPegawai);
 }
 
 // ============================================================
