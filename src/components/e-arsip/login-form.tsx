@@ -294,9 +294,16 @@ export default function LoginForm() {
         >
           {/* Header */}
           <CardHeader className="flex flex-col items-center gap-4 pb-2 pt-8">
-            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[#3c6eff] shadow-lg shadow-[#3c6eff]/30">
-              <Archive className="h-8 w-8 text-white" strokeWidth={2} />
-            </div>
+            <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-white shadow-lg overflow-hidden border-2 border-gray-100">
+              <img
+                src="/logo.jpg"
+                alt="Logo Dinas Pendidikan"
+                className="h-full w-full object-contain p-1"
+                onError={(e) => {
+                (e.target as HTMLImageElement).style.display = 'none';
+              }}
+            />
+          </div>
             <div className="text-center">
               <h1 className="text-2xl font-extrabold tracking-tight text-foreground">
                 E-Arsip ASN
