@@ -50,13 +50,17 @@ function mapPegawaiToDb(p: Partial<Pegawai>): Record<string, any> {
   if (p.tglPensiun !== undefined) {
     obj.tgl_pensiun = p.tglPensiun || null;
   } else if (p.tanggalLahir) {
-    const lahir = new Date(p.tanggalLahir);
+    const lahir = new Date(p.tanggalLahir + 'T00:00:00'); // hindari timezone shift
     if (!isNaN(lahir.getTime())) {
-      // Tambah 60 tahun
-      lahir.setFullYear(lahir.getFullYear() + 60);
-      // TMT = tanggal 1 bulan berikutnya setelah ultah ke-60
-      const tmt = new Date(lahir.getFullYear(), lahir.getMonth() + 1, 1);
-      obj.tgl_pensiun = tmt.toISOString().split('T')[0];
+      // Bulan berikutnya setelah ultah ke-60, tanggal 1
+      const tahunPensiun = lahir.getFullYear() + 60;
+      const bulanPensiun = lahir.getMonth() + 1; // 0-indexed, +1 = bulan berikutnya
+      const tmt = new Date(tahunPensiun, bulanPensiun, 1);
+      // Format YYYY-MM-DD lokal
+      const yyyy = tmt.getFullYear();
+      const mm = String(tmt.getMonth() + 1).padStart(2, '0');
+      const dd = String(tmt.getDate()).padStart(2, '0');
+      obj.tgl_pensiun = `${yyyy}-${mm}-${dd}`;
     }
   }
   return obj;
