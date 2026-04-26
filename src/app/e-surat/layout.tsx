@@ -168,7 +168,7 @@ export default function ESuratLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const [ready, setReady] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
-  const { currentUser, isLoggedIn, logout, initializeData } = useArsipStore();
+  const { currentUser, isLoggedIn, logout, fetchData } = useArsipStore();
 
   useEffect(() => {
     try {
@@ -184,8 +184,8 @@ export default function ESuratLayout({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    if (ready && isLoggedIn) initializeData();
-  }, [ready, isLoggedIn, initializeData]);
+    if (ready && isLoggedIn) fetchData();
+  }, [ready, isLoggedIn, fetchData]);
 
   useEffect(() => {
     if (ready && !isLoggedIn) router.replace('/');
