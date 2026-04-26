@@ -57,16 +57,18 @@ export const useArsipStore = create<ArsipStore>()(
       currentUser: null,
       isLoggedIn: false,
       login: (user) => set({ currentUser: user, isLoggedIn: true }),
-      logout: () => set({
-        currentUser: null,
-        isLoggedIn: false,
-        pegawaiList: [],
-        dokumenList: [],
-        notifikasiList: [],
-      }),
-      updateCurrentUser: (data) => set((s) => ({
-        currentUser: s.currentUser ? { ...s.currentUser, ...data } : null,
-      })),
+      logout: () =>
+        set({
+          currentUser: null,
+          isLoggedIn: false,
+          pegawaiList: [],
+          dokumenList: [],
+          notifikasiList: [],
+        }),
+      updateCurrentUser: (data) =>
+        set((s) => ({
+          currentUser: s.currentUser ? { ...s.currentUser, ...data } : null,
+        })),
 
       // ===== Data =====
       pegawaiList: [],
@@ -83,11 +85,14 @@ export const useArsipStore = create<ArsipStore>()(
       fetchData: async () => {
         set({ isLoading: true });
         try {
-          const [pegawai, dokumen, notifikasi] = await Promise.all([
+          const [pegawai, dokumenResult, notifikasi] = await Promise.all([
             db.fetchAllPegawai(),
-            db.fetchAllDokumen(),
+            db.fetchAllDokumen(1, 20),
             db.fetchAllNotifikasi(),
           ]);
+
+          const dokumen = dokumenResult.data;
+
           set({
             pegawaiList: pegawai,
             dokumenList: dokumen,
@@ -103,19 +108,15 @@ export const useArsipStore = create<ArsipStore>()(
 
       // ===== Pegawai CRUD =====
       addPegawai: (p) => {
-        // Optimistic: update local state immediately
         set((s) => ({ pegawaiList: [...s.pegawaiList, p] }));
-        // Sync to Supabase in background
         db.insertPegawai(p)
           .then((result) => {
-            // Update local id with Supabase-generated id
             if (result && result.id !== p.id) {
               set((s) => ({
                 pegawaiList: s.pegawaiList.map((pg) =>
                   pg.id === p.id ? { ...pg, id: result.id } : pg
                 ),
               }));
-              // Also update currentUser.pegawaiId if it references this pegawai
               const curr = get().currentUser;
               if (curr && curr.pegawaiId === p.id) {
                 set({ currentUser: { ...curr, pegawaiId: result.id } });
@@ -126,7 +127,6 @@ export const useArsipStore = create<ArsipStore>()(
             console.error('Gagal menyimpan pegawai ke Supabase:', e);
             const errMsg = e?.message || String(e);
             toast.error('Gagal menyimpan pegawai ke database: ' + errMsg);
-            // Revert optimistic update
             set((s) => ({
               pegawaiList: s.pegawaiList.filter((pg) => pg.id !== p.id),
             }));
@@ -134,11 +134,9 @@ export const useArsipStore = create<ArsipStore>()(
       },
 
       updatePegawai: (id, data) => {
-        // Optimistic update
         set((s) => ({
           pegawaiList: s.pegawaiList.map((p) => (p.id === id ? { ...p, ...data } : p)),
         }));
-        // Sync to Supabase
         db.updatePegawaiInDB(id, data).catch((e) => {
           console.error('Gagal update pegawai:', e);
           toast.error('Gagal memperbarui data pegawai: ' + (e?.message || String(e)));
@@ -146,12 +144,10 @@ export const useArsipStore = create<ArsipStore>()(
       },
 
       deletePegawai: (id) => {
-        // Optimistic update
         set((s) => ({
           pegawaiList: s.pegawaiList.filter((p) => p.id !== id),
           dokumenList: s.dokumenList.filter((d) => d.pegawaiId !== id),
         }));
-        // Sync to Supabase (cascade will handle dokumen)
         db.deletePegawaiFromDB(id).catch((e) => {
           console.error('Gagal hapus pegawai:', e);
           toast.error('Gagal menghapus pegawai dari database: ' + (e?.message || String(e)));
@@ -202,7 +198,6 @@ export const useArsipStore = create<ArsipStore>()(
 
       // ===== Notifikasi =====
       addNotifikasi: (message, type) => {
-        // Optimistic
         const notif: Notifikasi = {
           id: Date.now(),
           message,
@@ -213,7 +208,6 @@ export const useArsipStore = create<ArsipStore>()(
         set((s) => ({
           notifikasiList: [notif, ...s.notifikasiList].slice(0, 50),
         }));
-        // Sync to Supabase
         db.insertNotifikasi(message, type).catch((e) => {
           console.error('Gagal menyimpan notifikasi:', e);
         });

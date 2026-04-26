@@ -162,13 +162,27 @@ export async function deletePegawaiFromDB(id: number): Promise<void> {
 // Dokumen CRUD
 // ============================================================
 
-export async function fetchAllDokumen(): Promise<Dokumen[]> {
-  const { data, error } = await supabase
+export async function fetchAllDokumen(
+  page = 1,
+  limit = 20
+): Promise<{ data: Dokumen[]; total: number; page: number; limit: number }> {
+  const from = (page - 1) * limit;
+  const to = from + limit - 1;
+
+  const { data, error, count } = await supabase
     .from('dokumen')
-    .select('*')
-    .order('id', { ascending: true });
+    .select('*', { count: 'exact' })
+    .order('id', { ascending: true })
+    .range(from, to);
+
   if (error) throw new Error(error.message);
-  return (data || []).map(mapDbToDokumen);
+
+  return {
+    data: (data || []).map(mapDbToDokumen),
+    total: count || 0,
+    page,
+    limit,
+  };
 }
 
 export async function fetchDokumenByPegawaiId(pegawaiId: number): Promise<Dokumen[]> {
