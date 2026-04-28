@@ -1,552 +1,384 @@
-'use client';
+'use client'
 
-import { useState, useMemo, useRef, useCallback } from 'react';
-import { toast } from 'sonner';
+import { useState, useMemo, useEffect, useRef } from 'react'
+import { motion } from 'framer-motion'
 import {
-  Settings,
-  Save,
-  Globe,
-  Send,
-  Database,
-  Download,
-  Upload,
-  Trash2,
-  Info,
-  RefreshCw,
-  Loader2,
-} from 'lucide-react';
+  Search, Trash2, ChevronLeft, ChevronRight, X, Pencil, Save, Users, Camera, Upload
+} from 'lucide-react'
+import { Card, CardContent } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { Label } from '@/components/ui/label'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { toast } from 'sonner'
+import { useArsipStore } from '@/lib/store'
+import { supabase } from '@/lib/supabase'
+import * as db from '@/lib/db'
+import type { Pegawai } from '@/lib/types'
 
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Button } from '@/components/ui/button';
-import { Separator } from '@/components/ui/separator';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from '@/components/ui/alert-dialog';
+const JENIS_ASN_OPTIONS = [
+  { value: 'PNS', label: 'PNS' },
+  { value: 'PPPK_PENUH', label: 'PPPK Penuh' },
+  { value: 'PPPK_PARUH', label: 'PPPK Paruh Waktu' },
+  { value: 'OTHER', label: 'Lainnya' },
+]
 
-import { useArsipStore } from '@/lib/store';
-import type { AppConfig } from '@/lib/types';
+const GOLONGAN_PNS = ['I/a','I/b','I/c','I/d','II/a','II/b','II/c','II/d','III/a','III/b','III/c','III/d','IV/a','IV/b','IV/c','IV/d','IV/e','IV/j']
+const GOLONGAN_PPPK = Array.from({ length: 17 }, (_, i) => String(i + 1))
+const PAGE_SIZE = 10
 
-// ===== Main Settings Page =====
-
-export default function PengaturanPage() {
-  const {
-    config,
-    pegawaiList,
-    dokumenList,
-    updateConfig,
-    resetAllData,
-    addPegawai,
-    addDokumen,
-  } = useArsipStore();
-
-  // ===== Config form state =====
-  const [appsScriptURL, setAppsScriptURL] = useState((config as Record<string, unknown>).appsScriptURL as string || '');
-  const [telegramBotToken, setTelegramBotToken] = useState(config.telegramBotToken);
-  const [telegramChatId, setTelegramChatId] = useState(config.telegramChatId);
-
-  // ===== Dialog states =====
-  const [showResetDialog, setShowResetDialog] = useState(false);
-  const [isTestingNotif, setIsTestingNotif] = useState(false);
-
-  // ===== File input ref =====
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  // ===== Save Apps Script URL =====
-  const handleSaveAppsScript = useCallback(() => {
-    updateConfig({ appsScriptURL: appsScriptURL.trim() });
-    toast.success('URL Google Apps Script berhasil disimpan');
-  }, [appsScriptURL, updateConfig]);
-
-  // ===== Save Telegram config =====
-  const handleSaveTelegram = useCallback(() => {
-    updateConfig({
-      telegramBotToken: telegramBotToken.trim(),
-      telegramChatId: telegramChatId.trim(),
-    });
-    toast.success('Konfigurasi Telegram berhasil disimpan');
-  }, [telegramBotToken, telegramChatId, updateConfig]);
-
-  // ===== Test Telegram notification =====
-  const handleTestNotif = useCallback(async () => {
-    if (!telegramBotToken.trim() || !telegramChatId.trim()) {
-      toast.error('Bot Token dan Chat ID harus diisi terlebih dahulu');
-      return;
-    }
-
-    setIsTestingNotif(true);
-    try {
-      const response = await fetch(
-        `https://api.telegram.org/bot${telegramBotToken.trim()}/sendMessage`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            chat_id: telegramChatId.trim(),
-            text: '🔔 *Test Notifikasi E-Arsip ASN*\n\nNotifikasi berhasil dikirim! Konfigurasi Telegram Anda sudah benar.\n\n_Dinas Pendidikan_',
-            parse_mode: 'Markdown',
-          }),
-        }
-      );
-
-      const result = await response.json();
-
-      if (result.ok) {
-        toast.success('Notifikasi test berhasil dikirim ke Telegram');
-      } else {
-        toast.error(`Gagal mengirim notifikasi: ${result.description || 'Unknown error'}`);
-      }
-    } catch {
-      toast.error('Gagal menghubungi API Telegram. Periksa koneksi internet Anda.');
-    } finally {
-      setIsTestingNotif(false);
-    }
-  }, [telegramBotToken, telegramChatId]);
-
-  // ===== Reset all data =====
-  const handleResetData = useCallback(() => {
-    resetAllData();
-    setAppsScriptURL('');
-    setTelegramBotToken('');
-    setTelegramChatId('');
-    setShowResetDialog(false);
-    toast.success('Semua data berhasil direset');
-  }, [resetAllData]);
-
-  // ===== Export backup =====
-  const handleExportBackup = useCallback(() => {
-    const backup = {
-      version: '1.0.0',
-      exportedAt: new Date().toISOString(),
-      pegawaiList,
-      dokumenList,
-      config,
-    };
-
-    const jsonContent = JSON.stringify(backup, null, 2);
-    const blob = new Blob([jsonContent], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `e-arsip-backup-${new Date().toISOString().split('T')[0]}.json`;
-    link.click();
-    URL.revokeObjectURL(url);
-
-    toast.success('Backup data berhasil diekspor');
-  }, [pegawaiList, dokumenList, config]);
-
-  // ===== Import backup =====
-  const handleImportBackup = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      const file = e.target.files?.[0];
-      if (!file) return;
-
-      const reader = new FileReader();
-      reader.onload = (ev) => {
-        try {
-          const text = ev.target?.result as string;
-          const data = JSON.parse(text);
-
-          // Validate structure
-          if (!data.pegawaiList || !Array.isArray(data.pegawaiList)) {
-            toast.error('Format file backup tidak valid: pegawaiList tidak ditemukan');
-            return;
-          }
-
-          // Import pegawai
-          let importedPegawai = 0;
-          let importedDokumen = 0;
-
-          for (const pg of data.pegawaiList) {
-            if (pg.nip && pg.nama) {
-              addPegawai({
-                id: pg.id || Date.now() + importedPegawai,
-                nip: pg.nip,
-                nama: pg.nama,
-                jenisASN: pg.jenisASN || '',
-                jabatan: pg.jabatan || '',
-                golongan: pg.golongan || '',
-                unitKerja: pg.unitKerja || '',
-                email: pg.email || '',
-                hp: pg.hp || '',
-                tanggalLahir: pg.tanggalLahir || '',
-                status: pg.status || 'Aktif',
-              });
-              importedPegawai++;
-            }
-          }
-
-          // Import dokumen
-          if (data.dokumenList && Array.isArray(data.dokumenList)) {
-            for (const doc of data.dokumenList) {
-              if (doc.pegawaiId) {
-                addDokumen({
-                  id: doc.id || Date.now() + importedDokumen,
-                  pegawaiId: doc.pegawaiId,
-                  pegawaiNama: doc.pegawaiNama || '',
-                  nip: doc.nip || '',
-                  jenisASN: doc.jenisASN || '',
-                  jenisDokumen: doc.jenisDokumen || '',
-                  tanggal: doc.tanggal || '',
-                  status: doc.status || 'Pending',
-                  url: doc.url || '',
-                  expiry: doc.expiry || '',
-                  fileName: doc.fileName || '',
-                  keterangan: doc.keterangan || '',
-                  periode: doc.periode,
-                  tmtAwal: doc.tmtAwal,
-                  tmtAkhir: doc.tmtAkhir,
-                });
-                importedDokumen++;
-              }
-            }
-          }
-
-          // Import config
-          if (data.config) {
-            const cfg: Partial<AppConfig> = {};
-            if (data.config.appsScriptURL) cfg.appsScriptURL = data.config.appsScriptURL;
-            if (data.config.telegramBotToken) cfg.telegramBotToken = data.config.telegramBotToken;
-            if (data.config.telegramChatId) cfg.telegramChatId = data.config.telegramChatId;
-            if (Object.keys(cfg).length > 0) {
-              updateConfig(cfg);
-              setAppsScriptURL(cfg.appsScriptURL ?? '');
-              setTelegramBotToken(cfg.telegramBotToken ?? '');
-              setTelegramChatId(cfg.telegramChatId ?? '');
-            }
-          }
-
-          toast.success(
-            `Backup berhasil diimpor: ${importedPegawai} pegawai, ${importedDokumen} dokumen`
-          );
-        } catch {
-          toast.error('Gagal membaca file backup. Pastikan format file adalah JSON yang valid.');
-        }
-      };
-
-      reader.onerror = () => {
-        toast.error('Gagal membaca file');
-      };
-
-      reader.readAsText(file);
-
-      // Reset input
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
-    },
-    [addPegawai, addDokumen, updateConfig]
-  );
-
-  // ===== Computed stats =====
-  const totalPegawai = pegawaiList.length;
-  const totalDokumen = dokumenList.length;
-
-  return (
-    <div className="space-y-6">
-      {/* ===== Header ===== */}
-      <section aria-label="Header Pengaturan">
-        <div>
-          <div className="flex items-center gap-2">
-            <Settings className="h-5 w-5 text-muted-foreground" />
-            <h2 className="text-xl font-bold tracking-tight text-foreground">
-              Pengaturan
-            </h2>
-          </div>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Konfigurasi aplikasi E-Arsip ASN
-          </p>
-        </div>
-      </section>
-
-      {/* ===== Google Apps Script Integration ===== */}
-      <Card className="border-border/60 bg-white dark:bg-zinc-950">
-        <CardHeader className="pb-3">
-          <div className="flex items-center gap-2">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-emerald-100 dark:bg-emerald-900/30">
-              <Globe className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-            </div>
-            <div>
-              <CardTitle className="text-sm font-semibold">Google Apps Script API</CardTitle>
-              <CardDescription className="text-xs">
-                Konfigurasi upload dokumen ke Google Drive
-              </CardDescription>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-4 pt-0">
-          <div className="space-y-2">
-            <Label htmlFor="appsScriptUrl" className="text-sm font-medium">
-              Web App URL
-            </Label>
-            <Input
-              id="appsScriptUrl"
-              type="url"
-              placeholder="https://script.google.com/macros/s/xxxxx/exec"
-              value={appsScriptURL}
-              onChange={(e) => setAppsScriptURL(e.target.value)}
-              className="font-mono text-sm"
-            />
-            <p className="text-xs text-muted-foreground">
-              Masukkan URL deploy Google Apps Script untuk upload ke Google Drive
-            </p>
-          </div>
-          <div className="flex justify-end">
-            <Button
-              onClick={handleSaveAppsScript}
-              className="bg-[#3c6eff] hover:bg-[#3c6eff]/90 text-white gap-2"
-            >
-              <Save className="h-4 w-4" />
-              Simpan
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* ===== Telegram Notification ===== */}
-      <Card className="border-border/60 bg-white dark:bg-zinc-950">
-        <CardHeader className="pb-3">
-          <div className="flex items-center gap-2">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-sky-100 dark:bg-sky-900/30">
-              <Send className="h-4 w-4 text-sky-600 dark:text-sky-400" />
-            </div>
-            <div>
-              <CardTitle className="text-sm font-semibold">Telegram Bot Notification</CardTitle>
-              <CardDescription className="text-xs">
-                Kirim notifikasi otomatis ke Telegram
-              </CardDescription>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-4 pt-0">
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="botToken" className="text-sm font-medium">
-                Bot Token
-              </Label>
-              <Input
-                id="botToken"
-                type="password"
-                placeholder="123456:ABC-DEF..."
-                value={telegramBotToken}
-                onChange={(e) => setTelegramBotToken(e.target.value)}
-                className="font-mono text-sm"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="chatId" className="text-sm font-medium">
-                Chat ID
-              </Label>
-              <Input
-                id="chatId"
-                type="text"
-                placeholder="-1001234567890"
-                value={telegramChatId}
-                onChange={(e) => setTelegramChatId(e.target.value)}
-                className="font-mono text-sm"
-              />
-            </div>
-          </div>
-          <p className="text-xs text-muted-foreground">
-            Untuk notifikasi otomatis saat ada dokumen baru
-          </p>
-          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-            <Button
-              variant="outline"
-              onClick={handleTestNotif}
-              disabled={isTestingNotif}
-              className="border-sky-300 text-sky-700 hover:bg-sky-50 dark:border-sky-700 dark:text-sky-400 dark:hover:bg-sky-950/30 gap-2"
-            >
-              {isTestingNotif ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Send className="h-4 w-4" />
-              )}
-              {isTestingNotif ? 'Mengirim...' : 'Test Notifikasi'}
-            </Button>
-            <Button
-              onClick={handleSaveTelegram}
-              className="bg-[#3c6eff] hover:bg-[#3c6eff]/90 text-white gap-2"
-            >
-              <Save className="h-4 w-4" />
-              Simpan
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* ===== Data Management ===== */}
-      <Card className="border-border/60 bg-white dark:bg-zinc-950">
-        <CardHeader className="pb-3">
-          <div className="flex items-center gap-2">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-amber-100 dark:bg-amber-900/30">
-              <Database className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-            </div>
-            <div>
-              <CardTitle className="text-sm font-semibold">Manajemen Data</CardTitle>
-              <CardDescription className="text-xs">
-                Backup, impor, dan reset data aplikasi
-              </CardDescription>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-4 pt-0">
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-            {/* Export Backup */}
-            <Button
-              variant="outline"
-              onClick={handleExportBackup}
-              className="border-emerald-300 text-emerald-700 hover:bg-emerald-50 dark:border-emerald-700 dark:text-emerald-400 dark:hover:bg-emerald-950/30 h-auto flex-col gap-1.5 py-4"
-            >
-              <Download className="h-5 w-5" />
-              <div className="flex flex-col items-center">
-                <span className="text-sm font-medium">Export Backup</span>
-                <span className="text-[11px] text-muted-foreground">JSON file</span>
-              </div>
-            </Button>
-
-            {/* Import Backup */}
-            <Button
-              variant="outline"
-              onClick={() => fileInputRef.current?.click()}
-              className="border-sky-300 text-sky-700 hover:bg-sky-50 dark:border-sky-700 dark:text-sky-400 dark:hover:bg-sky-950/30 h-auto flex-col gap-1.5 py-4"
-            >
-              <Upload className="h-5 w-5" />
-              <div className="flex flex-col items-center">
-                <span className="text-sm font-medium">Import Backup</span>
-                <span className="text-[11px] text-muted-foreground">Pilih file JSON</span>
-              </div>
-            </Button>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".json"
-              className="hidden"
-              onChange={handleImportBackup}
-            />
-
-            {/* Reset Data */}
-            <AlertDialog open={showResetDialog} onOpenChange={setShowResetDialog}>
-              <AlertDialogTrigger asChild>
-                <Button
-                  variant="outline"
-                  className="border-red-300 text-red-700 hover:bg-red-50 dark:border-red-700 dark:text-red-400 dark:hover:bg-red-950/30 h-auto flex-col gap-1.5 py-4"
-                >
-                  <Trash2 className="h-5 w-5" />
-                  <div className="flex flex-col items-center">
-                    <span className="text-sm font-medium">Reset Semua Data</span>
-                    <span className="text-[11px] text-muted-foreground">Hapus permanen</span>
-                  </div>
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle className="flex items-center gap-2">
-                    <Trash2 className="h-5 w-5 text-red-500" />
-                    Reset Semua Data
-                  </AlertDialogTitle>
-                  <AlertDialogDescription asChild>
-                    <div className="space-y-3">
-                      <p>
-                        Apakah Anda yakin ingin menghapus semua data? Tindakan ini
-                        tidak dapat dibatalkan.
-                      </p>
-                      <div className="rounded-lg border border-red-200 bg-red-50 p-3 dark:border-red-800 dark:bg-red-950/30">
-                        <p className="text-sm font-medium text-red-700 dark:text-red-400">
-                          Menghapus semua data pegawai dan dokumen. Tindakan ini tidak
-                          dapat dibatalkan.
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <RefreshCw className="h-4 w-4" />
-                        <span>
-                          Data akan dikembalikan ke keadaan awal (kosong)
-                        </span>
-                      </div>
-                    </div>
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Batal</AlertDialogCancel>
-                  <AlertDialogAction
-                    onClick={handleResetData}
-                    className="bg-red-600 hover:bg-red-700 text-white"
-                  >
-                    Ya, Reset Semua Data
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* ===== App Info ===== */}
-      <Card className="border-border/60 bg-white dark:bg-zinc-950">
-        <CardHeader className="pb-3">
-          <div className="flex items-center gap-2">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-purple-100 dark:bg-purple-900/30">
-              <Info className="h-4 w-4 text-purple-600 dark:text-purple-400" />
-            </div>
-            <div>
-              <CardTitle className="text-sm font-semibold">Informasi Aplikasi</CardTitle>
-              <CardDescription className="text-xs">
-                Detail versi dan statistik aplikasi
-              </CardDescription>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent className="pt-0">
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            <InfoItem label="Total Pegawai" value={`${totalPegawai.toLocaleString('id-ID')} orang`} />
-            <InfoItem label="Total Dokumen" value={`${totalDokumen.toLocaleString('id-ID')} dokumen`} />
-            <InfoItem label="Versi Aplikasi" value="1.0.0" />
-          </div>
-
-          <Separator className="my-4" />
-
-          <div className="flex items-center justify-between">
-            <p className="text-sm font-medium text-foreground">
-              E-Arsip ASN Dinas Pendidikan
-            </p>
-            <p className="text-xs text-muted-foreground">
-              &copy; {new Date().getFullYear()} — Sistem Arsip Digital
-            </p>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
-  );
+function getInitials(name: string) {
+  return name.split(' ').map(w => w[0]).filter(Boolean).slice(0,2).join('').toUpperCase()
 }
 
-// ===== Info Item Helper =====
+function formatDate(d: string) {
+  if (!d) return '-'
+  try { return new Date(d).toLocaleDateString('id-ID',{day:'numeric',month:'short',year:'numeric'}) }
+  catch { return d }
+}
 
-function InfoItem({
-  label,
-  value,
-}: {
-  label: string;
-  value: string;
-}) {
+export default function PegawaiPage() {
+  const { pegawaiList, fetchData, currentUser } = useArsipStore()
+  const [search, setSearch] = useState('')
+  const [page, setPage] = useState(1)
+  const [detail, setDetail] = useState<Pegawai|null>(null)
+  const [showDetail, setShowDetail] = useState(false)
+  const [showEdit, setShowEdit] = useState(false)
+  const [editId, setEditId] = useState<number|null>(null)
+  const [form, setForm] = useState<Partial<Pegawai>>({})
+  const [saving, setSaving] = useState(false)
+  const [del, setDel] = useState<Pegawai|null>(null)
+
+  // Foto state
+  const [fotoFile, setFotoFile] = useState<File|null>(null)
+  const [fotoPreview, setFotoPreview] = useState<string>('')
+  const [uploading, setUploading] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => { fetchData() }, [fetchData])
+
+  const filtered = useMemo(() => {
+    let r = pegawaiList
+    if (currentUser?.role === 'pegawai') {
+      const me = pegawaiList.find(p => p.nip === currentUser.nip)
+      if (me?.unitKerja) r = r.filter(p => p.unitKerja === me.unitKerja)
+      else r = r.filter(p => p.nip === currentUser.nip)
+    }
+    if (search.trim()) {
+      const q = search.toLowerCase()
+      r = r.filter(p => p.nip.toLowerCase().includes(q) || p.nama.toLowerCase().includes(q) || (p.jenisASN||'').toLowerCase().includes(q) || (p.jabatan||'').toLowerCase().includes(q) || (p.unitKerja||'').toLowerCase().includes(q))
+    }
+    return r
+  }, [pegawaiList, search, currentUser])
+
+  const total = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
+  const safe = Math.min(page, total)
+  const paged = filtered.slice((safe-1)*PAGE_SIZE, safe*PAGE_SIZE)
+
+  const labelAsn = (v: string) => JENIS_ASN_OPTIONS.find(o=>o.value===v)?.label || v || '-'
+
+  const openEdit = (p: Pegawai) => {
+    setEditId(p.id)
+    setForm({ nip:p.nip, nama:p.nama, jenisASN:p.jenisASN, jabatan:p.jabatan, golongan:p.golongan, kecamatan:p.kecamatan, unitKerja:p.unitKerja, email:p.email, hp:p.hp, tanggalLahir:p.tanggalLahir, tempatLahir:p.tempatLahir, jenisKelamin:p.jenisKelamin, agama:p.agama, alamat:p.alamat, pendidikanTerakhir:p.pendidikanTerakhir, status:p.status })
+    setFotoFile(null)
+    setFotoPreview('')
+    setShowEdit(true)
+  }
+
+  // Upload foto ke Supabase Storage
+  const uploadFoto = async (file: File): Promise<string> => {
+    const ext = file.name.split('.').pop()
+    const fileName = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
+    const filePath = `profil/${fileName}`
+
+    const { error } = await supabase.storage
+      .from('foto-profil')
+      .upload(filePath, file, { cacheControl: '3600', upsert: true })
+
+    if (error) throw error
+
+    const { data: urlData } = supabase.storage
+      .from('foto-profil')
+      .getPublicUrl(filePath)
+
+    return urlData.publicUrl
+  }
+
+  const handlePilihFoto = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    // Validasi
+    if (!file.type.startsWith('image/')) {
+      toast.error('File harus berupa gambar')
+      return
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error('Ukuran foto maksimal 2MB')
+      return
+    }
+
+    setFotoFile(file)
+    setFotoPreview(URL.createObjectURL(file))
+  }
+
+  const save = async () => {
+    if (!editId) return
+    setSaving(true)
+    try {
+      let fotoUrl = form.fotoUrl
+
+      // Upload foto jika ada
+      if (fotoFile) {
+        setUploading(true)
+        try {
+          fotoUrl = await uploadFoto(fotoFile)
+        } catch (e: any) {
+          toast.error('Gagal upload foto: ' + (e.message || 'Unknown'))
+          setSaving(false)
+          setUploading(false)
+          return
+        }
+        setUploading(false)
+      }
+
+      await db.updatePegawaiInDB(editId, { ...form, fotoUrl })
+      toast.success('Data diperbarui')
+      setShowEdit(false)
+      await fetchData()
+    } catch(e: any) { toast.error('Gagal: '+(e.message||'Unknown')) }
+    finally { setSaving(false) }
+  }
+
+  const hapus = async () => {
+    if (!del) return
+    try {
+      await db.deletePegawaiFromDB(del.id)
+      toast.success('Pegawai dihapus')
+      setDel(null)
+      await fetchData()
+    } catch(e: any) { toast.error('Gagal: '+(e.message||'Unknown')) }
+  }
+
   return (
-    <div className="space-y-1 rounded-lg border border-border/60 bg-muted/20 p-3">
-      <span className="text-xs font-medium text-muted-foreground">{label}</span>
-      <p className="text-sm font-semibold text-foreground">{value}</p>
+    <div className="space-y-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h2 className="text-xl font-bold">👥 Data Pegawai</h2>
+          <p className="text-sm text-muted-foreground">{currentUser?.role==='pegawai'?'Rekan satu unit kerja • '+filtered.length:'Kelola • '+pegawaiList.length}</p>
+        </div>
+      </div>
+
+      <Card><CardContent className="p-3">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input placeholder="Cari..." value={search} onChange={e=>{setSearch(e.target.value);setPage(1)}} className="pl-10 h-10" />
+        </div>
+      </CardContent></Card>
+
+      <Card>
+        <ScrollArea className="h-[calc(100vh-280px)]">
+          <div className="min-w-[800px]">
+            <div className="flex items-center gap-3 border-b px-4 py-3 text-xs font-semibold text-muted-foreground uppercase">
+              <div className="w-12">#</div><div className="w-40">NIP</div><div className="flex-1">Nama</div><div className="w-28">ASN</div><div className="w-20">Gol</div><div className="w-32">Unit</div><div className="w-20 text-center">Status</div><div className="w-24 text-center">Aksi</div>
+            </div>
+            <div className="divide-y">
+              {paged.length===0 ? (
+                <div className="flex flex-col items-center py-16"><Users className="h-12 w-12 text-muted-foreground/30 mb-3" /><p className="text-sm text-muted-foreground">Tidak ada data</p></div>
+              ) : paged.map(p => (
+                <motion.div key={p.id} initial={{opacity:0}} animate={{opacity:1}} className="flex items-center gap-3 px-4 py-3 hover:bg-muted/40 cursor-pointer" onClick={()=>{setDetail(p);setShowDetail(true)}}>
+                  <div className="w-12">
+                    <Avatar className="h-9 w-9">
+                      <AvatarImage src={p.fotoUrl || ''} alt={p.nama} />
+                      <AvatarFallback className="bg-[#3c6eff]/10 text-xs font-bold text-[#3c6eff]">{getInitials(p.nama)}</AvatarFallback>
+                    </Avatar>
+                  </div>
+                  <div className="w-40"><p className="text-sm font-mono">{p.nip}</p></div>
+                  <div className="flex-1"><p className="text-sm font-semibold truncate">{p.nama}</p></div>
+                  <div className="w-28"><Badge variant="outline" className="text-xs">{labelAsn(p.jenisASN)}</Badge></div>
+                  <div className="w-20 text-sm text-muted-foreground">{p.golongan||'-'}</div>
+                  <div className="w-32 text-sm text-muted-foreground truncate">{p.unitKerja||'-'}</div>
+                  <div className="w-20 text-center"><Badge className={p.status==='Aktif'?'bg-emerald-500':'bg-gray-500'}>{p.status||'Aktif'}</Badge></div>
+                  <div className="w-24 flex justify-center gap-1" onClick={e=>e.stopPropagation()}>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 hover:text-amber-600" onClick={()=>openEdit(p)}><Pencil className="h-4 w-4"/></Button>
+                    {currentUser?.role==='admin' && <Button variant="ghost" size="icon" className="h-8 w-8 hover:text-red-500" onClick={()=>setDel(p)}><Trash2 className="h-4 w-4"/></Button>}
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        </ScrollArea>
+        <div className="border-t px-4 py-2 flex justify-between text-sm text-muted-foreground">
+          <span>{paged.length} dari {filtered.length}</span>
+          <div className="flex gap-2 items-center">
+            <Button variant="outline" size="icon" className="h-8 w-8" disabled={safe<=1} onClick={()=>setPage(p=>Math.max(1,p-1))}><ChevronLeft className="h-4 w-4"/></Button>
+            <span className="text-xs">{safe}/{total}</span>
+            <Button variant="outline" size="icon" className="h-8 w-8" disabled={safe>=total} onClick={()=>setPage(p=>Math.min(total,p+1))}><ChevronRight className="h-4 w-4"/></Button>
+          </div>
+        </div>
+      </Card>
+
+      {/* MODAL EDIT DENGAN FOTO */}
+      <Dialog open={showEdit} onOpenChange={setShowEdit}>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader><DialogTitle>Edit Pegawai</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            {/* Foto Profil */}
+            <div className="flex flex-col items-center gap-2">
+              <Avatar className="h-24 w-24">
+                <AvatarImage src={fotoPreview || form.fotoUrl || ''} alt="Foto" />
+                <AvatarFallback className="bg-[#3c6eff]/10 text-2xl font-bold text-[#3c6eff]">
+                  {getInitials(form.nama || '')}
+                </AvatarFallback>
+              </Avatar>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handlePilihFoto}
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploading}
+                className="gap-1"
+              >
+                <Camera className="h-4 w-4" />
+                {fotoFile ? 'Ganti Foto' : form.fotoUrl ? 'Ganti Foto' : 'Upload Foto'}
+              </Button>
+              {fotoFile && (
+                <p className="text-xs text-muted-foreground">{fotoFile.name}</p>
+              )}
+            </div>
+
+            <div><Label>NIP</Label><Input value={form.nip||''} disabled className="bg-muted"/></div>
+            <div><Label>Nama *</Label><Input value={form.nama||''} onChange={e=>setForm({...form,nama:e.target.value})}/></div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label>Jenis ASN</Label>
+                <Select value={form.jenisASN||'PNS'} onValueChange={v=>setForm({...form,jenisASN:v,golongan:''})}>
+                  <SelectTrigger><SelectValue/></SelectTrigger>
+                  <SelectContent>{JENIS_ASN_OPTIONS.map(o=><SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>Golongan</Label>
+                <Select value={form.golongan||''} onValueChange={v=>setForm({...form,golongan:v})}>
+                  <SelectTrigger><SelectValue placeholder="Pilih"/></SelectTrigger>
+                  <SelectContent>
+                    {(form.jenisASN==='PNS'||form.jenisASN==='OTHER'?GOLONGAN_PNS:GOLONGAN_PPPK).map(g=><SelectItem key={g} value={g}>{g}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div><Label>Jabatan</Label><Input value={form.jabatan||''} onChange={e=>setForm({...form,jabatan:e.target.value})}/></div>
+            <div className="grid grid-cols-2 gap-3">
+              <div><Label>Kecamatan</Label><Input value={form.kecamatan||''} onChange={e=>setForm({...form,kecamatan:e.target.value})}/></div>
+              <div><Label>Unit Kerja</Label><Input value={form.unitKerja||''} onChange={e=>setForm({...form,unitKerja:e.target.value})}/></div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div><Label>Email</Label><Input value={form.email||''} onChange={e=>setForm({...form,email:e.target.value})}/></div>
+              <div><Label>No HP</Label><Input value={form.hp||''} onChange={e=>setForm({...form,hp:e.target.value})}/></div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div><Label>Tgl Lahir</Label><Input type="date" value={form.tanggalLahir||''} onChange={e=>setForm({...form,tanggalLahir:e.target.value})}/></div>
+              <div><Label>Tempat Lahir</Label><Input value={form.tempatLahir||''} onChange={e=>setForm({...form,tempatLahir:e.target.value})}/></div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label>Jenis Kelamin</Label>
+                <Select value={form.jenisKelamin||''} onValueChange={v=>setForm({...form,jenisKelamin:v})}>
+                  <SelectTrigger><SelectValue placeholder="Pilih"/></SelectTrigger>
+                  <SelectContent><SelectItem value="Laki-laki">Laki-laki</SelectItem><SelectItem value="Perempuan">Perempuan</SelectItem></SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>Agama</Label>
+                <Select value={form.agama||''} onValueChange={v=>setForm({...form,agama:v})}>
+                  <SelectTrigger><SelectValue placeholder="Pilih"/></SelectTrigger>
+                  <SelectContent>
+                    {['Islam','Kristen','Katolik','Hindu','Buddha','Konghucu','Lainnya'].map(a=><SelectItem key={a} value={a}>{a}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div><Label>Alamat</Label><Input value={form.alamat||''} onChange={e=>setForm({...form,alamat:e.target.value})}/></div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label>Pendidikan</Label>
+                <Select value={form.pendidikanTerakhir||''} onValueChange={v=>setForm({...form,pendidikanTerakhir:v})}>
+                  <SelectTrigger><SelectValue placeholder="Pilih"/></SelectTrigger>
+                  <SelectContent>{['SD','SMP','SMA','D1','D2','D3','S1','S2','S3'].map(p=><SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>Status</Label>
+                <Select value={form.status||'Aktif'} onValueChange={v=>setForm({...form,status:v as any})}>
+                  <SelectTrigger><SelectValue/></SelectTrigger>
+                  <SelectContent><SelectItem value="Aktif">Aktif</SelectItem><SelectItem value="Nonaktif">Nonaktif</SelectItem></SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={()=>setShowEdit(false)}>Batal</Button>
+            <Button onClick={save} disabled={saving || uploading} className="gap-2 bg-[#3c6eff] hover:bg-[#2b54f5] text-white">
+              {saving ? 'Menyimpan...' : <><Save className="h-4 w-4"/>Simpan</>}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* MODAL DETAIL */}
+      <Dialog open={showDetail} onOpenChange={setShowDetail}>
+        <DialogContent className="max-w-md">
+          <DialogHeader><DialogTitle>Detail Pegawai</DialogTitle></DialogHeader>
+          {detail && (
+            <div className="space-y-2 text-sm">
+              <div className="flex items-center gap-3">
+                <Avatar className="h-14 w-14">
+                  <AvatarImage src={detail.fotoUrl || ''} alt={detail.nama} />
+                  <AvatarFallback className="bg-[#3c6eff]/10 text-lg font-bold text-[#3c6eff]">{getInitials(detail.nama)}</AvatarFallback>
+                </Avatar>
+                <div><p className="font-bold text-lg">{detail.nama}</p><p className="text-muted-foreground font-mono">{detail.nip}</p></div>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div><p className="text-xs text-muted-foreground">Jenis ASN</p><p>{labelAsn(detail.jenisASN)}</p></div>
+                <div><p className="text-xs text-muted-foreground">Golongan</p><p>{detail.golongan||'-'}</p></div>
+                <div><p className="text-xs text-muted-foreground">Jabatan</p><p>{detail.jabatan||'-'}</p></div>
+                <div><p className="text-xs text-muted-foreground">Unit Kerja</p><p>{detail.unitKerja||'-'}</p></div>
+                <div><p className="text-xs text-muted-foreground">Email</p><p>{detail.email||'-'}</p></div>
+                <div><p className="text-xs text-muted-foreground">HP</p><p>{detail.hp||'-'}</p></div>
+                <div><p className="text-xs text-muted-foreground">Tgl Lahir</p><p>{formatDate(detail.tanggalLahir)}</p></div>
+                <div><p className="text-xs text-muted-foreground">Status</p><Badge className={detail.status==='Aktif'?'bg-emerald-500':'bg-gray-500'}>{detail.status||'Aktif'}</Badge></div>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={()=>setShowDetail(false)}>Tutup</Button>
+            <Button onClick={()=>{setShowDetail(false);if(detail)openEdit(detail)}} className="bg-amber-500 hover:bg-amber-600 text-white"><Pencil className="h-4 w-4 mr-1"/>Edit</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* KONFIRMASI HAPUS */}
+      <Dialog open={!!del} onOpenChange={()=>setDel(null)}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Hapus Pegawai?</DialogTitle></DialogHeader>
+          <p className="text-sm text-muted-foreground">Yakin hapus <b>{del?.nama}</b>?</p>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={()=>setDel(null)}>Batal</Button>
+            <Button variant="destructive" onClick={hapus}>Hapus</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
-  );
+  )
 }

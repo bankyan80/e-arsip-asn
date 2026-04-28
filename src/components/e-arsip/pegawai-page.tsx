@@ -1,940 +1,170 @@
-'use client';
+'use client'
 
-import { useState, useMemo, useRef, useCallback } from 'react';
-import { toast } from 'sonner';
-import {
-  Plus,
-  Download,
-  Upload,
-  Eye,
-  Pencil,
-  Trash2,
-  Search,
-  Users,
-  X,
-  FileSpreadsheet,
-  ChevronLeft,
-  ChevronRight,
-  AlertCircle,
-  CheckCircle2,
-} from 'lucide-react';
+import { useState, useMemo, useEffect, useRef } from 'react'
+import { motion } from 'framer-motion'
+import { Search, Trash2, ChevronLeft, ChevronRight, Pencil, Save, Users, Camera } from 'lucide-react'
+import { Card, CardContent } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { Label } from '@/components/ui/label'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { toast } from 'sonner'
+import { useArsipStore } from '@/lib/store'
+import { supabase } from '@/lib/supabase'
+import * as db from '@/lib/db'
+import type { Pegawai } from '@/lib/types'
 
-import { Card, CardContent } from '@/components/ui/card';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+const JENIS_ASN_OPTIONS = [
+  { value: 'PNS', label: 'PNS' },
+  { value: 'PPPK_PENUH', label: 'PPPK Penuh' },
+  { value: 'PPPK_PARUH', label: 'PPPK Paruh Waktu' },
+  { value: 'OTHER', label: 'Lainnya' },
+]
+const GOLONGAN_PNS = ['I/a','I/b','I/c','I/d','II/a','II/b','II/c','II/d','III/a','III/b','III/c','III/d','IV/a','IV/b','IV/c','IV/d','IV/e','IV/j']
+const GOLONGAN_PPPK = Array.from({ length: 17 }, (_, i) => String(i + 1))
+const PAGE_SIZE = 10
 
-import { useArsipStore } from '@/lib/store';
-import {
-  JENIS_ASN_OPTIONS,
-  ALL_JENIS_ASN,
-  JENIS_ASN_BADGE,
-} from '@/lib/constants';
-import {
-  formatDate,
-  getStatusBadgeClass,
-  groupDocsByType,
-  downloadTemplateXLS,
-  parseXLSTemplate,
-  isValidDateString,
-} from '@/lib/utils-arsip';
-import type { Pegawai } from '@/lib/types';
-
-import PegawaiModal from './pegawai-modal';
-
-// ===== Constants =====
-
-const ITEMS_PER_PAGE = 10;
-
-// ===== Upload Result Type =====
-
-interface ImportResult {
-  success: number;
-  errors: number;
-  messages: string[];
-}
-
-// ===== Main Pegawai Page =====
+function getInitials(name: string) { return name.split(' ').map(w => w[0]).filter(Boolean).slice(0,2).join('').toUpperCase() }
+function formatDate(d: string) { if (!d) return '-'; try { return new Date(d).toLocaleDateString('id-ID',{day:'numeric',month:'short',year:'numeric'}) } catch { return d } }
 
 export default function PegawaiPage() {
-  const {
-    pegawaiList,
-    dokumenList,
-    currentUser,
-    addPegawai,
-    deletePegawai,
-  } = useArsipStore();
+  const { pegawaiList, fetchData, currentUser } = useArsipStore()
+  const [search, setSearch] = useState('')
+  const [page, setPage] = useState(1)
+  const [detail, setDetail] = useState<Pegawai|null>(null)
+  const [showDetail, setShowDetail] = useState(false)
+  const [showEdit, setShowEdit] = useState(false)
+  const [editId, setEditId] = useState<number|null>(null)
+  const [form, setForm] = useState<Partial<Pegawai>>({})
+  const [saving, setSaving] = useState(false)
+  const [del, setDel] = useState<Pegawai|null>(null)
+  const [fotoFile, setFotoFile] = useState<File|null>(null)
+  const [fotoPreview, setFotoPreview] = useState('')
+  const [uploading, setUploading] = useState(false)
+  const fileRef = useRef<HTMLInputElement>(null)
 
-  // Modal states
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [modalKey, setModalKey] = useState(0);
-  const [editingPegawai, setEditingPegawai] = useState<Pegawai | null>(null);
-  const [showDetailModal, setShowDetailModal] = useState(false);
-  const [detailPegawai, setDetailPegawai] = useState<Pegawai | null>(null);
-  const [showUploadModal, setShowUploadModal] = useState(false);
+  useEffect(() => { fetchData() }, [fetchData])
 
-  // Pagination
-  const [currentPage, setCurrentPage] = useState(1);
+  const filtered = useMemo(() => {
+    let r = pegawaiList
+    if (currentUser?.role === 'pegawai') { const me = pegawaiList.find(p => p.nip === currentUser.nip); if (me?.unitKerja) r = r.filter(p => p.unitKerja === me.unitKerja); else r = r.filter(p => p.nip === currentUser.nip) }
+    if (search.trim()) { const q = search.toLowerCase(); r = r.filter(p => p.nip.toLowerCase().includes(q) || p.nama.toLowerCase().includes(q) || (p.jenisASN||'').toLowerCase().includes(q) || (p.jabatan||'').toLowerCase().includes(q) || (p.unitKerja||'').toLowerCase().includes(q)) }
+    return r
+  }, [pegawaiList, search, currentUser])
 
-  // Filter states
-  const [search, setSearch] = useState('');
-  const [filterJenisASN, setFilterJenisASN] = useState('');
-  const [filterStatus, setFilterStatus] = useState('');
-  const [filterKecamatan, setFilterKecamatan] = useState('');
-  const [filterUnitKerja, setFilterUnitKerja] = useState('');
+  const total = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
+  const safe = Math.min(page, total)
+  const paged = filtered.slice((safe-1)*PAGE_SIZE, safe*PAGE_SIZE)
+  const labelAsn = (v: string) => JENIS_ASN_OPTIONS.find(o=>o.value===v)?.label || v || '-'
 
-  // Upload state
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [importResult, setImportResult] = useState<ImportResult | null>(null);
+  const openEdit = (p: Pegawai) => { setEditId(p.id); setForm({ nip:p.nip, nama:p.nama, jenisASN:p.jenisASN, jabatan:p.jabatan, golongan:p.golongan, kecamatan:p.kecamatan, unitKerja:p.unitKerja, email:p.email, hp:p.hp, tanggalLahir:p.tanggalLahir, tempatLahir:p.tempatLahir, jenisKelamin:p.jenisKelamin, agama:p.agama, alamat:p.alamat, pendidikanTerakhir:p.pendidikanTerakhir, status:p.status }); setFotoFile(null); setFotoPreview(''); setShowEdit(true) }
 
-  // ===== Role check =====
-  const isAdmin = currentUser?.role === 'admin';
-  const isPegawaiRole = currentUser?.role === 'pegawai';
-  const pegawaiId = currentUser?.pegawaiId;
+  const uploadFoto = async (file: File): Promise<string> => {
+    const ext = file.name.split('.').pop()
+    const fileName = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
+    const { error } = await supabase.storage.from('foto-profil').upload(`profil/${fileName}`, file, { cacheControl: '3600', upsert: true })
+    if (error) throw error
+    const { data } = supabase.storage.from('foto-profil').getPublicUrl(`profil/${fileName}`)
+    return data.publicUrl
+  }
 
-  // ===== Get current pegawai's unit kerja =====
-  const myPegawai = useMemo(() => {
-    if (!isPegawaiRole || !pegawaiId) return null;
-    return pegawaiList.find((p) => p.id === pegawaiId) || null;
-  }, [isPegawaiRole, pegawaiId, pegawaiList]);
+  const handlePilihFoto = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (!file.type.startsWith('image/')) { toast.error('File harus gambar'); return }
+    if (file.size > 2*1024*1024) { toast.error('Maksimal 2MB'); return }
+    setFotoFile(file); setFotoPreview(URL.createObjectURL(file))
+  }
 
-  const myUnitKerja = myPegawai?.unitKerja || '';
+  const save = async () => {
+    if (!editId) return; setSaving(true)
+    try {
+      let fotoUrl = form.fotoUrl
+      if (fotoFile) { setUploading(true); try { fotoUrl = await uploadFoto(fotoFile) } catch(e:any) { toast.error('Upload gagal: '+(e.message||'Unknown')); setSaving(false); setUploading(false); return }; setUploading(false) }
+      await db.updatePegawaiInDB(editId, { ...form, fotoUrl })
+      toast.success('Data diperbarui'); setShowEdit(false); await fetchData()
+    } catch(e:any) { toast.error('Gagal: '+(e.message||'Unknown')) }
+    finally { setSaving(false) }
+  }
 
-  // ===== Dynamic filter options dari data pegawai yang terdaftar =====
-  const dynamicKecamatanOptions = useMemo(() => {
-    const set = new Set<string>();
-    pegawaiList.forEach((p) => { if (p.kecamatan) set.add(p.kecamatan); });
-    return Array.from(set).sort();
-  }, [pegawaiList]);
-
-  const dynamicUnitKerjaOptions = useMemo(() => {
-    const set = new Set<string>();
-    pegawaiList.forEach((p) => { if (p.unitKerja) set.add(p.unitKerja); });
-    return Array.from(set).sort();
-  }, [pegawaiList]);
-
-  // ===== Filtered & paginated data =====
-  const filteredData = useMemo(() => {
-    let data = [...pegawaiList];
-
-    // Jika pegawai, filter hanya dari unit kerja yang sama
-    if (isPegawaiRole && myUnitKerja) {
-      data = data.filter((p) => p.unitKerja === myUnitKerja);
-    }
-
-    // Search filter (nama or NIP)
-    if (search.trim()) {
-      const q = search.toLowerCase();
-      data = data.filter(
-        (p) =>
-          p.nama.toLowerCase().includes(q) || p.nip.toLowerCase().includes(q)
-      );
-    }
-
-    // Jenis ASN filter
-    if (filterJenisASN) {
-      data = data.filter((p) => p.jenisASN === filterJenisASN);
-    }
-
-    // Status filter
-    if (filterStatus) {
-      data = data.filter((p) => p.status === filterStatus);
-    }
-
-    // Kecamatan filter (hidden for pegawai)
-    if (!isPegawaiRole && filterKecamatan) {
-      data = data.filter((p) => p.kecamatan === filterKecamatan);
-    }
-
-    // Unit Kerja filter (hidden for pegawai since already filtered)
-    if (!isPegawaiRole && filterUnitKerja) {
-      data = data.filter((p) => p.unitKerja === filterUnitKerja);
-    }
-
-    return data;
-  }, [pegawaiList, search, filterJenisASN, filterStatus, filterKecamatan, filterUnitKerja, isPegawaiRole, myUnitKerja]);
-
-  const totalPages = Math.max(1, Math.ceil(filteredData.length / ITEMS_PER_PAGE));
-  const paginatedData = useMemo(() => {
-    const start = (currentPage - 1) * ITEMS_PER_PAGE;
-    return filteredData.slice(start, start + ITEMS_PER_PAGE);
-  }, [filteredData, currentPage]);
-
-  // Reset page when filters change
-  const updateSearch = useCallback((v: string) => { setSearch(v); setCurrentPage(1); }, []);
-  const updateJenisASN = useCallback((v: string) => { setFilterJenisASN(v); setCurrentPage(1); }, []);
-  const updateStatus = useCallback((v: string) => { setFilterStatus(v); setCurrentPage(1); }, []);
-  const updateKecamatan = useCallback((v: string) => { setFilterKecamatan(v); setCurrentPage(1); }, []);
-  const updateUnitKerja = useCallback((v: string) => { setFilterUnitKerja(v); setCurrentPage(1); }, []);
-
-  // ===== Pegawai detail documents =====
-  const detailDocs = useMemo(() => {
-    if (!detailPegawai) return [];
-    return dokumenList.filter((d) => d.pegawaiId === detailPegawai.id);
-  }, [detailPegawai, dokumenList]);
-
-  const groupedDocs = useMemo(() => {
-    return groupDocsByType(detailDocs);
-  }, [detailDocs]);
-
-  // ===== Handlers =====
-
-  const handleView = (pegawai: Pegawai) => {
-    setDetailPegawai(pegawai);
-    setShowDetailModal(true);
-  };
-
-  const handleEdit = (pegawai: Pegawai) => {
-    setEditingPegawai(pegawai);
-    setModalKey((k) => k + 1);
-    setShowAddModal(true);
-  };
-
-  const handleDelete = (pegawai: Pegawai) => {
-    if (!confirm(`Yakin ingin menghapus data pegawai "${pegawai.nama}"?`)) return;
-    deletePegawai(pegawai.id);
-    toast.success(`Data pegawai "${pegawai.nama}" berhasil dihapus`);
-  };
-
-  const handleOpenAdd = () => {
-    setEditingPegawai(null);
-    setModalKey((k) => k + 1);
-    setShowAddModal(true);
-  };
-
-  const handleCloseAdd = () => {
-    setShowAddModal(false);
-    setEditingPegawai(null);
-  };
-
-  // ===== Template Download =====
-  const handleDownloadTemplate = () => {
-    downloadTemplateXLS();
-    toast.success('Template berhasil diunduh');
-  };
-
-  // ===== Template Upload =====
-  const handleOpenUpload = () => {
-    setImportResult(null);
-    setShowUploadModal(true);
-  };
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      const buffer = ev.target?.result as ArrayBuffer;
-      if (!buffer) {
-        toast.error('Gagal membaca file Excel');
-        return;
-      }
-
-      const rows = parseXLSTemplate(buffer);
-      if (rows.length === 0) {
-        toast.error('File Excel kosong atau format tidak valid');
-        return;
-      }
-
-      let successCount = 0;
-      let errorCount = 0;
-      const messages: string[] = [];
-
-      rows.forEach((row, idx) => {
-        const rowNum = idx + 2; // 1-indexed, skip header
-        const nip = (row['NIP'] || '').trim();
-        const nama = (row['Nama'] || '').trim();
-        const jenisASN = (row['Jenis ASN'] || '').trim();
-        const jabatan = (row['Jabatan'] || '').trim();
-        const golongan = (row['Golongan'] || '').trim();
-        const kecamatan = (row['Kecamatan'] || '').trim();
-        const unitKerja = (row['Unit Kerja'] || '').trim();
-        const email = (row['Email'] || '').trim();
-        const hp = (row['No HP'] || '').trim();
-        const tanggalLahir = (row['Tanggal Lahir'] || '').trim();
-        const status = (row['Status'] || 'Aktif').trim() as 'Aktif' | 'Nonaktif';
-
-        // Validation
-        if (!nip) {
-          errorCount++;
-          messages.push(`Baris ${rowNum}: NIP wajib diisi`);
-          return;
-        }
-        if (!nama) {
-          errorCount++;
-          messages.push(`Baris ${rowNum}: Nama wajib diisi`);
-          return;
-        }
-        if (jenisASN && !ALL_JENIS_ASN.includes(jenisASN)) {
-          errorCount++;
-          messages.push(`Baris ${rowNum}: Jenis ASN "${jenisASN}" tidak valid`);
-          return;
-        }
-
-        // Validasi format tanggal lahir
-        if (tanggalLahir && !isValidDateString(tanggalLahir)) {
-          errorCount++;
-          messages.push(`Baris ${rowNum}: Format Tanggal Lahir "${tanggalLahir}" tidak valid (gunakan yyyy-mm-dd)`);
-          return;
-        }
-
-        // Check duplicate NIP
-        if (pegawaiList.some((p) => p.nip === nip)) {
-          errorCount++;
-          messages.push(`Baris ${rowNum}: NIP "${nip}" sudah terdaftar`);
-          return;
-        }
-
-        // Add pegawai
-        addPegawai({
-          id: Date.now() + idx,
-          nip,
-          nama,
-          jenisASN: jenisASN || '',
-          jabatan,
-          golongan,
-          kecamatan,
-          unitKerja,
-          email,
-          hp,
-          tanggalLahir,
-          status,
-        });
-        successCount++;
-      });
-
-      setImportResult({ success: successCount, errors: errorCount, messages });
-      if (errorCount === 0) {
-        toast.success(`${successCount} pegawai berhasil diimpor`);
-      } else {
-        toast.warning(`${successCount} berhasil, ${errorCount} gagal diimpor`);
-      }
-    };
-
-    reader.onerror = () => {
-      toast.error('Gagal membaca file Excel');
-    };
-
-    reader.readAsArrayBuffer(file);
-
-    // Reset input
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
-  };
-
-  // ===== Render =====
+  const hapus = async () => { if (!del) return; try { await db.deletePegawaiFromDB(del.id); toast.success('Dihapus'); setDel(null); await fetchData() } catch(e:any) { toast.error('Gagal: '+(e.message||'Unknown')) } }
 
   return (
-    <div className="space-y-6">
-      {/* ===== Header ===== */}
-      <section aria-label="Header Data Pegawai">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h2 className="text-xl font-bold tracking-tight text-foreground">
-              Data Pegawai ASN
-            </h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              {isPegawaiRole && myUnitKerja
-                ? `Data pegawai di unit kerja: ${myUnitKerja}`
-                : 'Kelola data pegawai Aparatur Sipil Negara di lingkungan Dinas Pendidikan Kabupaten Cirebon'}
-            </p>
+    <div className="space-y-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><div><h2 className="text-xl font-bold">👥 Data Pegawai</h2><p className="text-sm text-muted-foreground">{currentUser?.role==='pegawai'?'Rekan satu unit • '+filtered.length:'Kelola • '+pegawaiList.length}</p></div></div>
+      <Card><CardContent className="p-3"><div className="relative"><Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" /><Input placeholder="Cari..." value={search} onChange={e=>{setSearch(e.target.value);setPage(1)}} className="pl-10 h-10" /></div></CardContent></Card>
+      <Card>
+        <ScrollArea className="h-[calc(100vh-280px)]"><div className="min-w-[800px]">
+          <div className="flex items-center gap-3 border-b px-4 py-3 text-xs font-semibold text-muted-foreground uppercase"><div className="w-12">#</div><div className="w-40">NIP</div><div className="flex-1">Nama</div><div className="w-28">ASN</div><div className="w-20">Gol</div><div className="w-32">Unit</div><div className="w-20 text-center">Status</div><div className="w-24 text-center">Aksi</div></div>
+          <div className="divide-y">
+            {paged.length===0 ? <div className="flex flex-col items-center py-16"><Users className="h-12 w-12 text-muted-foreground/30 mb-3" /><p className="text-sm text-muted-foreground">Tidak ada data</p></div> :
+            paged.map(p => (
+              <motion.div key={p.id} initial={{opacity:0}} animate={{opacity:1}} className="flex items-center gap-3 px-4 py-3 hover:bg-muted/40 cursor-pointer" onClick={()=>{setDetail(p);setShowDetail(true)}}>
+                <div className="w-12"><Avatar className="h-9 w-9"><AvatarImage src={p.fotoUrl||''} /><AvatarFallback className="bg-[#3c6eff]/10 text-xs font-bold text-[#3c6eff]">{getInitials(p.nama)}</AvatarFallback></Avatar></div>
+                <div className="w-40"><p className="text-sm font-mono">{p.nip}</p></div>
+                <div className="flex-1"><p className="text-sm font-semibold truncate">{p.nama}</p></div>
+                <div className="w-28"><Badge variant="outline" className="text-xs">{labelAsn(p.jenisASN)}</Badge></div>
+                <div className="w-20 text-sm text-muted-foreground">{p.golongan||'-'}</div>
+                <div className="w-32 text-sm text-muted-foreground truncate">{p.unitKerja||'-'}</div>
+                <div className="w-20 text-center"><Badge className={p.status==='Aktif'?'bg-emerald-500':'bg-gray-500'}>{p.status||'Aktif'}</Badge></div>
+                <div className="w-24 flex justify-center gap-1" onClick={e=>e.stopPropagation()}>
+                  <Button variant="ghost" size="icon" className="h-8 w-8 hover:text-amber-600" onClick={()=>openEdit(p)}><Pencil className="h-4 w-4"/></Button>
+                  {currentUser?.role==='admin' && <Button variant="ghost" size="icon" className="h-8 w-8 hover:text-red-500" onClick={()=>setDel(p)}><Trash2 className="h-4 w-4"/></Button>}
+                </div>
+              </motion.div>
+            ))}
           </div>
-          {isAdmin && (
-            <div className="flex flex-wrap items-center gap-2">
-              <Button
-                onClick={handleOpenAdd}
-                className="bg-[#3c6eff] hover:bg-[#3c6eff]/90 text-white gap-2"
-              >
-                <Plus className="h-4 w-4" />
-                Tambah Pegawai
-              </Button>
-              <Button
-                variant="outline"
-                onClick={handleDownloadTemplate}
-                className="border-green-300 text-green-700 hover:bg-green-50 dark:border-green-700 dark:text-green-400 dark:hover:bg-green-950/30 gap-2"
-              >
-                <Download className="h-4 w-4" />
-                Unduh Template
-              </Button>
-              <Button
-                variant="outline"
-                onClick={handleOpenUpload}
-                className="border-amber-300 text-amber-700 hover:bg-amber-50 dark:border-amber-700 dark:text-amber-400 dark:hover:bg-amber-950/30 gap-2"
-              >
-                <Upload className="h-4 w-4" />
-                Upload Template
-              </Button>
-            </div>
-          )}
-        </div>
-      </section>
-
-      {/* ===== Filter Bar ===== */}
-      <Card className="border-border/60 bg-white dark:bg-zinc-950">
-        <CardContent className="p-4">
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
-            {/* Search */}
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground pointer-events-none" />
-              <Input
-                placeholder="Cari nama atau NIP..."
-                value={search}
-                onChange={(e) => updateSearch(e.target.value)}
-                className="pl-9"
-              />
-            </div>
-
-            {/* Filter Jenis ASN */}
-            <select
-              value={filterJenisASN}
-              onChange={(e) => updateJenisASN(e.target.value)}
-              className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              <option value="">Semua Jenis ASN</option>
-              {JENIS_ASN_OPTIONS.map((group) => (
-                <optgroup key={group.group} label={group.group}>
-                  {group.items.map((item) => (
-                    <option key={item} value={item}>
-                      {item}
-                    </option>
-                  ))}
-                </optgroup>
-              ))}
-            </select>
-
-            {/* Filter Status */}
-            <select
-              value={filterStatus}
-              onChange={(e) => updateStatus(e.target.value)}
-              className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              <option value="">Semua Status</option>
-              <option value="Aktif">Aktif</option>
-              <option value="Nonaktif">Nonaktif</option>
-            </select>
-
-            {/* Filter Kecamatan (hidden for pegawai) */}
-            {!isPegawaiRole && (
-            <select
-              value={filterKecamatan}
-              onChange={(e) => updateKecamatan(e.target.value)}
-              className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              <option value="">Semua Kecamatan</option>
-              {dynamicKecamatanOptions.map((k) => (
-                <option key={k} value={k}>
-                  {k}
-                </option>
-              ))}
-            </select>
-            )}
-
-            {/* Filter Unit Kerja (hidden for pegawai) */}
-            {!isPegawaiRole && (
-            <select
-              value={filterUnitKerja}
-              onChange={(e) => updateUnitKerja(e.target.value)}
-              className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              <option value="">Semua Unit Kerja</option>
-              {dynamicUnitKerjaOptions.map((unit) => (
-                <option key={unit} value={unit}>
-                  {unit}
-                </option>
-              ))}
-            </select>
-            )}
-          </div>
-        </CardContent>
+        </div></ScrollArea>
+        <div className="border-t px-4 py-2 flex justify-between text-sm text-muted-foreground"><span>{paged.length} dari {filtered.length}</span><div className="flex gap-2 items-center"><Button variant="outline" size="icon" className="h-8 w-8" disabled={safe<=1} onClick={()=>setPage(p=>Math.max(1,p-1))}><ChevronLeft className="h-4 w-4"/></Button><span className="text-xs">{safe}/{total}</span><Button variant="outline" size="icon" className="h-8 w-8" disabled={safe>=total} onClick={()=>setPage(p=>Math.min(total,p+1))}><ChevronRight className="h-4 w-4"/></Button></div></div>
       </Card>
 
-      {/* ===== Pegawai Table ===== */}
-      <Card className="border-border/60 bg-white dark:bg-zinc-950">
-        <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow className="border-border/50 hover:bg-transparent">
-                  <TableHead className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground w-10">
-                    No
-                  </TableHead>
-                  <TableHead className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                    NIP/NIK
-                  </TableHead>
-                  <TableHead className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                    Nama
-                  </TableHead>
-                  <TableHead className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                    Jenis ASN
-                  </TableHead>
-                  <TableHead className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground hidden lg:table-cell">
-                    Jabatan
-                  </TableHead>
-                  <TableHead className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground hidden md:table-cell">
-                    Golongan
-                  </TableHead>
-                  <TableHead className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground hidden xl:table-cell">
-                    Kecamatan
-                  </TableHead>
-                  <TableHead className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground hidden xl:table-cell">
-                    Unit Kerja
-                  </TableHead>
-                  <TableHead className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                    Status
-                  </TableHead>
-                  <TableHead className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground text-right">
-                    Aksi
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {paginatedData.length === 0 ? (
-                  <TableRow>
-                    <TableCell
-                      colSpan={10}
-                      className="px-4 py-12 text-center"
-                    >
-                      <div className="flex flex-col items-center gap-2">
-                        <Users className="h-10 w-10 text-muted-foreground/40" />
-                        <p className="text-sm font-medium text-muted-foreground">
-                          Tidak ada data pegawai ditemukan
-                        </p>
-                        <p className="text-xs text-muted-foreground/70">
-                          Coba ubah filter pencarian Anda
-                        </p>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  paginatedData.map((pg, idx) => {
-                    const rowNum = (currentPage - 1) * ITEMS_PER_PAGE + idx + 1;
-                    const badgeClass =
-                      JENIS_ASN_BADGE[pg.jenisASN] ??
-                      'bg-muted text-muted-foreground';
-
-                    return (
-                      <TableRow
-                        key={pg.id}
-                        className="border-border/40 transition-colors hover:bg-muted/40"
-                      >
-                        <TableCell className="px-4 py-3 text-sm text-muted-foreground">
-                          {rowNum}
-                        </TableCell>
-                        <TableCell className="px-4 py-3 text-sm font-mono text-foreground whitespace-nowrap">
-                          {pg.nip}
-                        </TableCell>
-                        <TableCell className="px-4 py-3">
-                          <span className="text-sm font-medium text-foreground">
-                            {pg.nama}
-                          </span>
-                        </TableCell>
-                        <TableCell className="px-4 py-3">
-                          <Badge
-                            variant="secondary"
-                            className={`text-[11px] font-medium px-2 py-0.5 ${badgeClass}`}
-                          >
-                            {pg.jenisASN}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="px-4 py-3 text-sm text-foreground hidden lg:table-cell">
-                          {pg.jabatan || '-'}
-                        </TableCell>
-                        <TableCell className="px-4 py-3 text-sm text-foreground hidden md:table-cell">
-                          {pg.golongan || '-'}
-                        </TableCell>
-                        <TableCell className="px-4 py-3 text-sm text-muted-foreground hidden xl:table-cell">
-                          {pg.kecamatan || '-'}
-                        </TableCell>
-                        <TableCell className="px-4 py-3 text-sm text-muted-foreground hidden xl:table-cell">
-                          {pg.unitKerja || '-'}
-                        </TableCell>
-                        <TableCell className="px-4 py-3">
-                          <Badge
-                            variant="secondary"
-                            className={`text-[11px] font-semibold px-2 py-0.5 ${
-                              pg.status === 'Aktif'
-                                ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'
-                                : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'
-                            }`}
-                          >
-                            {pg.status}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="px-4 py-3 text-right">
-                            <div className="flex items-center justify-end gap-1">
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8 text-muted-foreground hover:text-[#3c6eff] hover:bg-[#3c6eff]/10"
-                                onClick={() => handleView(pg)}
-                                aria-label={`Lihat detail ${pg.nama}`}
-                              >
-                                <Eye className="h-4 w-4" />
-                              </Button>
-                              {isAdmin && (
-                                <>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-8 w-8 text-muted-foreground hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/30"
-                                    onClick={() => handleEdit(pg)}
-                                    aria-label={`Edit ${pg.nama}`}
-                                  >
-                                    <Pencil className="h-4 w-4" />
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-8 w-8 text-muted-foreground hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30"
-                                    onClick={() => handleDelete(pg)}
-                                    aria-label={`Hapus ${pg.nama}`}
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
-                                </>
-                              )}
-                            </div>
-                          </TableCell>
-                      </TableRow>
-                    );
-                  })
-                )}
-              </TableBody>
-            </Table>
+      {/* MODAL EDIT */}
+      <Dialog open={showEdit} onOpenChange={setShowEdit}>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader><DialogTitle>Edit Pegawai</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <div className="flex flex-col items-center gap-2">
+              <Avatar className="h-24 w-24"><AvatarImage src={fotoPreview || form.fotoUrl || ''} /><AvatarFallback className="bg-[#3c6eff]/10 text-2xl font-bold text-[#3c6eff]">{getInitials(form.nama||'')}</AvatarFallback></Avatar>
+              <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handlePilihFoto} />
+              <Button type="button" variant="outline" size="sm" onClick={()=>fileRef.current?.click()} disabled={uploading} className="gap-1"><Camera className="h-4 w-4" />{fotoFile || form.fotoUrl ? 'Ganti Foto' : 'Upload Foto'}</Button>
+            </div>
+            <div><Label>NIP</Label><Input value={form.nip||''} disabled className="bg-muted"/></div>
+            <div><Label>Nama *</Label><Input value={form.nama||''} onChange={e=>setForm({...form,nama:e.target.value})}/></div>
+            <div className="grid grid-cols-2 gap-3">
+              <div><Label>Jenis ASN</Label><Select value={form.jenisASN||'PNS'} onValueChange={v=>setForm({...form,jenisASN:v,golongan:''})}><SelectTrigger><SelectValue/></SelectTrigger><SelectContent>{JENIS_ASN_OPTIONS.map(o=><SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent></Select></div>
+              <div><Label>Golongan</Label><Select value={form.golongan||''} onValueChange={v=>setForm({...form,golongan:v})}><SelectTrigger><SelectValue placeholder="Pilih"/></SelectTrigger><SelectContent>{(form.jenisASN==='PNS'||form.jenisASN==='OTHER'?GOLONGAN_PNS:GOLONGAN_PPPK).map(g=><SelectItem key={g} value={g}>{g}</SelectItem>)}</SelectContent></Select></div>
+            </div>
+            <div><Label>Jabatan</Label><Input value={form.jabatan||''} onChange={e=>setForm({...form,jabatan:e.target.value})}/></div>
+            <div className="grid grid-cols-2 gap-3"><div><Label>Kecamatan</Label><Input value={form.kecamatan||''} onChange={e=>setForm({...form,kecamatan:e.target.value})}/></div><div><Label>Unit Kerja</Label><Input value={form.unitKerja||''} onChange={e=>setForm({...form,unitKerja:e.target.value})}/></div></div>
+            <div className="grid grid-cols-2 gap-3"><div><Label>Email</Label><Input value={form.email||''} onChange={e=>setForm({...form,email:e.target.value})}/></div><div><Label>No HP</Label><Input value={form.hp||''} onChange={e=>setForm({...form,hp:e.target.value})}/></div></div>
+            <div className="grid grid-cols-2 gap-3"><div><Label>Tgl Lahir</Label><Input type="date" value={form.tanggalLahir||''} onChange={e=>setForm({...form,tanggalLahir:e.target.value})}/></div><div><Label>Tempat Lahir</Label><Input value={form.tempatLahir||''} onChange={e=>setForm({...form,tempatLahir:e.target.value})}/></div></div>
+            <div className="grid grid-cols-2 gap-3">
+              <div><Label>Jenis Kelamin</Label><Select value={form.jenisKelamin||''} onValueChange={v=>setForm({...form,jenisKelamin:v})}><SelectTrigger><SelectValue placeholder="Pilih"/></SelectTrigger><SelectContent><SelectItem value="Laki-laki">Laki-laki</SelectItem><SelectItem value="Perempuan">Perempuan</SelectItem></SelectContent></Select></div>
+              <div><Label>Agama</Label><Select value={form.agama||''} onValueChange={v=>setForm({...form,agama:v})}><SelectTrigger><SelectValue placeholder="Pilih"/></SelectTrigger><SelectContent>{['Islam','Kristen','Katolik','Hindu','Buddha','Konghucu','Lainnya'].map(a=><SelectItem key={a} value={a}>{a}</SelectItem>)}</SelectContent></Select></div>
+            </div>
+            <div><Label>Alamat</Label><Input value={form.alamat||''} onChange={e=>setForm({...form,alamat:e.target.value})}/></div>
+            <div className="grid grid-cols-2 gap-3">
+              <div><Label>Pendidikan</Label><Select value={form.pendidikanTerakhir||''} onValueChange={v=>setForm({...form,pendidikanTerakhir:v})}><SelectTrigger><SelectValue placeholder="Pilih"/></SelectTrigger><SelectContent>{['SD','SMP','SMA','D1','D2','D3','S1','S2','S3'].map(p=><SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent></Select></div>
+              <div><Label>Status</Label><Select value={form.status||'Aktif'} onValueChange={v=>setForm({...form,status:v as any})}><SelectTrigger><SelectValue/></SelectTrigger><SelectContent><SelectItem value="Aktif">Aktif</SelectItem><SelectItem value="Nonaktif">Nonaktif</SelectItem></SelectContent></Select></div>
+            </div>
           </div>
-
-          {/* ===== Pagination ===== */}
-          {filteredData.length > ITEMS_PER_PAGE && (
-            <div className="flex items-center justify-between border-t px-4 py-3">
-              <p className="text-sm text-muted-foreground">
-                Menampilkan{' '}
-                <span className="font-medium text-foreground">
-                  {(currentPage - 1) * ITEMS_PER_PAGE + 1}
-                </span>
-                {' - '}
-                <span className="font-medium text-foreground">
-                  {Math.min(currentPage * ITEMS_PER_PAGE, filteredData.length)}
-                </span>
-                {' dari '}
-                <span className="font-medium text-foreground">
-                  {filteredData.length}
-                </span>{' '}
-                pegawai
-              </p>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-8 gap-1"
-                  disabled={currentPage <= 1}
-                  onClick={() => setCurrentPage((p) => p - 1)}
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                  Sebelumnya
-                </Button>
-                <span className="text-sm text-muted-foreground">
-                  {currentPage} / {totalPages}
-                </span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-8 gap-1"
-                  disabled={currentPage >= totalPages}
-                  onClick={() => setCurrentPage((p) => p + 1)}
-                >
-                  Selanjutnya
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* ===== Add/Edit Pegawai Modal ===== */}
-      <PegawaiModal
-        key={modalKey}
-        open={showAddModal}
-        onClose={handleCloseAdd}
-        pegawai={editingPegawai}
-      />
-
-      {/* ===== Pegawai Detail Dialog ===== */}
-      <Dialog open={showDetailModal} onOpenChange={(v) => !v && setShowDetailModal(false)}>
-        <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-lg font-semibold">
-              <Users className="h-5 w-5 text-[#3c6eff]" />
-              Detail Pegawai
-            </DialogTitle>
-          </DialogHeader>
-
-          {detailPegawai && (
-            <div className="space-y-6">
-              {/* Info Grid */}
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <DetailItem label="NIP/NIK" value={detailPegawai.nip} mono />
-                <DetailItem label="Nama Lengkap" value={detailPegawai.nama} bold />
-                <DetailItem
-                  label="Jenis ASN"
-                  value={detailPegawai.jenisASN}
-                  badge
-                  badgeClass={
-                    JENIS_ASN_BADGE[detailPegawai.jenisASN] ??
-                    'bg-muted text-muted-foreground'
-                  }
-                />
-                <DetailItem label="Jabatan/Pangkat" value={detailPegawai.jabatan} />
-                <DetailItem label="Golongan" value={detailPegawai.golongan} />
-                <DetailItem label="Kecamatan" value={detailPegawai.kecamatan} />
-                <DetailItem label="Unit Kerja" value={detailPegawai.unitKerja} />
-                <DetailItem label="Email" value={detailPegawai.email} />
-                <DetailItem label="No HP" value={detailPegawai.hp} />
-                <DetailItem
-                  label="Tanggal Lahir"
-                  value={formatDate(detailPegawai.tanggalLahir)}
-                />
-                <DetailItem
-                  label="Status"
-                  value={detailPegawai.status}
-                  badge
-                  badgeClass={
-                    detailPegawai.status === 'Aktif'
-                      ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'
-                      : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'
-                  }
-                />
-              </div>
-
-              {/* Documents Section */}
-              <div>
-                <h3 className="text-sm font-semibold text-foreground mb-3">
-                  Dokumen Terkait
-                </h3>
-                {groupedDocs.length === 0 || detailDocs.length === 0 ? (
-                  <div className="flex flex-col items-center py-6 text-muted-foreground">
-                    <FileSpreadsheet className="h-8 w-8 text-muted-foreground/40 mb-2" />
-                    <p className="text-sm">Belum ada dokumen untuk pegawai ini</p>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {groupedDocs.map((group) => (
-                      <div key={group.label}>
-                        <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
-                          {group.label}
-                        </h4>
-                        <div className="space-y-2">
-                          {group.items.map((doc) => (
-                            <div
-                              key={doc.id}
-                              className="flex flex-col gap-1.5 rounded-lg border border-border/60 p-3 bg-muted/20"
-                            >
-                              <div className="flex items-center justify-between gap-2">
-                                <span className="text-sm font-medium text-foreground">
-                                  {doc.jenisDokumen}
-                                </span>
-                                <Badge
-                                  variant="secondary"
-                                  className={`text-[11px] font-semibold px-2 py-0.5 shrink-0 ${getStatusBadgeClass(doc.status)}`}
-                                >
-                                  {doc.status}
-                                </Badge>
-                              </div>
-                              <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
-                                {doc.periode && (
-                                  <span>Periode: {doc.periode}</span>
-                                )}
-                                {doc.tmtAwal && (
-                                  <span>TMT Awal: {formatDate(doc.tmtAwal)}</span>
-                                )}
-                                {doc.tmtAkhir && (
-                                  <span>TMT Akhir: {formatDate(doc.tmtAkhir)}</span>
-                                )}
-                                {doc.tanggal && (
-                                  <span>Tanggal: {formatDate(doc.tanggal)}</span>
-                                )}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
+          <DialogFooter className="gap-2"><Button variant="outline" onClick={()=>setShowEdit(false)}>Batal</Button><Button onClick={save} disabled={saving||uploading} className="gap-2 bg-[#3c6eff] hover:bg-[#2b54f5] text-white">{saving ? 'Menyimpan...' : <><Save className="h-4 w-4"/>Simpan</>}</Button></DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* ===== Upload Template Dialog ===== */}
-      <Dialog open={showUploadModal} onOpenChange={(v) => !v && setShowUploadModal(false)}>
-        <DialogContent className="sm:max-w-lg">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-lg font-semibold">
-              <Upload className="h-5 w-5 text-amber-600" />
-              Upload Template Pegawai
-            </DialogTitle>
-          </DialogHeader>
-
-          <div className="space-y-4 py-2">
-            {!importResult ? (
-              <>
-                <div className="space-y-2">
-                  <p className="text-sm text-muted-foreground">
-                    Upload file Excel (.xlsx) sesuai template yang telah diunduh. Format kolom:
-                  </p>
-                  <div className="rounded-lg bg-muted/50 p-3">
-                    <p className="text-xs font-mono text-foreground break-all">
-                      NIP, Nama, Jenis ASN, Jabatan, Golongan, Kecamatan, Unit Kerja, Email, No HP, Tanggal Lahir, Status
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex flex-col items-center gap-3 rounded-lg border-2 border-dashed border-muted-foreground/30 p-8 transition-colors hover:border-muted-foreground/50">
-                  <FileSpreadsheet className="h-10 w-10 text-muted-foreground/50" />
-                  <p className="text-sm text-muted-foreground">
-                    Drag & drop atau klik untuk memilih file
-                  </p>
-                  <p className="text-xs text-muted-foreground/70">
-                    Format: Excel (.xlsx)
-                  </p>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept=".xlsx,.xls"
-                    className="hidden"
-                    onChange={handleFileChange}
-                  />
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => fileInputRef.current?.click()}
-                    className="gap-2"
-                  >
-                    <FileSpreadsheet className="h-4 w-4" />
-                    Pilih File Excel
-                  </Button>
-                </div>
-              </>
-            ) : (
-              <div className="space-y-4">
-                {/* Summary */}
-                <div className="flex items-center gap-4 rounded-lg bg-muted/30 p-4">
-                  <div className="flex flex-col items-center gap-1">
-                    <CheckCircle2 className="h-6 w-6 text-green-500" />
-                    <span className="text-lg font-bold text-green-600">
-                      {importResult.success}
-                    </span>
-                    <span className="text-[11px] text-muted-foreground">Berhasil</span>
-                  </div>
-                  <div className="h-8 w-px bg-border" />
-                  <div className="flex flex-col items-center gap-1">
-                    <AlertCircle className="h-6 w-6 text-red-500" />
-                    <span className="text-lg font-bold text-red-600">
-                      {importResult.errors}
-                    </span>
-                    <span className="text-[11px] text-muted-foreground">Gagal</span>
-                  </div>
-                </div>
-
-                {/* Error messages */}
-                {importResult.messages.length > 0 && (
-                  <div className="max-h-48 overflow-y-auto space-y-1.5">
-                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                      Detail Error
-                    </p>
-                    {importResult.messages.map((msg, idx) => (
-                      <div
-                        key={idx}
-                        className="flex items-start gap-2 rounded-md bg-red-50 px-3 py-2 text-xs text-red-700 dark:bg-red-950/20 dark:text-red-400"
-                      >
-                        <X className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-                        <span>{msg}</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-
-          {/* Footer */}
-          <div className="flex justify-end gap-2 pt-2">
-            {importResult && (
-              <Button
-                variant="outline"
-                onClick={() => setImportResult(null)}
-                className="gap-2"
-              >
-                <Upload className="h-4 w-4" />
-                Upload Lagi
-              </Button>
-            )}
-            <Button variant="outline" onClick={() => setShowUploadModal(false)}>
-              Tutup
-            </Button>
-          </div>
+      {/* MODAL DETAIL */}
+      <Dialog open={showDetail} onOpenChange={setShowDetail}>
+        <DialogContent className="max-w-md"><DialogHeader><DialogTitle>Detail Pegawai</DialogTitle></DialogHeader>
+          {detail && <div className="space-y-2 text-sm"><div className="flex items-center gap-3"><Avatar className="h-14 w-14"><AvatarImage src={detail.fotoUrl||''} /><AvatarFallback className="bg-[#3c6eff]/10 text-lg font-bold text-[#3c6eff]">{getInitials(detail.nama)}</AvatarFallback></Avatar><div><p className="font-bold text-lg">{detail.nama}</p><p className="text-muted-foreground font-mono">{detail.nip}</p></div></div><div className="grid grid-cols-2 gap-2"><div><p className="text-xs text-muted-foreground">Jenis ASN</p><p>{labelAsn(detail.jenisASN)}</p></div><div><p className="text-xs text-muted-foreground">Golongan</p><p>{detail.golongan||'-'}</p></div><div><p className="text-xs text-muted-foreground">Jabatan</p><p>{detail.jabatan||'-'}</p></div><div><p className="text-xs text-muted-foreground">Unit Kerja</p><p>{detail.unitKerja||'-'}</p></div><div><p className="text-xs text-muted-foreground">Email</p><p>{detail.email||'-'}</p></div><div><p className="text-xs text-muted-foreground">HP</p><p>{detail.hp||'-'}</p></div><div><p className="text-xs text-muted-foreground">Tgl Lahir</p><p>{formatDate(detail.tanggalLahir)}</p></div><div><p className="text-xs text-muted-foreground">Status</p><Badge className={detail.status==='Aktif'?'bg-emerald-500':'bg-gray-500'}>{detail.status||'Aktif'}</Badge></div></div></div>}
+          <DialogFooter><Button variant="outline" onClick={()=>setShowDetail(false)}>Tutup</Button><Button onClick={()=>{setShowDetail(false);if(detail)openEdit(detail)}} className="bg-amber-500 hover:bg-amber-600 text-white"><Pencil className="h-4 w-4 mr-1"/>Edit</Button></DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
-  );
-}
 
-// ===== Detail Item Helper =====
-
-function DetailItem({
-  label,
-  value,
-  mono,
-  bold,
-  badge,
-  badgeClass,
-}: {
-  label: string;
-  value: string;
-  mono?: boolean;
-  bold?: boolean;
-  badge?: boolean;
-  badgeClass?: string;
-}) {
-  return (
-    <div className="space-y-1">
-      <span className="text-xs font-medium text-muted-foreground">{label}</span>
-      {badge ? (
-        <div>
-          <Badge
-            variant="secondary"
-            className={`text-[11px] font-semibold px-2 py-0.5 ${badgeClass ?? ''}`}
-          >
-            {value || '-'}
-          </Badge>
-        </div>
-      ) : (
-        <p
-          className={`text-sm ${
-            bold ? 'font-semibold' : 'font-medium'
-          } text-foreground ${mono ? 'font-mono' : ''}`}
-        >
-          {value || '-'}
-        </p>
-      )}
+      <Dialog open={!!del} onOpenChange={()=>setDel(null)}><DialogContent><DialogHeader><DialogTitle>Hapus?</DialogTitle></DialogHeader><p className="text-sm">Yakin hapus <b>{del?.nama}</b>?</p><DialogFooter className="gap-2"><Button variant="outline" onClick={()=>setDel(null)}>Batal</Button><Button variant="destructive" onClick={hapus}>Hapus</Button></DialogFooter></DialogContent></Dialog>
     </div>
-  );
+  )
 }

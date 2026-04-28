@@ -25,6 +25,7 @@ function mapDbToPegawai(row: Record<string, any>): Pegawai {
     pendidikanTerakhir: row.pendidikan_terakhir ?? '',
     status: row.status ?? 'Aktif',
     tglPensiun: row.tgl_pensiun ?? '',
+    fotoUrl: row.foto_url ?? '',
   };
 }
 
@@ -46,6 +47,7 @@ function mapPegawaiToDb(p: Partial<Pegawai>): Record<string, any> {
   if (p.alamat !== undefined) obj.alamat = p.alamat;
   if (p.pendidikanTerakhir !== undefined) obj.pendidikan_terakhir = p.pendidikanTerakhir;
   if (p.status !== undefined) obj.status = p.status;
+  if (p.fotoUrl !== undefined) obj.foto_url = p.fotoUrl;
   // tgl_pensiun: auto-hitung dari tanggal_lahir + 60 tahun, TMT tanggal 1 bulan berikutnya
   if (p.tglPensiun !== undefined) {
     obj.tgl_pensiun = p.tglPensiun || null;
