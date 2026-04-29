@@ -112,8 +112,10 @@ export default function PegawaiPage() {
   const uploadFoto = async (file: File): Promise<string> => {
     const ext = file.name.split('.').pop()
     const fileName = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
-    const { error } = await supabase.storage.from('foto-profil').upload(`profil/${fileName}`, file, { cacheControl: '3600', upsert: true })
-    if (error) throw error
+    const { error } = await supabase.storage
+      .from('foto-profil')
+      .upload(`profil/${fileName}`, file, { cacheControl: '3600', upsert: true })
+    if (error) throw new Error(error.message)
     const { data } = supabase.storage.from('foto-profil').getPublicUrl(`profil/${fileName}`)
     return data.publicUrl
   }
@@ -145,16 +147,27 @@ export default function PegawaiPage() {
       let fotoUrl = form.fotoUrl
       if (fotoFile) {
         setUploading(true)
-        try { fotoUrl = await uploadFoto(fotoFile) }
-        catch (e: any) { toast.error('Upload gagal: ' + (e.message || 'Unknown')); setSaving(false); setUploading(false); return }
+        try {
+          fotoUrl = await uploadFoto(fotoFile)
+        } catch (e: any) {
+          toast.error('Gagal upload foto: ' + (e.message || 'Unknown'))
+          setSaving(false)
+          setUploading(false)
+          return
+        }
         setUploading(false)
       }
+      console.log('Menyimpan dengan fotoUrl:', fotoUrl)
       await db.updatePegawaiInDB(editId, { ...form, fotoUrl })
-      toast.success('Data diperbarui')
+      toast.success('Data berhasil diperbarui!')
       setShowEdit(false)
       await fetchData()
-    } catch (e: any) { toast.error('Gagal: ' + (e.message || 'Unknown')) }
-    finally { setSaving(false) }
+    } catch (e: any) {
+      console.error('Save error:', e)
+      toast.error('Gagal menyimpan: ' + (e.message || 'Unknown'))
+    } finally {
+      setSaving(false)
+    }
   }
 
   const hapus = async () => {
@@ -181,17 +194,27 @@ export default function PegawaiPage() {
       </CardContent></Card>
       <Card>
         <ScrollArea className="h-[calc(100vh-280px)]">
-          <div className="min-w-[800px]">
+          <div className="min-w-[900px]">
             <div className="flex items-center gap-3 border-b px-4 py-3 text-xs font-semibold text-muted-foreground uppercase">
-              <div className="w-12">#</div><div className="w-40">NIP</div><div className="flex-1">Nama</div><div className="w-28">ASN</div><div className="w-20">Gol</div><div className="w-32">Unit</div><div className="w-20 text-center">Status</div><div className="w-24 text-center">Aksi</div>
+              <div className="w-14 text-center">Foto</div>
+              <div className="w-40">NIP</div>
+              <div className="flex-1">Nama</div>
+              <div className="w-28">ASN</div>
+              <div className="w-20">Gol</div>
+              <div className="w-32">Unit</div>
+              <div className="w-20 text-center">Status</div>
+              <div className="w-24 text-center">Aksi</div>
             </div>
             <div className="divide-y">
               {paged.length === 0 ? (
                 <div className="flex flex-col items-center py-16"><Users className="h-12 w-12 text-muted-foreground/30 mb-3" /><p className="text-sm text-muted-foreground">Tidak ada data</p></div>
               ) : paged.map(p => (
                 <motion.div key={p.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center gap-3 px-4 py-3 hover:bg-muted/40 cursor-pointer" onClick={() => { setDetail(p); setShowDetail(true) }}>
-                  <div className="w-12">
-                    <Avatar className="h-9 w-9"><AvatarImage src={p.fotoUrl || ''} /><AvatarFallback className="bg-[#3c6eff]/10 text-xs font-bold text-[#3c6eff]">{getInitials(p.nama)}</AvatarFallback></Avatar>
+                  <div className="w-14 flex justify-center">
+                    <Avatar className="h-10 w-10 ring-2 ring-white dark:ring-zinc-800 shadow-sm">
+                      <AvatarImage src={p.fotoUrl || ''} alt={p.nama} className="object-cover" />
+                      <AvatarFallback className="bg-[#3c6eff] text-xs font-bold text-white">{getInitials(p.nama)}</AvatarFallback>
+                    </Avatar>
                   </div>
                   <div className="w-40"><p className="text-sm font-mono">{p.nip}</p></div>
                   <div className="flex-1"><p className="text-sm font-semibold truncate">{p.nama}</p></div>
@@ -224,14 +247,15 @@ export default function PegawaiPage() {
           <DialogHeader><DialogTitle>Edit Pegawai</DialogTitle></DialogHeader>
           <div className="space-y-3">
             <div className="flex flex-col items-center gap-2">
-              <Avatar className="h-24 w-24">
-                <AvatarImage src={fotoPreview || form.fotoUrl || ''} />
-                <AvatarFallback className="bg-[#3c6eff]/10 text-2xl font-bold text-[#3c6eff]">{getInitials(form.nama || '')}</AvatarFallback>
+              <Avatar className="h-28 w-28 ring-4 ring-[#3c6eff]/20 shadow-xl">
+                <AvatarImage src={fotoPreview || form.fotoUrl || ''} className="object-cover" />
+                <AvatarFallback className="bg-[#3c6eff] text-2xl font-bold text-white">{getInitials(form.nama || '')}</AvatarFallback>
               </Avatar>
               <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handlePilihFoto} />
               <Button type="button" variant="outline" size="sm" onClick={() => fileRef.current?.click()} disabled={uploading} className="gap-1">
                 <Camera className="h-4 w-4" />{fotoFile || form.fotoUrl ? 'Ganti Foto' : 'Upload Foto'}
               </Button>
+              {fotoFile && <p className="text-xs text-muted-foreground">{fotoFile.name}</p>}
             </div>
             <div><Label>NIP</Label><Input value={form.nip || ''} disabled className="bg-muted" /></div>
             <div><Label>Nama *</Label><Input value={form.nama || ''} onChange={e => setForm({ ...form, nama: e.target.value })} /></div>
@@ -308,19 +332,27 @@ export default function PegawaiPage() {
           <DialogHeader><DialogTitle>Detail Pegawai</DialogTitle></DialogHeader>
           {detail && (
             <div className="space-y-2 text-sm">
-              <div className="flex items-center gap-3">
-                <Avatar className="h-14 w-14"><AvatarImage src={detail.fotoUrl || ''} /><AvatarFallback className="bg-[#3c6eff]/10 text-lg font-bold text-[#3c6eff]">{getInitials(detail.nama)}</AvatarFallback></Avatar>
-                <div><p className="font-bold text-lg">{detail.nama}</p><p className="text-muted-foreground font-mono">{detail.nip}</p></div>
+              <div className="flex items-center gap-4">
+                <Avatar className="h-16 w-16 ring-4 ring-[#3c6eff]/20 shadow-lg">
+                  <AvatarImage src={detail.fotoUrl || ''} alt={detail.nama} className="object-cover" />
+                  <AvatarFallback className="bg-[#3c6eff] text-lg font-bold text-white">{getInitials(detail.nama)}</AvatarFallback>
+                </Avatar>
+                <div>
+                  <p className="font-bold text-lg">{detail.nama}</p>
+                  <p className="text-muted-foreground font-mono text-sm">{detail.nip}</p>
+                </div>
               </div>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-2 gap-2 mt-3">
                 <div><p className="text-xs text-muted-foreground">Jenis ASN</p><p>{labelAsn(detail.jenisASN)}</p></div>
                 <div><p className="text-xs text-muted-foreground">Golongan</p><p>{detail.golongan || '-'}</p></div>
                 <div><p className="text-xs text-muted-foreground">Jabatan</p><p>{detail.jabatan || '-'}</p></div>
                 <div><p className="text-xs text-muted-foreground">Unit Kerja</p><p>{detail.unitKerja || '-'}</p></div>
+                <div><p className="text-xs text-muted-foreground">Kecamatan</p><p>{detail.kecamatan || '-'}</p></div>
                 <div><p className="text-xs text-muted-foreground">Email</p><p>{detail.email || '-'}</p></div>
                 <div><p className="text-xs text-muted-foreground">HP</p><p>{detail.hp || '-'}</p></div>
                 <div><p className="text-xs text-muted-foreground">Tgl Lahir</p><p>{formatDate(detail.tanggalLahir)}</p></div>
                 <div><p className="text-xs text-muted-foreground">Status</p><Badge className={detail.status === 'Aktif' ? 'bg-emerald-500' : 'bg-gray-500'}>{detail.status || 'Aktif'}</Badge></div>
+                <div><p className="text-xs text-muted-foreground">TMT Pensiun</p><p>{formatDate(detail.tglPensiun || '')}</p></div>
               </div>
             </div>
           )}
