@@ -157,7 +157,6 @@ export default function PegawaiPage() {
         }
         setUploading(false)
       }
-      console.log('Menyimpan dengan fotoUrl:', fotoUrl)
       await db.updatePegawaiInDB(editId, { ...form, fotoUrl })
       toast.success('Data berhasil diperbarui!')
       setShowEdit(false)
@@ -195,10 +194,10 @@ export default function PegawaiPage() {
       <Card>
         <ScrollArea className="h-[calc(100vh-280px)]">
           <div className="min-w-[900px]">
-            <div className="flex items-center gap-3 border-b px-4 py-3 text-xs font-semibold text-muted-foreground uppercase">
+            <div className="flex items-center gap-3 border-b px-4 py-3 text-xs font-semibold text-muted-foreground uppercase whitespace-nowrap">
               <div className="w-14 text-center">Foto</div>
               <div className="w-40">NIP</div>
-              <div className="flex-1">Nama</div>
+              <div className="flex-1 min-w-0">Nama</div>
               <div className="w-28">ASN</div>
               <div className="w-20">Gol</div>
               <div className="w-32">Unit</div>
@@ -210,19 +209,21 @@ export default function PegawaiPage() {
                 <div className="flex flex-col items-center py-16"><Users className="h-12 w-12 text-muted-foreground/30 mb-3" /><p className="text-sm text-muted-foreground">Tidak ada data</p></div>
               ) : paged.map(p => (
                 <motion.div key={p.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center gap-3 px-4 py-3 hover:bg-muted/40 cursor-pointer" onClick={() => { setDetail(p); setShowDetail(true) }}>
-                  <div className="w-14 flex justify-center">
-                    <Avatar className="h-10 w-10 ring-2 ring-white dark:ring-zinc-800 shadow-sm">
+                  <div className="w-14 flex shrink-0 justify-center">
+                    <Avatar className="h-10 w-10 ring-2 ring-white dark:ring-zinc-800 shadow-sm shrink-0">
                       <AvatarImage src={p.fotoUrl || ''} alt={p.nama} className="object-cover" />
                       <AvatarFallback className="bg-[#3c6eff] text-xs font-bold text-white">{getInitials(p.nama)}</AvatarFallback>
                     </Avatar>
                   </div>
-                  <div className="w-40"><p className="text-sm font-mono">{p.nip}</p></div>
-                  <div className="flex-1"><p className="text-sm font-semibold truncate">{p.nama}</p></div>
-                  <div className="w-28"><Badge variant="outline" className="text-xs">{labelAsn(p.jenisASN)}</Badge></div>
-                  <div className="w-20 text-sm text-muted-foreground">{p.golongan || '-'}</div>
-                  <div className="w-32 text-sm text-muted-foreground truncate">{p.unitKerja || '-'}</div>
-                  <div className="w-20 text-center"><Badge className={p.status === 'Aktif' ? 'bg-emerald-500' : 'bg-gray-500'}>{p.status || 'Aktif'}</Badge></div>
-                  <div className="w-24 flex justify-center gap-1" onClick={e => e.stopPropagation()}>
+                  <div className="w-40 shrink-0"><p className="text-sm font-mono truncate" title={p.nip}>{p.nip}</p></div>
+                  <div className="flex-1 min-w-0"><p className="text-sm font-semibold truncate" title={p.nama}>{p.nama}</p></div>
+                  <div className="w-28 shrink-0"><Badge variant="outline" className="text-xs truncate max-w-full block" title={labelAsn(p.jenisASN)}>{labelAsn(p.jenisASN)}</Badge></div>
+                  <div className="w-20 shrink-0 text-sm text-muted-foreground truncate" title={p.golongan || ''}>{p.golongan || '-'}</div>
+                  <div className="w-32 shrink-0 text-sm text-muted-foreground truncate" title={p.unitKerja || ''}>{p.unitKerja || '-'}</div>
+                  <div className="w-20 shrink-0 text-center">
+                    <Badge className={p.status === 'Aktif' ? 'bg-emerald-500 shrink-0' : 'bg-gray-500 shrink-0'}>{p.status || 'Aktif'}</Badge>
+                  </div>
+                  <div className="w-24 shrink-0 flex justify-center gap-1" onClick={e => e.stopPropagation()}>
                     <Button variant="ghost" size="icon" className="h-8 w-8 hover:text-amber-600" onClick={() => openEdit(p)}><Pencil className="h-4 w-4" /></Button>
                     {currentUser?.role === 'admin' && <Button variant="ghost" size="icon" className="h-8 w-8 hover:text-red-500" onClick={() => setDel(p)}><Trash2 className="h-4 w-4" /></Button>}
                   </div>
