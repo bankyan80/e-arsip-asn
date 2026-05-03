@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect, useRef } from 'react'
 import { motion } from 'framer-motion'
-import { Search, Trash2, ChevronLeft, ChevronRight, Pencil, Save, Users, Camera } from 'lucide-react'
+import { Search, Trash2, ChevronLeft, ChevronRight, Pencil, Save, Users, Camera, Download } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -16,6 +16,7 @@ import { toast } from 'sonner'
 import { useArsipStore } from '@/lib/store'
 import { supabase } from '@/lib/supabase'
 import * as db from '@/lib/db'
+import * as XLSX from 'xlsx'
 import type { Pegawai } from '@/lib/types'
 
 const JENIS_ASN_OPTIONS = [
@@ -175,6 +176,37 @@ export default function PegawaiPage() {
     catch (e: any) { toast.error('Gagal: ' + (e.message || 'Unknown')) }
   }
 
+  const exportToExcel = () => {
+    const dataToExport = pegawaiList.map((p, i) => ({
+      'No': i + 1,
+      'NIP': p.nip,
+      'Nama': p.nama,
+      'Jenis ASN': labelAsn(p.jenisASN),
+      'Golongan': p.golongan || '-',
+      'Jabatan': p.jabatan || '-',
+      'Kecamatan': p.kecamatan || '-',
+      'Unit Kerja': p.unitKerja || '-',
+      'Jenis Kelamin': p.jenisKelamin || '-',
+      'Agama': p.agama || '-',
+      'Pendidikan': p.pendidikanTerakhir || '-',
+      'TMT Pensiun': p.tglPensiun ? formatDate(p.tglPensiun) : '-',
+      'Status': p.status || 'Aktif',
+    }))
+
+    const ws = XLSX.utils.json_to_sheet(dataToExport)
+    ws['!cols'] = [
+      { wch: 5 }, { wch: 22 }, { wch: 25 }, { wch: 26 }, { wch: 10 },
+      { wch: 28 }, { wch: 20 }, { wch: 30 }, { wch: 15 }, { wch: 12 },
+      { wch: 12 }, { wch: 15 }, { wch: 10 }
+    ]
+
+    const wb = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(wb, ws, 'Data Pegawai')
+    const today = new Date().toISOString().split('T')[0]
+    XLSX.writeFile(wb, `Data-Pegawai-${today}.xlsx`)
+    toast.success('Data pegawai berhasil diunduh!')
+  }
+
   return (
     <div className="space-y-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -184,6 +216,12 @@ export default function PegawaiPage() {
             {currentUser?.role === 'pegawai' ? 'Rekan satu unit • ' + filtered.length : 'Kelola • ' + pegawaiList.length}
           </p>
         </div>
+        {currentUser?.role === 'admin' && (
+          <Button onClick={exportToExcel} variant="outline" className="gap-2 border-emerald-500 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950">
+            <Download className="h-4 w-4" />
+            Unduh Excel
+          </Button>
+        )}
       </div>
       <Card><CardContent className="p-3">
         <div className="relative">
