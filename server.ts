@@ -151,7 +151,7 @@ export async function createApp() {
 async function startServer() {
   const app = await createApp();
   app.listen(PORT, '0.0.0.0', () => {
-    console.log(`[E-Arsip ASN] Server ready and serving on http://localhost:${PORT}`);
+    console.log(`[Arsip Digital ASN] Server ready and serving on http://localhost:${PORT}`);
   });
 }
 

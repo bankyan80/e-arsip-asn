@@ -324,7 +324,7 @@ export default function App() {
   if (loadingSession) {
     return (
       <div className="min-h-screen bg-[#f3f6fa] flex items-center justify-center">
-        <Loading message="Menginisialisasi sistem E-Arsip ASN..." />
+        <Loading message="Menginisialisasi sistem Arsip Digital ASN..." />
       </div>
     );
   }
@@ -345,7 +345,7 @@ export default function App() {
             <div className="bg-white/10 w-14 h-14 rounded-2xl flex items-center justify-center text-white mx-auto mb-4 border border-white/10 shadow-inner">
               <FileCheck className="w-8 h-8 stroke-[1.8]" />
             </div>
-            <h2 className="text-xl font-display font-bold tracking-tight uppercase">E-Arsip ASN</h2>
+            <h2 className="text-xl font-display font-bold tracking-tight uppercase">Arsip Digital ASN</h2>
             <p className="text-[10px] text-white/60 font-medium tracking-wide mt-1">
               Sistem Pengarsipan Dokumen Digital Kepegawaian ASN
             </p>
@@ -407,7 +407,7 @@ export default function App() {
                     Menghubungkan...
                   </>
                 ) : (
-                  'Masuk Ke E-Arsip'
+                  'Masuk Ke Arsip Digital'
                 )}
               </button>
             </form>
@@ -1825,7 +1825,7 @@ export default function App() {
 
       {/* Persistent Admin footer brand */}
       <footer className="bg-slate-100 py-3.5 text-center text-[7px] text-slate-400 border-t mt-8">
-        Tim Kerja Bidang SD Dinas Pendidikan Kecamatan Lemahabang • E-Arsip ASN Integrated V1.2
+        Tim Kerja Bidang SD Dinas Pendidikan Kecamatan Lemahabang • Arsip Digital ASN Integrated V1.2
       </footer>
 
       {/* LIGHTBOX FILE VIEWER */}
