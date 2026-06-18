@@ -107,9 +107,9 @@ export default function App() {
       loadAllPegawaiData();
     } else {
       adminData.fetchAdminData(session.role);
-      // Also fetch kategori/jenis-dokumen for admin kategori page
       fetch('/api/kategori').then(r => r.json()).then(setKategoriList).catch(() => {});
       fetch('/api/jenis-dokumen').then(r => r.json()).then(setJenisDokumenList).catch(() => {});
+      fetch('/api/pegawai/me').then(r => r.json()).then(d => { if (d && d.id) setProfile(d); }).catch(() => {});
     }
   }, [session]);
 
@@ -1151,6 +1151,15 @@ export default function App() {
               <Activity className="w-4 h-4" />
               Log Aktivitas
             </button>
+            <button
+              onClick={() => { setAdminTab('profil'); }}
+              className={`flex-1 lg:flex-initial text-left px-3.5 py-3 rounded-xl font-bold flex items-center gap-2.5 transition-colors ${
+                adminTab === 'profil' ? 'bg-[#0f2a44] text-white' : 'text-slate-600 hover:bg-slate-50'
+              }`}
+            >
+              <Users className="w-4 h-4" />
+              Profil Saya
+            </button>
           </nav>
         </aside>
 
@@ -1956,6 +1965,86 @@ export default function App() {
                 </div>
               </div>
 
+            </div>
+          )}
+
+          {/* PAGE G. ADMIN PROFILE */}
+          {adminTab === 'profil' && profile && (
+            <div className="space-y-4 animate-fade-in">
+              <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm flex flex-col items-center text-center">
+                <div className="w-16 h-16 bg-[#1d4ed8] rounded-full text-white text-xl font-bold flex items-center justify-center shadow">
+                  {profile.namaPegawai.substring(0, 2).toUpperCase()}
+                </div>
+                <h3 className="text-base font-extrabold text-slate-800 mt-3">{profile.namaPegawai}</h3>
+                <p className="text-[11px] text-slate-400 font-mono mt-1">NIP: {profile.nip}</p>
+                <div className="mt-2.5 flex items-center gap-1.5">
+                  <span className="bg-blue-50 text-[#1d4ed8] text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md">{profile.statusPegawai}</span>
+                  <span className="bg-slate-100 text-slate-500 text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md">{profile.pangkatGolongan}</span>
+                </div>
+              </div>
+              <div className="bg-white rounded-2xl border border-slate-100 overflow-hidden shadow-xs divide-y divide-slate-50">
+                <div className="px-4 py-3 bg-slate-50 text-[10px] uppercase tracking-wider font-extrabold text-slate-500">Riwayat & Jabatan Kerja</div>
+                <div className="p-4 py-3 text-xs grid grid-cols-3 gap-2">
+                  <span className="text-slate-400 font-semibold">Instansi</span>
+                  <span className="col-span-2 text-slate-700 font-bold">{profile.namaInstansi}</span>
+                </div>
+                <div className="p-4 py-3 text-xs grid grid-cols-3 gap-2">
+                  <span className="text-slate-400 font-semibold">Jabatan</span>
+                  <span className="col-span-2 text-slate-700 font-bold">{profile.jabatan}</span>
+                </div>
+                <div className="p-4 py-3 text-xs grid grid-cols-3 gap-2">
+                  <span className="text-slate-400 font-semibold">Tgl Lahir</span>
+                  <span className="col-span-2 text-slate-700 font-mono font-bold">{profile.tanggalLahir}</span>
+                </div>
+                <div className="p-4 py-3 text-xs grid grid-cols-3 gap-2">
+                  <span className="text-slate-400 font-semibold">Kelamin</span>
+                  <span className="col-span-2 text-slate-700 font-bold">{profile.jenisKelamin}</span>
+                </div>
+                <div className="p-4 py-3 text-xs grid grid-cols-3 gap-2">
+                  <span className="text-slate-400 font-semibold">Pendidikan</span>
+                  <span className="col-span-2 text-slate-700 font-bold">{profile.pendidikanTerakhir}</span>
+                </div>
+              </div>
+              <div className="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm">
+                <div className="flex justify-between items-center border-b border-slate-100 pb-2 mb-3">
+                  <h4 className="text-xs font-black text-[#0f2a44] uppercase">Kontak ASN</h4>
+                  <button onClick={() => setProfileEditing(!profileEditing)} className="text-xs text-[#1d4ed8] font-bold">
+                    {profileEditing ? 'Batal' : 'Ubah Kontak'}
+                  </button>
+                </div>
+                {!profileEditing ? (
+                  <div className="space-y-3.5 text-xs">
+                    <div className="flex items-center gap-2.5 text-slate-600">
+                      <Phone className="w-4 h-4 text-slate-400" />
+                      <span>{profile.nomorHp || 'Belum diisi'}</span>
+                    </div>
+                    <div className="flex items-center gap-2.5 text-slate-600">
+                      <Mail className="w-4 h-4 text-slate-400" />
+                      <span>{profile.email || 'Belum diisi'}</span>
+                    </div>
+                    <div className="flex items-start gap-2.5 text-slate-600">
+                      <MapPin className="w-4 h-4 text-slate-400 mt-0.5" />
+                      <span className="leading-relaxed">{profile.alamat || 'Belum diisi'}</span>
+                    </div>
+                  </div>
+                ) : (
+                  <form onSubmit={handleUpdateProfile} className="space-y-3">
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Nomor HP</label>
+                      <input type="text" value={profileForm.nomorHp} onChange={e => setProfileForm(p => ({ ...p, nomorHp: e.target.value }))} className="w-full h-10 border border-slate-200 rounded-lg px-3 text-xs" />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Surel / Email</label>
+                      <input type="email" value={profileForm.email} onChange={e => setProfileForm(p => ({ ...p, email: e.target.value }))} className="w-full h-10 border border-slate-200 rounded-lg px-3 text-xs" />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Alamat Tinggal</label>
+                      <textarea value={profileForm.alamat} onChange={e => setProfileForm(p => ({ ...p, alamat: e.target.value }))} className="w-full border border-slate-200 rounded-lg p-2 text-xs min-h-[60px]" />
+                    </div>
+                    <button type="submit" className="w-full h-10 bg-[#1d4ed8] text-white text-xs font-bold rounded-lg">Simpan Perubahan Kontak</button>
+                  </form>
+                )}
+              </div>
             </div>
           )}
 
