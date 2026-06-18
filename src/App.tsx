@@ -151,8 +151,8 @@ export default function App() {
       setIdentifier('198501012008011002');
       setPassword('12345678');
     } else if (type === 'super') {
-      setIdentifier('199208152015031004');
-      setPassword('12345678');
+      setIdentifier('198001292025211035');
+      setPassword('admin456');
     }
   };
 

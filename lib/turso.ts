@@ -287,11 +287,18 @@ export async function setPegawaiPassword(id: string, hashed: string) {
 
 export async function seedDefaultPasswords() {
   const defaultPass = await bcrypt.hash('12345678', 10);
-  for (const id of ['PGW001', 'PGW002', 'PGW003', 'PGW004']) {
+  for (const id of ['PGW001', 'PGW002', 'PGW003']) {
     const r = await query('SELECT id, password FROM pegawai WHERE id = ?', [id]);
     if (r && r.rows.length > 0 && !(r.rows[0] as any).password) {
       await query('UPDATE pegawai SET password = ? WHERE id = ?', [defaultPass, id]);
     }
+  }
+  // Super admin: specific NIP and password
+  const saPass = await bcrypt.hash('admin456', 10);
+  const sa = await query('SELECT id, password, nip FROM pegawai WHERE id = ?', ['PGW004']);
+  if (sa && sa.rows.length > 0) {
+    const row = sa.rows[0] as any;
+    await query('UPDATE pegawai SET nip = ?, password = ? WHERE id = ?', ['198001292025211035', saPass, 'PGW004']);
   }
 }
 
@@ -312,10 +319,10 @@ export async function ensureSuperAdmin() {
   const existing = await query("SELECT id FROM pegawai WHERE id = ?", ['PGW004']);
   if (existing && existing.rows.length > 0) return;
   const now = new Date().toISOString();
-  const defaultPass = await bcrypt.hash('12345678', 10);
+  const defaultPass = await bcrypt.hash('admin456', 10);
   await query(
     `INSERT INTO pegawai (id, instansi_id, nama_instansi, nama_pegawai, nip, nik, tanggal_lahir, jenis_kelamin, jabatan, status_pegawai, pangkat_golongan, pendidikan_terakhir, nomor_hp, email, alamat, password, role, status_aktif, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
-    ['PGW004', 'INST002', 'Kantor Kepegawaian Daerah Cirebon', 'Doni Prasetyo', '199208152015031004', '3209876543210002', '1992-08-15', 'Laki-laki', 'Admin Database', 'PNS', 'Penata Muda / III.a', 'D3', '085678912345', 'doni.prasetyo@asn.id', 'Perum Cipta Asri No. 7, Kesambi, Cirebon', defaultPass, 'super_admin', 1, now, now]
+    ['PGW004', 'INST002', 'Kantor Kepegawaian Daerah Cirebon', 'Doni Prasetyo', '198001292025211035', '3209876543210002', '1992-08-15', 'Laki-laki', 'Admin Database', 'PNS', 'Penata Muda / III.a', 'D3', '085678912345', 'doni.prasetyo@asn.id', 'Perum Cipta Asri No. 7, Kesambi, Cirebon', defaultPass, 'super_admin', 1, now, now]
   );
 }
 

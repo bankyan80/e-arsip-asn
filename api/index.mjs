@@ -335,11 +335,17 @@ async function setPegawaiPassword(id, hashed) {
 }
 async function seedDefaultPasswords() {
   const defaultPass = await bcrypt.hash("12345678", 10);
-  for (const id of ["PGW001", "PGW002", "PGW003", "PGW004"]) {
+  for (const id of ["PGW001", "PGW002", "PGW003"]) {
     const r = await query("SELECT id, password FROM pegawai WHERE id = ?", [id]);
     if (r && r.rows.length > 0 && !r.rows[0].password) {
       await query("UPDATE pegawai SET password = ? WHERE id = ?", [defaultPass, id]);
     }
+  }
+  const saPass = await bcrypt.hash("admin456", 10);
+  const sa = await query("SELECT id, password, nip FROM pegawai WHERE id = ?", ["PGW004"]);
+  if (sa && sa.rows.length > 0) {
+    const row = sa.rows[0];
+    await query("UPDATE pegawai SET nip = ?, password = ? WHERE id = ?", ["198001292025211035", saPass, "PGW004"]);
   }
 }
 async function seedKategoriDanJenis() {
@@ -362,10 +368,10 @@ async function ensureSuperAdmin() {
   const existing = await query("SELECT id FROM pegawai WHERE id = ?", ["PGW004"]);
   if (existing && existing.rows.length > 0) return;
   const now = (/* @__PURE__ */ new Date()).toISOString();
-  const defaultPass = await bcrypt.hash("12345678", 10);
+  const defaultPass = await bcrypt.hash("admin456", 10);
   await query(
     `INSERT INTO pegawai (id, instansi_id, nama_instansi, nama_pegawai, nip, nik, tanggal_lahir, jenis_kelamin, jabatan, status_pegawai, pangkat_golongan, pendidikan_terakhir, nomor_hp, email, alamat, password, role, status_aktif, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
-    ["PGW004", "INST002", "Kantor Kepegawaian Daerah Cirebon", "Doni Prasetyo", "199208152015031004", "3209876543210002", "1992-08-15", "Laki-laki", "Admin Database", "PNS", "Penata Muda / III.a", "D3", "085678912345", "doni.prasetyo@asn.id", "Perum Cipta Asri No. 7, Kesambi, Cirebon", defaultPass, "super_admin", 1, now, now]
+    ["PGW004", "INST002", "Kantor Kepegawaian Daerah Cirebon", "Doni Prasetyo", "198001292025211035", "3209876543210002", "1992-08-15", "Laki-laki", "Admin Database", "PNS", "Penata Muda / III.a", "D3", "085678912345", "doni.prasetyo@asn.id", "Perum Cipta Asri No. 7, Kesambi, Cirebon", defaultPass, "super_admin", 1, now, now]
   );
 }
 var url, authToken, isConfigured, client;
@@ -945,7 +951,7 @@ async function seedTurso() {
     { id: "PGW001", instansiId: "INST001", namaInstansi: "SD Negeri 1 Lemahabang", namaPegawai: "Ahmad Hidayat", nip: "198705122010012003", nik: "3209123456780001", tanggalLahir: "1987-05-12", jenisKelamin: "Laki-laki", jabatan: "Guru Kelas", statusPegawai: "PNS", pangkatGolongan: "Penata / III.c", pendidikanTerakhir: "S1", nomorHp: "081234567890", email: "ahmad.hidayat@asn.id", alamat: "Jl. Merdeka No. 4, Lemahabang, Cirebon", role: "pegawai", statusAktif: true, createdAt: now, updatedAt: now },
     { id: "PGW002", instansiId: "INST001", namaInstansi: "SD Negeri 1 Lemahabang", namaPegawai: "Budi Santoso", nip: "198501012008011002", nik: "3209123456780002", tanggalLahir: "1985-01-01", jenisKelamin: "Laki-laki", jabatan: "Kepala Sekolah", statusPegawai: "PNS", pangkatGolongan: "Penata Tk. I / III.d", pendidikanTerakhir: "S2", nomorHp: "081398765432", email: "budi.santoso@asn.id", alamat: "Kompleks Gria Indah Blok C5, Cirebon", role: "admin_instansi", statusAktif: true, createdAt: now, updatedAt: now },
     { id: "PGW003", instansiId: "INST002", namaInstansi: "Kantor Kepegawaian Daerah Cirebon", namaPegawai: "Citra Dewi Lestari", nip: "199003102014022001", nik: "3209876543210001", tanggalLahir: "1990-03-10", jenisKelamin: "Perempuan", jabatan: "Analis Kepegawaian", statusPegawai: "PNS", pangkatGolongan: "Penata Muda Tk. I / III.b", pendidikanTerakhir: "S1", nomorHp: "082134567891", email: "citra.dewi@asn.id", alamat: "Jl. Diponegoro No. 23, Kesambi, Cirebon", role: "admin_instansi", statusAktif: true, createdAt: now, updatedAt: now },
-    { id: "PGW004", instansiId: "INST002", namaInstansi: "Kantor Kepegawaian Daerah Cirebon", namaPegawai: "Doni Prasetyo", nip: "199208152015031004", nik: "3209876543210002", tanggalLahir: "1992-08-15", jenisKelamin: "Laki-laki", jabatan: "Admin Database", statusPegawai: "PNS", pangkatGolongan: "Penata Muda / III.a", pendidikanTerakhir: "D3", nomorHp: "085678912345", email: "doni.prasetyo@asn.id", alamat: "Perum Cipta Asri No. 7, Kesambi, Cirebon", role: "super_admin", statusAktif: true, createdAt: now, updatedAt: now }
+    { id: "PGW004", instansiId: "INST002", namaInstansi: "Kantor Kepegawaian Daerah Cirebon", namaPegawai: "Doni Prasetyo", nip: "198001292025211035", nik: "3209876543210002", tanggalLahir: "1992-08-15", jenisKelamin: "Laki-laki", jabatan: "Admin Database", statusPegawai: "PNS", pangkatGolongan: "Penata Muda / III.a", pendidikanTerakhir: "D3", nomorHp: "085678912345", email: "doni.prasetyo@asn.id", alamat: "Perum Cipta Asri No. 7, Kesambi, Cirebon", role: "super_admin", statusAktif: true, createdAt: now, updatedAt: now }
   ];
   for (const p of defaultPegawai) {
     try {
