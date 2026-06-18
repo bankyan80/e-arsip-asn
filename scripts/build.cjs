@@ -9,5 +9,5 @@ execSync('npx esbuild server.ts --bundle --platform=node --format=cjs --packages
 
 // Step 3: Build api/handler.ts for Vercel (CJS output to bypass ESM issues)
 if (fs.existsSync('api/handler.ts')) {
-  execSync('npx esbuild api/handler.ts --bundle --platform=node --format=cjs --packages=external --outfile=api/index.cjs', { stdio: 'inherit', cwd: process.cwd() });
+  execSync('npx esbuild api/handler.ts --bundle --platform=node --format=esm --packages=external --outfile=api/index.mjs', { stdio: 'inherit', cwd: process.cwd() });
 }
