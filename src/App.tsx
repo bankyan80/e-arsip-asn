@@ -77,6 +77,17 @@ export default function App() {
   });
   const [addingPegawaiProcess, setAddingPegawaiProcess] = useState(false);
 
+  // Kategori & Jenis Dokumen CRUD states
+  const [showKategoriModal, setShowKategoriModal] = useState(false);
+  const [editKategori, setEditKategori] = useState<any>(null);
+  const [kategoriForm, setKategoriForm] = useState({ namaKategori: '', urutan: 0 });
+
+  const [showJenisModal, setShowJenisModal] = useState(false);
+  const [editJenis, setEditJenis] = useState<any>(null);
+  const [jenisForm, setJenisForm] = useState({ kategoriId: '', namaDokumen: '', berlakuUntuk: 'Semua', wajib: false });
+
+  const [confirmDelete, setConfirmDelete] = useState<{ type: 'kategori' | 'jenis'; id: string; nama: string } | null>(null);
+
   // File Viewer light box state
   const [activeFileUrl, setActiveFileUrl] = useState<string | null>(null);
   const [activeFileName, setActiveFileName] = useState<string | null>(null);
@@ -1742,9 +1753,16 @@ export default function App() {
           {/* PAGE E. KATEGORI ARSIP PANEL */}
           {adminTab === 'kategori' && (
             <div className="space-y-4 animate-fade-in">
-              <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-xs">
-                <h3 className="text-sm font-bold text-slate-800">Master Kategori Kearsipan ASN</h3>
-                <p className="text-xs text-slate-400 mt-1">Grup dan Kategori yang didaftarkan dalam sistem</p>
+              <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-xs flex justify-between items-center">
+                <div>
+                  <h3 className="text-sm font-bold text-slate-800">Master Kategori Kearsipan ASN</h3>
+                  <p className="text-xs text-slate-400 mt-1">Grup dan Kategori yang didaftarkan dalam sistem</p>
+                </div>
+                {session?.role === 'super_admin' && (
+                  <button onClick={() => { setEditKategori(null); setKategoriForm({ namaKategori: '', urutan: 0 }); setShowKategoriModal(true); }} className="text-xs bg-[#0f2a44] text-white px-3 py-1.5 rounded-lg font-bold hover:bg-[#1a3d5e] whitespace-nowrap">
+                    + Kategori
+                  </button>
+                )}
               </div>
 
               <div className="space-y-3">
@@ -1754,23 +1772,141 @@ export default function App() {
                       <span className="font-extrabold text-slate-800 uppercase tracking-wide">
                         {cat.namaKategori}
                       </span>
-                      <span className="bg-slate-100 px-2.5 py-0.5 rounded text-[10px] font-bold text-slate-500">
-                        Urutan {cat.urutan}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="bg-slate-100 px-2.5 py-0.5 rounded text-[10px] font-bold text-slate-500">
+                          Urutan {cat.urutan}
+                        </span>
+                        {session?.role === 'super_admin' && (
+                          <>
+                            <button onClick={() => { setEditKategori(cat); setKategoriForm({ namaKategori: cat.namaKategori, urutan: cat.urutan }); setShowKategoriModal(true); }} className="text-[#0f2a44] hover:underline text-[10px]">Edit</button>
+                            <button onClick={() => setConfirmDelete({ type: 'kategori', id: cat.id, nama: cat.namaKategori })} className="text-red-500 hover:underline text-[10px]">Hapus</button>
+                            <button onClick={() => { setEditJenis(null); setJenisForm({ kategoriId: cat.id, namaDokumen: '', berlakuUntuk: 'Semua', wajib: false }); setShowJenisModal(true); }} className="text-xs bg-emerald-600 text-white px-2 py-0.5 rounded-lg font-bold hover:bg-emerald-700">+ Dokumen</button>
+                          </>
+                        )}
+                      </div>
                     </div>
-                    {/* List sub-components types configured under this category */}
                     <div className="flex flex-wrap gap-1.5">
                       {jenisDokumenList.filter(jd => jd.kategoriId === cat.id || jd.namaKategori === cat.namaKategori).map(jd => (
-                        <span key={jd.id} className={`inline-block py-1 px-2 rounded-lg font-semibold text-[10px] ${
+                        <span key={jd.id} className={`inline-flex items-center gap-1 py-1 px-2 rounded-lg font-semibold text-[10px] ${
                           jd.wajib ? 'bg-red-50 text-red-600 border border-red-100' : 'bg-slate-50 text-slate-500 border'
                         }`}>
                           {jd.namaDokumen} {jd.wajib ? '(Wajib)' : ''}
+                          {session?.role === 'super_admin' && (
+                            <button onClick={() => { setEditJenis(jd); setJenisForm({ kategoriId: jd.kategoriId, namaDokumen: jd.namaDokumen, berlakuUntuk: jd.berlakuUntuk, wajib: jd.wajib }); setShowJenisModal(true); }} className="text-[#0f2a44] hover:underline ml-1">✎</button>
+                          )}
+                          {session?.role === 'super_admin' && (
+                            <button onClick={() => setConfirmDelete({ type: 'jenis', id: jd.id, nama: jd.namaDokumen })} className="text-red-400 hover:text-red-600 ml-0.5">✕</button>
+                          )}
                         </span>
                       ))}
                     </div>
                   </div>
                 ))}
               </div>
+
+              {/* Kategori Modal */}
+              {showKategoriModal && (
+                <div className="fixed inset-0 bg-black/40 z-50 flex items-end md:items-center justify-center p-4">
+                  <div className="bg-white w-full max-w-sm rounded-2xl p-5 shadow-xl">
+                    <h4 className="text-sm font-bold text-slate-800 mb-4">{editKategori ? 'Edit Kategori' : 'Tambah Kategori'}</h4>
+                    <div className="space-y-3">
+                      <div>
+                        <label className="text-[10px] font-bold text-slate-500 uppercase">Nama Kategori</label>
+                        <input value={kategoriForm.namaKategori} onChange={e => setKategoriForm(p => ({ ...p, namaKategori: e.target.value }))} className="w-full h-10 border rounded-xl px-3 text-sm mt-1" placeholder="Contoh: Riwayat Karier" />
+                      </div>
+                      <div>
+                        <label className="text-[10px] font-bold text-slate-500 uppercase">Urutan</label>
+                        <input type="number" value={kategoriForm.urutan} onChange={e => setKategoriForm(p => ({ ...p, urutan: parseInt(e.target.value) || 0 }))} className="w-full h-10 border rounded-xl px-3 text-sm mt-1" />
+                      </div>
+                    </div>
+                    <div className="flex gap-2 mt-5">
+                      <button onClick={() => setShowKategoriModal(false)} className="flex-1 h-10 border rounded-xl text-sm font-bold">Batal</button>
+                      <button onClick={async () => {
+                        try {
+                          if (editKategori) {
+                            await fetch(`/api/admin/kategori/${editKategori.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(kategoriForm) });
+                          } else {
+                            await fetch('/api/admin/kategori', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(kategoriForm) });
+                          }
+                          setShowKategoriModal(false);
+                          const res = await fetch('/api/kategori'); setKategoriList(await res.json());
+                          showToast(editKategori ? 'Kategori diperbarui' : 'Kategori ditambahkan');
+                        } catch { showToast('Gagal menyimpan kategori', 'error'); }
+                      }} className="flex-1 h-10 bg-[#0f2a44] text-white rounded-xl text-sm font-bold">Simpan</button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Jenis Dokumen Modal */}
+              {showJenisModal && (
+                <div className="fixed inset-0 bg-black/40 z-50 flex items-end md:items-center justify-center p-4">
+                  <div className="bg-white w-full max-w-sm rounded-2xl p-5 shadow-xl">
+                    <h4 className="text-sm font-bold text-slate-800 mb-4">{editJenis ? 'Edit Jenis Dokumen' : 'Tambah Jenis Dokumen'}</h4>
+                    <div className="space-y-3">
+                      <div>
+                        <label className="text-[10px] font-bold text-slate-500 uppercase">Nama Dokumen</label>
+                        <input value={jenisForm.namaDokumen} onChange={e => setJenisForm(p => ({ ...p, namaDokumen: e.target.value }))} className="w-full h-10 border rounded-xl px-3 text-sm mt-1" placeholder="Contoh: SK CPNS/PNS" />
+                      </div>
+                      <div>
+                        <label className="text-[10px] font-bold text-slate-500 uppercase">Berlaku Untuk</label>
+                        <select value={jenisForm.berlakuUntuk} onChange={e => setJenisForm(p => ({ ...p, berlakuUntuk: e.target.value }))} className="w-full h-10 border rounded-xl px-3 text-sm mt-1">
+                          <option value="Semua">Semua</option>
+                          <option value="PNS">PNS</option>
+                          <option value="PPPK">PPPK</option>
+                          <option value="CPNS">CPNS</option>
+                        </select>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <input type="checkbox" checked={jenisForm.wajib} onChange={e => setJenisForm(p => ({ ...p, wajib: e.target.checked }))} id="wajib" className="w-4 h-4" />
+                        <label htmlFor="wajib" className="text-xs font-bold text-slate-600">Wajib</label>
+                      </div>
+                    </div>
+                    <div className="flex gap-2 mt-5">
+                      <button onClick={() => setShowJenisModal(false)} className="flex-1 h-10 border rounded-xl text-sm font-bold">Batal</button>
+                      <button onClick={async () => {
+                        try {
+                          if (editJenis) {
+                            await fetch(`/api/admin/jenis-dokumen/${editJenis.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(jenisForm) });
+                          } else {
+                            await fetch('/api/admin/jenis-dokumen', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...jenisForm, kategoriId: jenisForm.kategoriId, namaKategori: kategoriList.find(k => k.id === jenisForm.kategoriId)?.namaKategori || '' }) });
+                          }
+                          setShowJenisModal(false);
+                          const res = await fetch('/api/jenis-dokumen'); setJenisDokumenList(await res.json());
+                          showToast(editJenis ? 'Jenis dokumen diperbarui' : 'Jenis dokumen ditambahkan');
+                        } catch { showToast('Gagal menyimpan jenis dokumen', 'error'); }
+                      }} className="flex-1 h-10 bg-[#0f2a44] text-white rounded-xl text-sm font-bold">Simpan</button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Confirm Delete */}
+              {confirmDelete && (
+                <div className="fixed inset-0 bg-black/40 z-50 flex items-end md:items-center justify-center p-4">
+                  <div className="bg-white w-full max-w-sm rounded-2xl p-5 shadow-xl">
+                    <h4 className="text-sm font-bold text-slate-800 mb-2">Konfirmasi Hapus</h4>
+                    <p className="text-xs text-slate-500">Yakin ingin menghapus <strong>{confirmDelete.nama}</strong>?</p>
+                    <div className="flex gap-2 mt-5">
+                      <button onClick={() => setConfirmDelete(null)} className="flex-1 h-10 border rounded-xl text-sm font-bold">Batal</button>
+                      <button onClick={async () => {
+                        try {
+                          if (confirmDelete.type === 'kategori') {
+                            await fetch(`/api/admin/kategori/${confirmDelete.id}`, { method: 'DELETE' });
+                            const res = await fetch('/api/kategori'); setKategoriList(await res.json());
+                            const res2 = await fetch('/api/jenis-dokumen'); setJenisDokumenList(await res2.json());
+                          } else {
+                            await fetch(`/api/admin/jenis-dokumen/${confirmDelete.id}`, { method: 'DELETE' });
+                            const res = await fetch('/api/jenis-dokumen'); setJenisDokumenList(await res.json());
+                          }
+                          setConfirmDelete(null);
+                          showToast('Berhasil dihapus');
+                        } catch { showToast('Gagal menghapus', 'error'); }
+                      }} className="flex-1 h-10 bg-red-600 text-white rounded-xl text-sm font-bold">Hapus</button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 

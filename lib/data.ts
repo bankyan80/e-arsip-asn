@@ -114,9 +114,33 @@ export const getKategoriList: typeof firestore.getKategoriList = isTursoConfigur
   ? async () => turso.listKategori() as any
   : firestore.getKategoriList;
 
+export const createKategori = isTursoConfigured
+  ? async (data: any) => turso.createKategori(data) as any
+  : async (data: any) => { console.warn('createKategori not available (Firestore fallback)'); return data; };
+
+export const updateKategori = isTursoConfigured
+  ? async (id: string, data: any) => turso.updateKategori(id, data) as any
+  : async (id: string, _data: any) => { console.warn('updateKategori not available (Firestore fallback)'); };
+
+export const deleteKategori = isTursoConfigured
+  ? async (id: string) => turso.deleteKategori(id)
+  : async (id: string) => { console.warn('deleteKategori not available (Firestore fallback)'); };
+
 export const getJenisDokumenList: typeof firestore.getJenisDokumenList = isTursoConfigured
   ? async () => turso.listJenisDokumen() as any
   : firestore.getJenisDokumenList;
+
+export const createJenisDokumen = isTursoConfigured
+  ? async (data: any) => turso.createJenisDokumen(data) as any
+  : async (data: any) => { console.warn('createJenisDokumen not available (Firestore fallback)'); return data; };
+
+export const updateJenisDokumen = isTursoConfigured
+  ? async (id: string, data: any) => turso.updateJenisDokumen(id, data)
+  : async (id: string, _data: any) => { console.warn('updateJenisDokumen not available (Firestore fallback)'); };
+
+export const deleteJenisDokumen = isTursoConfigured
+  ? async (id: string) => turso.deleteJenisDokumen(id)
+  : async (id: string) => { console.warn('deleteJenisDokumen not available (Firestore fallback)'); };
 
 export const setPegawaiPassword = isTursoConfigured
   ? async (id: string, hashed: string) => turso.setPegawaiPassword(id, hashed)

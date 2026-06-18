@@ -266,10 +266,69 @@ async function listKategori() {
   if (!r) return [];
   return r.rows.map(mapRow);
 }
+async function createKategori(data) {
+  await query(
+    "INSERT INTO kategori_arsip (id, nama_kategori, urutan) VALUES (?, ?, ?)",
+    [data.id, data.namaKategori, data.urutan]
+  );
+  return data;
+}
+async function updateKategori(id, data) {
+  const set = [];
+  const args = [];
+  if (data.namaKategori !== void 0) {
+    set.push("nama_kategori = ?");
+    args.push(data.namaKategori);
+  }
+  if (data.urutan !== void 0) {
+    set.push("urutan = ?");
+    args.push(data.urutan);
+  }
+  if (set.length === 0) return;
+  args.push(id);
+  await query(`UPDATE kategori_arsip SET ${set.join(", ")} WHERE id = ?`, args);
+}
+async function deleteKategori(id) {
+  await query("DELETE FROM jenis_dokumen WHERE kategori_id = ?", [id]);
+  await query("DELETE FROM kategori_arsip WHERE id = ?", [id]);
+}
 async function listJenisDokumen() {
   const r = await query("SELECT * FROM jenis_dokumen ORDER BY urutan");
   if (!r) return [];
   return r.rows.map(mapRow);
+}
+async function createJenisDokumen(data) {
+  await query(
+    "INSERT INTO jenis_dokumen (id, kategori_id, nama_kategori, nama_dokumen, berlaku_untuk, wajib, urutan) VALUES (?, ?, ?, ?, ?, ?, ?)",
+    [data.id, data.kategoriId, data.namaKategori, data.namaDokumen, data.berlakuUntuk, data.wajib ? 1 : 0, data.urutan || 0]
+  );
+  return data;
+}
+async function updateJenisDokumen(id, data) {
+  const set = [];
+  const args = [];
+  if (data.namaDokumen !== void 0) {
+    set.push("nama_dokumen = ?");
+    args.push(data.namaDokumen);
+  }
+  if (data.berlakuUntuk !== void 0) {
+    set.push("berlaku_untuk = ?");
+    args.push(data.berlakuUntuk);
+  }
+  if (data.wajib !== void 0) {
+    set.push("wajib = ?");
+    args.push(data.wajib ? 1 : 0);
+  }
+  if (data.urutan !== void 0) {
+    set.push("urutan = ?");
+    args.push(data.urutan);
+  }
+  if (set.length === 0) return;
+  args.push(id);
+  await query(`UPDATE jenis_dokumen SET ${set.join(", ")} WHERE id = ?`, args);
+}
+async function deleteJenisDokumen(id) {
+  await query("DELETE FROM jenis_dokumen WHERE id = ?", [id]);
 }
 async function setPegawaiPassword(id, hashed) {
   await query("UPDATE pegawai SET password = ? WHERE id = ?", [hashed, id]);
@@ -839,7 +898,11 @@ var data_exports = {};
 __export(data_exports, {
   adminCreatePegawai: () => adminCreatePegawai2,
   createArsipData: () => createArsipData2,
+  createJenisDokumen: () => createJenisDokumen2,
+  createKategori: () => createKategori2,
   createLogEntry: () => createLogEntry2,
+  deleteJenisDokumen: () => deleteJenisDokumen2,
+  deleteKategori: () => deleteKategori2,
   findPegawaiByCredentials: () => findPegawaiByCredentials2,
   getArsipData: () => getArsipData2,
   getInstansiData: () => getInstansiData2,
@@ -856,6 +919,8 @@ __export(data_exports, {
   seedInitialDb: () => seedInitialDb2,
   setPegawaiPassword: () => setPegawaiPassword2,
   updateArsipData: () => updateArsipData2,
+  updateJenisDokumen: () => updateJenisDokumen2,
+  updateKategori: () => updateKategori2,
   updatePegawaiData: () => updatePegawaiData2,
   updateSettingValue: () => updateSettingValue2,
   writeLocalDb: () => writeLocalDb2
@@ -908,7 +973,7 @@ async function seedInitialDb2() {
   }
   return seedInitialDb();
 }
-var getInstansiData2, listAllInstansi2, getPegawaiData2, findPegawaiByCredentials2, updatePegawaiData2, listAllPegawai2, adminCreatePegawai2, listArsipByPegawai3, getArsipData2, createArsipData2, updateArsipData2, listAllArsipAdmin2, createLogEntry2, getLogsData2, getSettingValue2, updateSettingValue2, getKategoriList2, getJenisDokumenList2, setPegawaiPassword2, readLocalDb2, writeLocalDb2;
+var getInstansiData2, listAllInstansi2, getPegawaiData2, findPegawaiByCredentials2, updatePegawaiData2, listAllPegawai2, adminCreatePegawai2, listArsipByPegawai3, getArsipData2, createArsipData2, updateArsipData2, listAllArsipAdmin2, createLogEntry2, getLogsData2, getSettingValue2, updateSettingValue2, getKategoriList2, createKategori2, updateKategori2, deleteKategori2, getJenisDokumenList2, createJenisDokumen2, updateJenisDokumen2, deleteJenisDokumen2, setPegawaiPassword2, readLocalDb2, writeLocalDb2;
 var init_data = __esm({
   "lib/data.ts"() {
     "use strict";
@@ -957,7 +1022,27 @@ var init_data = __esm({
     } : getSettingValue;
     updateSettingValue2 = isConfigured ? async (key, value) => setSetting(key, value) : updateSettingValue;
     getKategoriList2 = isConfigured ? async () => listKategori() : getKategoriList;
+    createKategori2 = isConfigured ? async (data) => createKategori(data) : async (data) => {
+      console.warn("createKategori not available (Firestore fallback)");
+      return data;
+    };
+    updateKategori2 = isConfigured ? async (id, data) => updateKategori(id, data) : async (id, _data) => {
+      console.warn("updateKategori not available (Firestore fallback)");
+    };
+    deleteKategori2 = isConfigured ? async (id) => deleteKategori(id) : async (id) => {
+      console.warn("deleteKategori not available (Firestore fallback)");
+    };
     getJenisDokumenList2 = isConfigured ? async () => listJenisDokumen() : getJenisDokumenList;
+    createJenisDokumen2 = isConfigured ? async (data) => createJenisDokumen(data) : async (data) => {
+      console.warn("createJenisDokumen not available (Firestore fallback)");
+      return data;
+    };
+    updateJenisDokumen2 = isConfigured ? async (id, data) => updateJenisDokumen(id, data) : async (id, _data) => {
+      console.warn("updateJenisDokumen not available (Firestore fallback)");
+    };
+    deleteJenisDokumen2 = isConfigured ? async (id) => deleteJenisDokumen(id) : async (id) => {
+      console.warn("deleteJenisDokumen not available (Firestore fallback)");
+    };
     setPegawaiPassword2 = isConfigured ? async (id, hashed) => setPegawaiPassword(id, hashed) : async (id, _hashed) => {
       console.warn("setPegawaiPassword not available (Firestore fallback)");
     };
@@ -1738,6 +1823,80 @@ function createAdminRouter(requireAuth2, requireRole2, logAction2) {
       return res.json({ message: "Password berhasil direset." });
     } catch {
       return res.status(500).json({ error: "Gagal mereset password." });
+    }
+  });
+  router.post("/kategori", requireAuth2, requireRole2(["super_admin"]), async (req, res) => {
+    const { namaKategori, urutan } = req.body;
+    if (!namaKategori) return res.status(400).json({ error: "Nama kategori wajib diisi." });
+    try {
+      const id = "KAT_" + Date.now();
+      const result = await createKategori2({ id, namaKategori, urutan: urutan || 0 });
+      return res.status(201).json(result);
+    } catch {
+      return res.status(500).json({ error: "Gagal membuat kategori." });
+    }
+  });
+  router.patch("/kategori/:id", requireAuth2, requireRole2(["super_admin"]), async (req, res) => {
+    const { id } = req.params;
+    const { namaKategori, urutan } = req.body;
+    try {
+      await updateKategori2(id, { namaKategori, urutan });
+      return res.json({ message: "Kategori berhasil diperbarui." });
+    } catch {
+      return res.status(500).json({ error: "Gagal memperbarui kategori." });
+    }
+  });
+  router.delete("/kategori/:id", requireAuth2, requireRole2(["super_admin"]), async (req, res) => {
+    const { id } = req.params;
+    try {
+      await deleteKategori2(id);
+      return res.json({ message: "Kategori dan jenis dokumen di dalamnya berhasil dihapus." });
+    } catch {
+      return res.status(500).json({ error: "Gagal menghapus kategori." });
+    }
+  });
+  router.post("/jenis-dokumen", requireAuth2, requireRole2(["super_admin"]), async (req, res) => {
+    const { kategoriId, namaKategori, namaDokumen, berlakuUntuk, wajib } = req.body;
+    if (!kategoriId || !namaDokumen) return res.status(400).json({ error: "Kategori dan nama dokumen wajib diisi." });
+    try {
+      const id = "JD_" + Date.now();
+      const result = await createJenisDokumen2({ id, kategoriId, namaKategori, namaDokumen, berlakuUntuk: berlakuUntuk || "Semua", wajib: wajib || false });
+      return res.status(201).json(result);
+    } catch {
+      return res.status(500).json({ error: "Gagal membuat jenis dokumen." });
+    }
+  });
+  router.patch("/jenis-dokumen/:id", requireAuth2, requireRole2(["super_admin"]), async (req, res) => {
+    const { id } = req.params;
+    const { namaDokumen, berlakuUntuk, wajib, urutan } = req.body;
+    try {
+      await updateJenisDokumen2(id, { namaDokumen, berlakuUntuk, wajib, urutan });
+      return res.json({ message: "Jenis dokumen berhasil diperbarui." });
+    } catch {
+      return res.status(500).json({ error: "Gagal memperbarui jenis dokumen." });
+    }
+  });
+  router.delete("/jenis-dokumen/:id", requireAuth2, requireRole2(["super_admin"]), async (req, res) => {
+    const { id } = req.params;
+    try {
+      await deleteJenisDokumen2(id);
+      return res.json({ message: "Jenis dokumen berhasil dihapus." });
+    } catch {
+      return res.status(500).json({ error: "Gagal menghapus jenis dokumen." });
+    }
+  });
+  router.get("/kategori-list", requireAuth2, requireRole2(["super_admin", "admin_instansi"]), async (_req, res) => {
+    try {
+      return res.json(await getKategoriList2());
+    } catch {
+      return res.status(500).json({ error: "Gagal mengambil kategori." });
+    }
+  });
+  router.get("/jenis-dokumen-list", requireAuth2, requireRole2(["super_admin", "admin_instansi"]), async (_req, res) => {
+    try {
+      return res.json(await getJenisDokumenList2());
+    } catch {
+      return res.status(500).json({ error: "Gagal mengambil jenis dokumen." });
     }
   });
   return router;

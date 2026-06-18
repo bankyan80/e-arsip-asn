@@ -3,7 +3,10 @@ import bcrypt from 'bcryptjs';
 import {
   listAllPegawai, listAllArsipAdmin, getArsipData, updateArsipData,
   findPegawaiByCredentials, getInstansiData, adminCreatePegawai,
-  getLogsData, listAllInstansi, getSettingValue, updateSettingValue, setPegawaiPassword
+  getLogsData, listAllInstansi, getSettingValue, updateSettingValue, setPegawaiPassword,
+  createKategori, updateKategori, deleteKategori,
+  createJenisDokumen, updateJenisDokumen, deleteJenisDokumen,
+  getKategoriList, getJenisDokumenList
 } from '../lib/data';
 import { validasiSchema, createPegawaiSchema, settingSchema } from '../lib/validation';
 import { STATIC_JENIS_DOKUMEN } from '../lib/constants';
@@ -214,6 +217,71 @@ export function createAdminRouter(requireAuth: any, requireRole: any, logAction:
     } catch {
       return res.status(500).json({ error: 'Gagal mereset password.' });
     }
+  });
+
+  // KATEGORI CRUD
+  router.post('/kategori', requireAuth, requireRole(['super_admin']), async (req, res) => {
+    const { namaKategori, urutan } = req.body;
+    if (!namaKategori) return res.status(400).json({ error: 'Nama kategori wajib diisi.' });
+    try {
+      const id = 'KAT_' + Date.now();
+      const result = await createKategori({ id, namaKategori, urutan: urutan || 0 });
+      return res.status(201).json(result);
+    } catch { return res.status(500).json({ error: 'Gagal membuat kategori.' }); }
+  });
+
+  router.patch('/kategori/:id', requireAuth, requireRole(['super_admin']), async (req, res) => {
+    const { id } = req.params;
+    const { namaKategori, urutan } = req.body;
+    try {
+      await updateKategori(id, { namaKategori, urutan });
+      return res.json({ message: 'Kategori berhasil diperbarui.' });
+    } catch { return res.status(500).json({ error: 'Gagal memperbarui kategori.' }); }
+  });
+
+  router.delete('/kategori/:id', requireAuth, requireRole(['super_admin']), async (req, res) => {
+    const { id } = req.params;
+    try {
+      await deleteKategori(id);
+      return res.json({ message: 'Kategori dan jenis dokumen di dalamnya berhasil dihapus.' });
+    } catch { return res.status(500).json({ error: 'Gagal menghapus kategori.' }); }
+  });
+
+  // JENIS DOKUMEN CRUD
+  router.post('/jenis-dokumen', requireAuth, requireRole(['super_admin']), async (req, res) => {
+    const { kategoriId, namaKategori, namaDokumen, berlakuUntuk, wajib } = req.body;
+    if (!kategoriId || !namaDokumen) return res.status(400).json({ error: 'Kategori dan nama dokumen wajib diisi.' });
+    try {
+      const id = 'JD_' + Date.now();
+      const result = await createJenisDokumen({ id, kategoriId, namaKategori, namaDokumen, berlakuUntuk: berlakuUntuk || 'Semua', wajib: wajib || false });
+      return res.status(201).json(result);
+    } catch { return res.status(500).json({ error: 'Gagal membuat jenis dokumen.' }); }
+  });
+
+  router.patch('/jenis-dokumen/:id', requireAuth, requireRole(['super_admin']), async (req, res) => {
+    const { id } = req.params;
+    const { namaDokumen, berlakuUntuk, wajib, urutan } = req.body;
+    try {
+      await updateJenisDokumen(id, { namaDokumen, berlakuUntuk, wajib, urutan });
+      return res.json({ message: 'Jenis dokumen berhasil diperbarui.' });
+    } catch { return res.status(500).json({ error: 'Gagal memperbarui jenis dokumen.' }); }
+  });
+
+  router.delete('/jenis-dokumen/:id', requireAuth, requireRole(['super_admin']), async (req, res) => {
+    const { id } = req.params;
+    try {
+      await deleteJenisDokumen(id);
+      return res.json({ message: 'Jenis dokumen berhasil dihapus.' });
+    } catch { return res.status(500).json({ error: 'Gagal menghapus jenis dokumen.' }); }
+  });
+
+  // GET kategori & jenis dokumen (accessible by admin too)
+  router.get('/kategori-list', requireAuth, requireRole(['super_admin', 'admin_instansi']), async (_req, res) => {
+    try { return res.json(await getKategoriList()); } catch { return res.status(500).json({ error: 'Gagal mengambil kategori.' }); }
+  });
+
+  router.get('/jenis-dokumen-list', requireAuth, requireRole(['super_admin', 'admin_instansi']), async (_req, res) => {
+    try { return res.json(await getJenisDokumenList()); } catch { return res.status(500).json({ error: 'Gagal mengambil jenis dokumen.' }); }
   });
 
   return router;

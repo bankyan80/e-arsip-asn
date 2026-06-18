@@ -234,10 +234,51 @@ export async function listKategori() {
   return (r.rows as any[]).map(mapRow);
 }
 
+export async function createKategori(data: { id: string; namaKategori: string; urutan: number }) {
+  await query('INSERT INTO kategori_arsip (id, nama_kategori, urutan) VALUES (?, ?, ?)',
+    [data.id, data.namaKategori, data.urutan]);
+  return data;
+}
+
+export async function updateKategori(id: string, data: { namaKategori?: string; urutan?: number }) {
+  const set: string[] = []; const args: unknown[] = [];
+  if (data.namaKategori !== undefined) { set.push('nama_kategori = ?'); args.push(data.namaKategori); }
+  if (data.urutan !== undefined) { set.push('urutan = ?'); args.push(data.urutan); }
+  if (set.length === 0) return;
+  args.push(id);
+  await query(`UPDATE kategori_arsip SET ${set.join(', ')} WHERE id = ?`, args);
+}
+
+export async function deleteKategori(id: string) {
+  await query('DELETE FROM jenis_dokumen WHERE kategori_id = ?', [id]);
+  await query('DELETE FROM kategori_arsip WHERE id = ?', [id]);
+}
+
 export async function listJenisDokumen() {
   const r = await query('SELECT * FROM jenis_dokumen ORDER BY urutan');
   if (!r) return [];
   return (r.rows as any[]).map(mapRow);
+}
+
+export async function createJenisDokumen(data: any) {
+  await query('INSERT INTO jenis_dokumen (id, kategori_id, nama_kategori, nama_dokumen, berlaku_untuk, wajib, urutan) VALUES (?, ?, ?, ?, ?, ?, ?)',
+    [data.id, data.kategoriId, data.namaKategori, data.namaDokumen, data.berlakuUntuk, data.wajib ? 1 : 0, data.urutan || 0]);
+  return data;
+}
+
+export async function updateJenisDokumen(id: string, data: any) {
+  const set: string[] = []; const args: unknown[] = [];
+  if (data.namaDokumen !== undefined) { set.push('nama_dokumen = ?'); args.push(data.namaDokumen); }
+  if (data.berlakuUntuk !== undefined) { set.push('berlaku_untuk = ?'); args.push(data.berlakuUntuk); }
+  if (data.wajib !== undefined) { set.push('wajib = ?'); args.push(data.wajib ? 1 : 0); }
+  if (data.urutan !== undefined) { set.push('urutan = ?'); args.push(data.urutan); }
+  if (set.length === 0) return;
+  args.push(id);
+  await query(`UPDATE jenis_dokumen SET ${set.join(', ')} WHERE id = ?`, args);
+}
+
+export async function deleteJenisDokumen(id: string) {
+  await query('DELETE FROM jenis_dokumen WHERE id = ?', [id]);
 }
 
 export async function setPegawaiPassword(id: string, hashed: string) {
