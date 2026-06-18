@@ -17,3 +17,7 @@ api-build/
 cookies.txt
 session.txt
 session3.txt
+login_resp.txt
+scripts/call-bulk-validasi.mjs
+cookies.txt
+.env.production

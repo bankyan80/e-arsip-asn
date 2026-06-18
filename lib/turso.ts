@@ -75,6 +75,8 @@ export async function initSchema() {
     `CREATE TABLE IF NOT EXISTS jenis_dokumen (id TEXT PRIMARY KEY, kategori_id TEXT, nama_kategori TEXT, nama_dokumen TEXT, berlaku_untuk TEXT, wajib INTEGER DEFAULT 0, urutan INTEGER)`,
   ]);
   try { await c.execute('ALTER TABLE pegawai ADD COLUMN password TEXT NOT NULL DEFAULT \'\''); } catch {}
+  try { await c.execute('CREATE INDEX IF NOT EXISTS idx_arsip_deleted_updated ON arsip(deleted, updated_at)'); } catch {}
+  try { await c.execute('CREATE INDEX IF NOT EXISTS idx_arsip_pegawai_id ON arsip(pegawai_id)'); } catch {}
 }
 
 // INSTANSI
