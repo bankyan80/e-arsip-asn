@@ -85,7 +85,6 @@ export default async function handler(req: any, res: any) {
         } catch { return res.status(500).json({ error: 'Gagal memuat rekap.' }); }
       });
       const distPath = path.join(process.cwd(), 'dist');
-      app.get('/api/debug', (req, res) => res.json({ url: req.url, originalUrl: (req as any).originalUrl, method: req.method, headers: req.headers }));
       app.use(express.static(distPath));
       app.get('*', (_req, res) => res.sendFile(path.join(distPath, 'index.html')));
       appInstance = app;
