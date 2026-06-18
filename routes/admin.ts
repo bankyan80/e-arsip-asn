@@ -8,7 +8,7 @@ import {
   createJenisDokumen, updateJenisDokumen, deleteJenisDokumen,
   getKategoriList, getJenisDokumenList,
   bulkImportPegawai, clearPegawai, updateAllInstansiName,
-  createArsipData
+  createArsipData, bulkDeleteArsipByUploader
 } from '../lib/data';
 import { validasiSchema, createPegawaiSchema, settingSchema } from '../lib/validation';
 import { STATIC_JENIS_DOKUMEN } from '../lib/constants';
@@ -322,9 +322,15 @@ export function createAdminRouter(requireAuth: any, requireRole: any, logAction:
 
   // MIGRATE ARSIP FROM TIM-KERJA (super_admin only)
   router.post('/migrate-arsip', requireAuth, requireRole(['super_admin']), async (req, res) => {
-    const { arsip: arsipList } = req.body;
+    const { arsip: arsipList, clear } = req.body;
     if (!Array.isArray(arsipList) || arsipList.length === 0) return res.status(400).json({ error: 'Data arsip wajib dikirim.' });
     try {
+      // Optionally clear previous migration
+      if (clear) {
+        const { bulkDeleteArsipByUploader } = await import('../lib/turso');
+        if (bulkDeleteArsipByUploader) await bulkDeleteArsipByUploader('migration@tim-kerja');
+      }
+
       // Load all pegawai for name matching
       const allPeg = await listAllPegawai();
       const pegawaiMap: Record<string, any> = {};

@@ -158,6 +158,11 @@ export async function updateAllInstansiName(namaInstansi: string) {
   await query("UPDATE instansi SET nama_instansi = ?", [namaInstansi]);
 }
 
+export async function bulkDeleteArsipByUploader(uploadedBy: string) {
+  await query("DELETE FROM arsip WHERE uploaded_by = ?", [uploadedBy]);
+  await query("DELETE FROM logs WHERE detail LIKE ?", [`%${uploadedBy}%`]);
+}
+
 export async function updatePegawai(id: string, updates: Record<string, unknown>) {
   const setClauses: string[] = [];
   const args: unknown[] = [];

@@ -72,6 +72,7 @@ var init_constants = __esm({
 var turso_exports = {};
 __export(turso_exports, {
   bulkCreatePegawai: () => bulkCreatePegawai,
+  bulkDeleteArsipByUploader: () => bulkDeleteArsipByUploader,
   clearPegawaiExceptSuperAdmin: () => clearPegawaiExceptSuperAdmin,
   createArsip: () => createArsip,
   createInstansi: () => createInstansi,
@@ -242,6 +243,10 @@ async function clearPegawaiExceptSuperAdmin() {
 async function updateAllInstansiName(namaInstansi) {
   await query("UPDATE pegawai SET nama_instansi = ?, updated_at = datetime('now')", [namaInstansi]);
   await query("UPDATE instansi SET nama_instansi = ?", [namaInstansi]);
+}
+async function bulkDeleteArsipByUploader(uploadedBy) {
+  await query("DELETE FROM arsip WHERE uploaded_by = ?", [uploadedBy]);
+  await query("DELETE FROM logs WHERE detail LIKE ?", [`%${uploadedBy}%`]);
 }
 async function updatePegawai(id, updates) {
   const setClauses = [];
@@ -968,6 +973,7 @@ var init_firestore = __esm({
 var data_exports = {};
 __export(data_exports, {
   adminCreatePegawai: () => adminCreatePegawai2,
+  bulkDeleteArsipByUploader: () => bulkDeleteArsipByUploader2,
   bulkImportPegawai: () => bulkImportPegawai,
   clearPegawai: () => clearPegawai,
   createArsipData: () => createArsipData2,
@@ -1047,7 +1053,7 @@ async function seedInitialDb2() {
   }
   return seedInitialDb();
 }
-var getInstansiData2, listAllInstansi2, getPegawaiData2, findPegawaiByCredentials2, updatePegawaiData2, listAllPegawai2, adminCreatePegawai2, bulkImportPegawai, clearPegawai, updateAllInstansiName2, listArsipByPegawai3, getArsipData2, createArsipData2, updateArsipData2, listAllArsipAdmin2, createLogEntry2, getLogsData2, getSettingValue2, updateSettingValue2, getKategoriList2, createKategori2, updateKategori2, deleteKategori2, getJenisDokumenList2, createJenisDokumen2, updateJenisDokumen2, deleteJenisDokumen2, setPegawaiPassword2, readLocalDb2, writeLocalDb2;
+var getInstansiData2, listAllInstansi2, getPegawaiData2, findPegawaiByCredentials2, updatePegawaiData2, listAllPegawai2, adminCreatePegawai2, bulkImportPegawai, clearPegawai, updateAllInstansiName2, bulkDeleteArsipByUploader2, listArsipByPegawai3, getArsipData2, createArsipData2, updateArsipData2, listAllArsipAdmin2, createLogEntry2, getLogsData2, getSettingValue2, updateSettingValue2, getKategoriList2, createKategori2, updateKategori2, deleteKategori2, getJenisDokumenList2, createJenisDokumen2, updateJenisDokumen2, deleteJenisDokumen2, setPegawaiPassword2, readLocalDb2, writeLocalDb2;
 var init_data = __esm({
   "lib/data.ts"() {
     "use strict";
@@ -1088,6 +1094,9 @@ var init_data = __esm({
     };
     updateAllInstansiName2 = isConfigured ? async (namaInstansi) => updateAllInstansiName(namaInstansi) : async (_namaInstansi) => {
       console.warn("updateAllInstansiName not available (Firestore fallback)");
+    };
+    bulkDeleteArsipByUploader2 = isConfigured ? async (uploadedBy) => bulkDeleteArsipByUploader(uploadedBy) : async (_uploadedBy) => {
+      console.warn("bulkDeleteArsipByUploader not available (Firestore fallback)");
     };
     listArsipByPegawai3 = isConfigured ? async (pegawaiId) => listArsipByPegawai(pegawaiId) : listArsipByPegawai2;
     getArsipData2 = isConfigured ? async (id) => getArsip(id) : getArsipData;
@@ -2030,9 +2039,13 @@ function createAdminRouter(requireAuth2, requireRole2, logAction2) {
     }
   });
   router.post("/migrate-arsip", requireAuth2, requireRole2(["super_admin"]), async (req, res) => {
-    const { arsip: arsipList } = req.body;
+    const { arsip: arsipList, clear } = req.body;
     if (!Array.isArray(arsipList) || arsipList.length === 0) return res.status(400).json({ error: "Data arsip wajib dikirim." });
     try {
+      if (clear) {
+        const { bulkDeleteArsipByUploader: bulkDeleteArsipByUploader4 } = await Promise.resolve().then(() => (init_turso(), turso_exports));
+        if (bulkDeleteArsipByUploader4) await bulkDeleteArsipByUploader4("migration@tim-kerja");
+      }
       const allPeg = await listAllPegawai2();
       const pegawaiMap = {};
       for (const p of allPeg) {

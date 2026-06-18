@@ -86,6 +86,10 @@ export const updateAllInstansiName = isTursoConfigured
   ? async (namaInstansi: string) => turso.updateAllInstansiName(namaInstansi)
   : async (_namaInstansi: string) => { console.warn('updateAllInstansiName not available (Firestore fallback)'); };
 
+export const bulkDeleteArsipByUploader = isTursoConfigured
+  ? async (uploadedBy: string) => turso.bulkDeleteArsipByUploader(uploadedBy)
+  : async (_uploadedBy: string) => { console.warn('bulkDeleteArsipByUploader not available (Firestore fallback)'); };
+
 export const listArsipByPegawai: typeof firestore.listArsipByPegawai = isTursoConfigured
   ? async (pegawaiId: string) => turso.listArsipByPegawai(pegawaiId) as any
   : firestore.listArsipByPegawai;
