@@ -2,12 +2,15 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { bucket, isFirebaseConfigured } from './firebaseAdmin';
 
-const LOCAL_STORAGE_DIR = path.join(process.cwd(), 'uploaded_files');
+const LOCAL_STORAGE_DIR = process.env.VERCEL === '1'
+  ? '/tmp/uploaded_files'
+  : path.join(process.cwd(), 'uploaded_files');
 
-// Ensure local storage directory exists
-if (!fs.existsSync(LOCAL_STORAGE_DIR)) {
-  fs.mkdirSync(LOCAL_STORAGE_DIR, { recursive: true });
-}
+try {
+  if (!fs.existsSync(LOCAL_STORAGE_DIR)) {
+    fs.mkdirSync(LOCAL_STORAGE_DIR, { recursive: true });
+  }
+} catch {}
 
 export interface UploadResult {
   storagePath: string;
