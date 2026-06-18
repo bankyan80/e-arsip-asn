@@ -1,4 +1,4 @@
-import { dummy } from '../test-dummy';
+import { dummy } from '../test-dummy.ts';
 
 export default function handler(_req: any, res: any) {
   res.statusCode = 200;
