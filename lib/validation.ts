@@ -5,7 +5,7 @@ export const loginSchema = z.object({
   identifier: z.string()
     .regex(/^\d{16,18}$/, 'NIP harus 18 digit atau NIK 16 digit.')
     .refine(v => v.length === 16 || v.length === 18, 'NIP harus 18 digit atau NIK 16 digit.'),
-  tanggalLahir: z.string().min(1, 'Tanggal lahir wajib diisi.')
+  password: z.string().min(1, 'Password wajib diisi.')
 });
 
 export const profileUpdateSchema = z.object({

@@ -28,7 +28,7 @@ export default function App() {
   // Form states (Login)
   const [loginType, setLoginType] = useState<'NIP' | 'NIK' | 'BOTH'>('BOTH');
   const [identifier, setIdentifier] = useState('');
-  const [tanggalLahir, setTanggalLahir] = useState('');
+  const [password, setPassword] = useState('');
   const [loginLoading, setLoginLoading] = useState(false);
   const [loginError, setLoginError] = useState('');
 
@@ -103,14 +103,14 @@ export default function App() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoginError('');
-    if (!identifier || !tanggalLahir) {
-      setLoginError('Sila lengkapi data NIP/NIK dan tanggal lahir Anda.');
+    if (!identifier || !password) {
+      setLoginError('Sila lengkapi data NIP/NIK dan password Anda.');
       return;
     }
 
     setLoginLoading(true);
     try {
-      await sessionLogin(identifier, tanggalLahir, loginType);
+      await sessionLogin(identifier, password, loginType);
       showToast('Autentikasi berhasil. Selamat datang!');
     } catch (err: any) {
       setLoginError(err.message || 'Koneksi ke server gagal.');
@@ -132,13 +132,13 @@ export default function App() {
     setLoginType('BOTH');
     if (type === 'pegawai') {
       setIdentifier('198705122010012003');
-      setTanggalLahir('1987-05-12');
+      setPassword('12345678');
     } else if (type === 'admin') {
       setIdentifier('198501012008011002');
-      setTanggalLahir('1985-01-01');
+      setPassword('12345678');
     } else if (type === 'super') {
       setIdentifier('199208152015031004');
-      setTanggalLahir('1992-08-15');
+      setPassword('12345678');
     }
   };
 
@@ -382,15 +382,16 @@ export default function App() {
                 </span>
               </div>
 
-              {/* Tanggal Lahir Input */}
+              {/* Password Input */}
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1.5">
-                  Tanggal Lahir <span className="text-red-500">*</span>
+                  Password <span className="text-red-500">*</span>
                 </label>
                 <input
-                  type="date"
-                  value={tanggalLahir}
-                  onChange={(e) => setTanggalLahir(e.target.value)}
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Masukkan password"
                   className="w-full h-11 border border-slate-200 rounded-xl px-3 bg-slate-50 text-slate-800 text-sm font-semibold focus:outline-none focus:border-[#0f2a44] focus:bg-white transition-all"
                   required
                 />

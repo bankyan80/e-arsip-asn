@@ -1,4 +1,5 @@
 import { createClient } from '@libsql/client';
+import bcrypt from 'bcryptjs';
 
 const url = process.env.TURSO_DATABASE_URL;
 const authToken = process.env.TURSO_AUTH_TOKEN;
@@ -24,13 +25,28 @@ async function query(sql: string, args?: unknown[]) {
   return c.execute(sql, (args ? sanitize(args) : undefined) as any);
 }
 
-function mapRow(row: Record<string, unknown>) {
+function mapRowWithPassword(row: Record<string, unknown>) {
   const result: Record<string, unknown> = {};
   for (const [key, val] of Object.entries(row)) {
     const camel = key.replace(/_([a-z])/g, (_, c) => c.toUpperCase());
     if (key === 'status_aktif' || key === 'deleted' || key === 'wajib') {
       result[camel] = val == 1 || val === true;
     } else if (key === 'version_history') {
+      continue;
+    } else {
+      result[camel] = val;
+    }
+  }
+  return result;
+}
+
+function mapRow(row: Record<string, unknown>) {
+  const result: Record<string, unknown> = {};
+  for (const [key, val] of Object.entries(row)) {
+    const camel = key.replace(/_([a-z])/g, (_, c) => c.toUpperCase());
+    if (key === 'status_aktif' || key === 'deleted' || key === 'wajib') {
+      result[camel] = val == 1 || val === true;
+    } else if (key === 'version_history' || key === 'password') {
       continue;
     } else {
       result[camel] = val;
@@ -50,13 +66,14 @@ export async function initSchema() {
   if (!c) return;
   await c.batch([
     `CREATE TABLE IF NOT EXISTS instansi (id TEXT PRIMARY KEY, nama_instansi TEXT NOT NULL, alamat TEXT, kecamatan TEXT, kabupaten TEXT, status_aktif INTEGER DEFAULT 1)`,
-    `CREATE TABLE IF NOT EXISTS pegawai (id TEXT PRIMARY KEY, instansi_id TEXT NOT NULL, nama_instansi TEXT, nama_pegawai TEXT NOT NULL, nip TEXT, nik TEXT, tanggal_lahir TEXT, jenis_kelamin TEXT, jabatan TEXT, status_pegawai TEXT, pangkat_golongan TEXT, pendidikan_terakhir TEXT, nomor_hp TEXT, email TEXT, alamat TEXT, role TEXT DEFAULT 'pegawai', status_aktif INTEGER DEFAULT 1, login_terakhir TEXT, created_at TEXT, updated_at TEXT)`,
+    `CREATE TABLE IF NOT EXISTS pegawai (id TEXT PRIMARY KEY, instansi_id TEXT NOT NULL, nama_instansi TEXT, nama_pegawai TEXT NOT NULL, nip TEXT, nik TEXT, tanggal_lahir TEXT, jenis_kelamin TEXT, jabatan TEXT, status_pegawai TEXT, pangkat_golongan TEXT, pendidikan_terakhir TEXT, nomor_hp TEXT, email TEXT, alamat TEXT, password TEXT NOT NULL DEFAULT '', role TEXT DEFAULT 'pegawai', status_aktif INTEGER DEFAULT 1, login_terakhir TEXT, created_at TEXT, updated_at TEXT)`,
     `CREATE TABLE IF NOT EXISTS arsip (id TEXT PRIMARY KEY, pegawai_id TEXT NOT NULL, nip TEXT, nik TEXT, nama_pegawai TEXT, instansi_id TEXT, nama_instansi TEXT, kelompok_arsip TEXT, jenis_dokumen TEXT, nama_dokumen TEXT, nomor_dokumen TEXT, tanggal_dokumen TEXT, tahun TEXT, file_name TEXT, file_type TEXT, file_size INTEGER, storage_path TEXT, download_url TEXT, status_validasi TEXT DEFAULT 'Menunggu Validasi', catatan_admin TEXT, deleted INTEGER DEFAULT 0, uploaded_at TEXT, updated_at TEXT, uploaded_by TEXT, updated_by TEXT, version_history TEXT DEFAULT '[]')`,
     `CREATE TABLE IF NOT EXISTS logs (id TEXT PRIMARY KEY, tanggal TEXT, user_id TEXT, pegawai_id TEXT, nip TEXT, nama_pegawai TEXT, role TEXT, aksi TEXT, detail TEXT, arsip_id TEXT, nama_dokumen TEXT)`,
     `CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT, keterangan TEXT)`,
     `CREATE TABLE IF NOT EXISTS kategori_arsip (id TEXT PRIMARY KEY, nama_kategori TEXT, urutan INTEGER, deskripsi TEXT)`,
     `CREATE TABLE IF NOT EXISTS jenis_dokumen (id TEXT PRIMARY KEY, kategori_id TEXT, nama_kategori TEXT, nama_dokumen TEXT, berlaku_untuk TEXT, wajib INTEGER DEFAULT 0, urutan INTEGER)`,
   ]);
+  try { await c.execute('ALTER TABLE pegawai ADD COLUMN password TEXT NOT NULL DEFAULT \'\''); } catch {}
 }
 
 // INSTANSI
@@ -89,11 +106,18 @@ export async function getPegawai(id: string) {
   return mapRow(r.rows[0] as any);
 }
 
-export async function findPegawaiByNipNik(identifier: string, type: 'NIP' | 'NIK', tanggalLahir: string) {
+export async function findPegawaiByNipNik(identifier: string, type: 'NIP' | 'NIK') {
   const col = type === 'NIP' ? 'nip' : 'nik';
-  const r = await query(`SELECT * FROM pegawai WHERE ${col} = ? AND tanggal_lahir = ?`, [identifier, tanggalLahir]);
+  const r = await query(`SELECT * FROM pegawai WHERE ${col} = ?`, [identifier]);
   if (!r || r.rows.length === 0) return null;
   return mapRow(r.rows[0] as any);
+}
+
+export async function findPegawaiByNipNikWithPassword(identifier: string, type: 'NIP' | 'NIK') {
+  const col = type === 'NIP' ? 'nip' : 'nik';
+  const r = await query(`SELECT * FROM pegawai WHERE ${col} = ?`, [identifier]);
+  if (!r || r.rows.length === 0) return null;
+  return mapRowWithPassword(r.rows[0] as any);
 }
 
 export async function listPegawai(instansiId?: string) {
@@ -108,8 +132,8 @@ export async function listPegawai(instansiId?: string) {
 
 export async function createPegawai(data: any) {
   await query(
-    `INSERT INTO pegawai (id, instansi_id, nama_instansi, nama_pegawai, nip, nik, tanggal_lahir, jenis_kelamin, jabatan, status_pegawai, pangkat_golongan, pendidikan_terakhir, nomor_hp, email, alamat, role, status_aktif, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    [data.id, data.instansiId, data.namaInstansi, data.namaPegawai, data.nip, data.nik, data.tanggalLahir, data.jenisKelamin, data.jabatan, data.statusPegawai, data.pangkatGolongan, data.pendidikanTerakhir, data.nomorHp, data.email, data.alamat, data.role, data.statusAktif ? 1 : 0, data.createdAt, data.updatedAt]
+    `INSERT INTO pegawai (id, instansi_id, nama_instansi, nama_pegawai, nip, nik, tanggal_lahir, jenis_kelamin, jabatan, status_pegawai, pangkat_golongan, pendidikan_terakhir, nomor_hp, email, alamat, password, role, status_aktif, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [data.id, data.instansiId, data.namaInstansi, data.namaPegawai, data.nip, data.nik, data.tanggalLahir, data.jenisKelamin, data.jabatan, data.statusPegawai, data.pangkatGolongan, data.pendidikanTerakhir, data.nomorHp, data.email, data.alamat, data.password || '', data.role, data.statusAktif ? 1 : 0, data.createdAt, data.updatedAt]
   );
   return data;
 }
@@ -215,13 +239,28 @@ export async function listJenisDokumen() {
   return (r.rows as any[]).map(mapRow);
 }
 
+export async function setPegawaiPassword(id: string, hashed: string) {
+  await query('UPDATE pegawai SET password = ? WHERE id = ?', [hashed, id]);
+}
+
+export async function seedDefaultPasswords() {
+  const defaultPass = await bcrypt.hash('12345678', 10);
+  for (const id of ['PGW001', 'PGW002', 'PGW003', 'PGW004']) {
+    const r = await query('SELECT id, password FROM pegawai WHERE id = ?', [id]);
+    if (r && r.rows.length > 0 && !(r.rows[0] as any).password) {
+      await query('UPDATE pegawai SET password = ? WHERE id = ?', [defaultPass, id]);
+    }
+  }
+}
+
 export async function ensureSuperAdmin() {
   const existing = await query("SELECT id FROM pegawai WHERE id = ?", ['PGW004']);
   if (existing && existing.rows.length > 0) return;
   const now = new Date().toISOString();
+  const defaultPass = await bcrypt.hash('12345678', 10);
   await query(
-    `INSERT INTO pegawai (id, instansi_id, nama_instansi, nama_pegawai, nip, nik, tanggal_lahir, jenis_kelamin, jabatan, status_pegawai, pangkat_golongan, pendidikan_terakhir, nomor_hp, email, alamat, role, status_aktif, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
-    ['PGW004', 'INST002', 'Kantor Kepegawaian Daerah Cirebon', 'Doni Prasetyo', '199208152015031004', '3209876543210002', '1992-08-15', 'Laki-laki', 'Admin Database', 'PNS', 'Penata Muda / III.a', 'D3', '085678912345', 'doni.prasetyo@asn.id', 'Perum Cipta Asri No. 7, Kesambi, Cirebon', 'super_admin', 1, now, now]
+    `INSERT INTO pegawai (id, instansi_id, nama_instansi, nama_pegawai, nip, nik, tanggal_lahir, jenis_kelamin, jabatan, status_pegawai, pangkat_golongan, pendidikan_terakhir, nomor_hp, email, alamat, password, role, status_aktif, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+    ['PGW004', 'INST002', 'Kantor Kepegawaian Daerah Cirebon', 'Doni Prasetyo', '199208152015031004', '3209876543210002', '1992-08-15', 'Laki-laki', 'Admin Database', 'PNS', 'Penata Muda / III.a', 'D3', '085678912345', 'doni.prasetyo@asn.id', 'Perum Cipta Asri No. 7, Kesambi, Cirebon', defaultPass, 'super_admin', 1, now, now]
   );
 }
 

@@ -3,7 +3,7 @@ import path from 'path';
 import multer from 'multer';
 import rateLimit from 'express-rate-limit';
 
-import { seedInitialDb, createLogEntry } from './lib/firestore';
+import { seedInitialDb, createLogEntry } from './lib/data';
 import { verifySession } from './lib/session';
 import { SessionData, Log } from './src/types';
 

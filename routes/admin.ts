@@ -1,8 +1,9 @@
 import { Router } from 'express';
+import bcrypt from 'bcryptjs';
 import {
   listAllPegawai, listAllArsipAdmin, getArsipData, updateArsipData,
   findPegawaiByCredentials, getInstansiData, adminCreatePegawai,
-  getLogsData, listAllInstansi, getSettingValue, updateSettingValue
+  getLogsData, listAllInstansi, getSettingValue, updateSettingValue, setPegawaiPassword
 } from '../lib/data';
 import { validasiSchema, createPegawaiSchema, settingSchema } from '../lib/validation';
 import { STATIC_JENIS_DOKUMEN } from '../lib/constants';
@@ -30,8 +31,8 @@ export function createAdminRouter(requireAuth: any, requireRole: any, logAction:
     const body = parsed.data;
 
     try {
-      const existing = await findPegawaiByCredentials(body.nip, 'NIP', body.tanggalLahir);
-      if (existing) return res.status(400).json({ error: 'Pegawai dengan NIP dan tanggal lahir tersebut sudah ada.' });
+      const existing = await findPegawaiByCredentials(body.nip, 'NIP');
+      if (existing) return res.status(400).json({ error: 'Pegawai dengan NIP tersebut sudah ada.' });
 
       let instansiId = body.instansiId || 'INST001';
       if (session.role === 'admin_instansi') instansiId = session.instansiId;
@@ -41,6 +42,8 @@ export function createAdminRouter(requireAuth: any, requireRole: any, logAction:
         const ins = await getInstansiData(instansiId);
         if (ins) instansiName = ins.namaInstansi;
       }
+
+      const defaultPass = await bcrypt.hash('12345678', 10);
 
       const p: Pegawai = {
         id: 'PGW_' + Date.now(), instansiId, namaInstansi: instansiName,
@@ -52,6 +55,7 @@ export function createAdminRouter(requireAuth: any, requireRole: any, logAction:
         pangkatGolongan: body.pangkatGolongan || 'Penata / III.c',
         pendidikanTerakhir: body.pendidikanTerakhir || 'S1',
         nomorHp: body.nomorHp || '', email: body.email || '', alamat: body.alamat || '',
+        password: defaultPass,
         role: body.role === 'admin_instansi' || body.role === 'super_admin' ? body.role : 'pegawai',
         statusAktif: body.statusAktif !== undefined ? body.statusAktif : true,
         createdAt: new Date().toISOString(), updatedAt: new Date().toISOString()
@@ -194,6 +198,21 @@ export function createAdminRouter(requireAuth: any, requireRole: any, logAction:
       return res.json({ message: 'Pengaturan berhasil diperbaharui.' });
     } catch {
       return res.status(500).json({ error: 'Gagal menyimpan konfigurasi.' });
+    }
+  });
+
+  router.patch('/pegawai/:id/reset-password', requireAuth, requireRole(['super_admin', 'admin_instansi']), async (req, res) => {
+    const { id } = req.params;
+    const { newPassword } = req.body;
+    if (!newPassword || newPassword.length < 6) {
+      return res.status(400).json({ error: 'Password baru minimal 6 karakter.' });
+    }
+    try {
+      const hashed = await bcrypt.hash(newPassword, 10);
+      await setPegawaiPassword(id, hashed);
+      return res.json({ message: 'Password berhasil direset.' });
+    } catch {
+      return res.status(500).json({ error: 'Gagal mereset password.' });
     }
   });
 

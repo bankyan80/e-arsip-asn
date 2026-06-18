@@ -15,11 +15,11 @@ export function useSession() {
       .finally(() => setLoadingSession(false));
   }, []);
 
-  const login = useCallback(async (identifier: string, tanggalLahir: string, loginType: 'NIP' | 'NIK' | 'BOTH' = 'BOTH') => {
+  const login = useCallback(async (identifier: string, password: string, loginType: 'NIP' | 'NIK' | 'BOTH' = 'BOTH') => {
     const res = await fetch('/api/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ loginType, identifier, tanggalLahir })
+      body: JSON.stringify({ loginType, identifier, password })
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Login gagal.');

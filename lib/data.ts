@@ -29,6 +29,7 @@ async function seedTurso() {
 
   await turso.setSetting('app_nama', 'Arsip Digital ASN');
   await turso.setSetting('app_instansi', 'Pemerintah Kabupaten Cirebon');
+  await turso.seedDefaultPasswords();
   console.log('Seeding complete');
 }
 
@@ -53,9 +54,9 @@ export const getPegawaiData: typeof firestore.getPegawaiData = isTursoConfigured
   : firestore.getPegawaiData;
 
 export const findPegawaiByCredentials: typeof firestore.findPegawaiByCredentials = isTursoConfigured
-  ? async (identifier, type, tanggalLahir) => {
-      if (type === 'NIP' || type === 'BOTH') { const d = await turso.findPegawaiByNipNik(identifier, 'NIP', tanggalLahir); if (d) return d as any; }
-      if (type === 'NIK' || type === 'BOTH') { const d = await turso.findPegawaiByNipNik(identifier, 'NIK', tanggalLahir); if (d) return d as any; }
+  ? async (identifier, type, _tanggalLahir?: string) => {
+      if (type === 'NIP' || type === 'BOTH') { const d = await turso.findPegawaiByNipNikWithPassword(identifier, 'NIP'); if (d) return d as any; }
+      if (type === 'NIK' || type === 'BOTH') { const d = await turso.findPegawaiByNipNikWithPassword(identifier, 'NIK'); if (d) return d as any; }
       return null;
     }
   : firestore.findPegawaiByCredentials;
@@ -115,6 +116,10 @@ export const getKategoriList: typeof firestore.getKategoriList = isTursoConfigur
 export const getJenisDokumenList: typeof firestore.getJenisDokumenList = isTursoConfigured
   ? async () => turso.listJenisDokumen() as any
   : firestore.getJenisDokumenList;
+
+export const setPegawaiPassword = isTursoConfigured
+  ? async (id: string, hashed: string) => turso.setPegawaiPassword(id, hashed)
+  : async (id: string, _hashed: string) => { console.warn('setPegawaiPassword not available (Firestore fallback)'); };
 
 export const readLocalDb = firestore.readLocalDb;
 export const writeLocalDb = firestore.writeLocalDb;

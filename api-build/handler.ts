@@ -56,7 +56,25 @@ export default async function handler(req: any, res: any) {
       app.use(express.urlencoded({ extended: true, limit: '50mb' }));
       app.use(cookieParser());
       const upload = multer({ limits: { fileSize: 10 * 1024 * 1024 } });
-      app.use('/api/auth', createAuthRouter(requireAuth, rateLimit));
+  const generalLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 100,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'Terlalu banyak permintaan. Coba lagi dalam 15 menit.' }
+  });
+
+  const strictLimiter = rateLimit({
+    windowMs: 60 * 1000,
+    max: 20,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'Terlalu banyak permintaan. Coba lagi dalam 1 menit.' }
+  });
+
+  app.use('/api/', generalLimiter);
+  app.use('/api/auth/login', strictLimiter);
+  app.use('/api/auth', createAuthRouter(requireAuth, rateLimit));
       app.use('/api', createMetadataRouter(requireAuth));
       app.use('/api/pegawai', createPegawaiRouter(requireAuth, logAction));
       app.use('/api/arsip', createArsipRouter(requireAuth, upload, logAction));

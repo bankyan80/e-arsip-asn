@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import bcrypt from 'bcryptjs';
 import { findPegawaiByCredentials, updatePegawaiData, createLogEntry } from '../lib/data';
 import { signSession, verifySession } from '../lib/session';
 import { loginSchema } from '../lib/validation';
@@ -20,15 +21,20 @@ export function createAuthRouter(requireAuth: any, rateLimit: any) {
     if (!parsed.success) {
       return res.status(400).json({ error: parsed.error.issues[0]?.message || 'Data login tidak valid.' });
     }
-    const { loginType, identifier, tanggalLahir } = parsed.data;
+    const { loginType, identifier, password } = parsed.data;
 
     try {
-      const p = await findPegawaiByCredentials(identifier, loginType, tanggalLahir);
+      const p = await findPegawaiByCredentials(identifier, loginType);
       if (!p) {
-        return res.status(401).json({ error: 'NIP/NIK tidak ditemukan atau tanggal lahir tidak sesuai.' });
+        return res.status(401).json({ error: 'NIP/NIK tidak ditemukan.' });
       }
       if (!p.statusAktif) {
         return res.status(403).json({ error: 'Akun pegawai tidak aktif. Silakan hubungi admin.' });
+      }
+
+      const pwMatch = await bcrypt.compare(password, p.password || '');
+      if (!pwMatch) {
+        return res.status(401).json({ error: 'Password salah.' });
       }
 
       await updatePegawaiData(p.id, { loginTerakhir: new Date().toISOString() });
