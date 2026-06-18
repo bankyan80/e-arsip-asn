@@ -461,7 +461,7 @@ export default function App() {
           {/* Footer constraints */}
           <div className="bg-slate-50/50 py-3 text-center border-t border-slate-100">
             <p className="text-[7px] text-slate-400 font-bold uppercase tracking-wider">
-              Tim Kerja Bidang SD Dinas Pendidikan Kecamatan Lemahabang
+              Kantor Kepegawaian Daerah Cirebon
             </p>
           </div>
         </div>
@@ -2066,7 +2066,7 @@ export default function App() {
 
       {/* Persistent Admin footer brand */}
       <footer className="bg-slate-100 py-3.5 text-center text-[7px] text-slate-400 border-t mt-8">
-        Tim Kerja Bidang SD Dinas Pendidikan Kecamatan Lemahabang • Arsip Digital ASN Integrated V1.2
+        Kantor Kepegawaian Daerah Cirebon • Arsip Digital ASN Integrated V1.2
       </footer>
 
       {/* LIGHTBOX FILE VIEWER */}
