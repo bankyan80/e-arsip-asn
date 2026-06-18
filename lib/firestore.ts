@@ -4,7 +4,9 @@ import { db, isFirebaseConfigured } from './firebaseAdmin';
 import { Instansi, Pegawai, KategoriArsip, JenisDokumen, Arsip, Log, Setting } from '../src/types';
 import { STATIC_KATEGORI, STATIC_JENIS_DOKUMEN } from './constants';
 
-const LOCAL_DB_PATH = path.join(process.cwd(), 'local-db.json');
+const LOCAL_DB_PATH = process.env.VERCEL === '1'
+  ? path.join('/tmp', 'local-db.json')
+  : path.join(process.cwd(), 'local-db.json');
 
 // Interface for local JSON database structure
 interface LocalDB {
@@ -22,6 +24,14 @@ interface LocalDB {
 // -----------------------------------------
 export function readLocalDb(): LocalDB {
   if (!fs.existsSync(LOCAL_DB_PATH)) {
+    const projectPath = path.join(process.cwd(), 'local-db.json');
+    if (process.env.VERCEL === '1' && fs.existsSync(projectPath)) {
+      try {
+        fs.cpSync(projectPath, LOCAL_DB_PATH);
+        const content = fs.readFileSync(LOCAL_DB_PATH, 'utf-8');
+        return JSON.parse(content);
+      } catch { }
+    }
     const fresh: LocalDB = {
       instansi: [],
       pegawai: [],

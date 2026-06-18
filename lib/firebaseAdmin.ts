@@ -36,20 +36,21 @@ async function init() {
     try {
       bucket = adminAny.storage().bucket();
     } catch (bucketErr) {
-      console.warn('Real Firebase Storage bucket could not be resolved, using default:', bucketErr);
+      console.warn('Firebase Storage bucket could not be resolved:', bucketErr);
     }
-    console.log('Firebase Admin SDK successfully initialized.');
+    console.log('Firebase Admin SDK initialized.');
   } else if (hasClientCreds) {
     try {
-      const { default: firebase } = await import('firebase/compat/app');
+      const mod = await import('firebase/compat/app');
       await import('firebase/compat/firestore');
+      const firebase = mod.default || mod;
       const config: Record<string, any> = { apiKey, authDomain, projectId, messagingSenderId, appId };
       if (storageBucket) config.storageBucket = storageBucket;
       app = firebase.initializeApp(config);
       db = app.firestore();
       console.log('Firebase Client SDK (compat) initialized. Storage falls back to local.');
-    } catch (error) {
-      console.error('Failed to initialize Firebase Client SDK:', error);
+    } catch (error: any) {
+      console.error('Firebase Client SDK init failed, will use local DB:', error?.message || error);
     }
   }
 }
@@ -57,7 +58,7 @@ async function init() {
 if (isFirebaseConfigured) {
   init().catch(e => console.error('Firebase init error:', e));
 } else {
-  console.log('Firebase credentials not detected in .env. Falling back to local data store.');
+  console.log('Firebase credentials not detected. Using local data store.');
 }
 
 export { app, db, bucket, isFirebaseConfigured };
