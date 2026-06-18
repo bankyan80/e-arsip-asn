@@ -1199,7 +1199,8 @@ var profileUpdateSchema = z.object({
   pendidikanTerakhir: z.string().optional(),
   nomorHp: z.string().optional(),
   email: z.string().email("Format email tidak valid.").optional().or(z.literal("")),
-  alamat: z.string().optional()
+  alamat: z.string().optional(),
+  namaInstansi: z.string().optional()
 });
 var arsipUploadSchema = z.object({
   kelompokArsip: z.string().min(1),
@@ -1346,7 +1347,7 @@ function createPegawaiRouter(requireAuth2, logAction2) {
     const data = parsed.data;
     try {
       const updates = {};
-      const adminFields = ["namaPegawai", "jabatan", "statusPegawai", "pangkatGolongan", "pendidikanTerakhir"];
+      const adminFields = ["namaPegawai", "jabatan", "statusPegawai", "pangkatGolongan", "pendidikanTerakhir", "namaInstansi"];
       const kontakFields = ["nomorHp", "email", "alamat"];
       for (const key of kontakFields) {
         if (data[key] !== void 0) updates[key] = data[key];

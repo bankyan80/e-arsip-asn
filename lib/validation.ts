@@ -16,7 +16,8 @@ export const profileUpdateSchema = z.object({
   pendidikanTerakhir: z.string().optional(),
   nomorHp: z.string().optional(),
   email: z.string().email('Format email tidak valid.').optional().or(z.literal('')),
-  alamat: z.string().optional()
+  alamat: z.string().optional(),
+  namaInstansi: z.string().optional()
 });
 
 export const arsipUploadSchema = z.object({

@@ -26,7 +26,7 @@ export function createPegawaiRouter(requireAuth: any, logAction: any) {
     const data = parsed.data;
     try {
       const updates: Partial<Pegawai> = {};
-      const adminFields = ['namaPegawai', 'jabatan', 'statusPegawai', 'pangkatGolongan', 'pendidikanTerakhir'];
+      const adminFields = ['namaPegawai', 'jabatan', 'statusPegawai', 'pangkatGolongan', 'pendidikanTerakhir', 'namaInstansi'];
       const kontakFields = ['nomorHp', 'email', 'alamat'];
       for (const key of kontakFields) {
         if ((data as any)[key] !== undefined) (updates as any)[key] = (data as any)[key];

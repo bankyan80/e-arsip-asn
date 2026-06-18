@@ -49,7 +49,7 @@ export default function App() {
   // Editing state (Personnel)
   const [editArsip, setEditArsip] = useState<Arsip | null>(null);
   const [profileEditing, setProfileEditing] = useState(false);
-  const [profileForm, setProfileForm] = useState({ namaPegawai: '', jabatan: '', statusPegawai: '', pangkatGolongan: '', pendidikanTerakhir: '', nomorHp: '', email: '', alamat: '' });
+  const [profileForm, setProfileForm] = useState({ namaPegawai: '', jabatan: '', statusPegawai: '', pangkatGolongan: '', pendidikanTerakhir: '', nomorHp: '', email: '', alamat: '', namaInstansi: '' });
 
   // Verification dialog state (Admin)
   const [verifyingArsip, setVerifyingArsip] = useState<Arsip | null>(null);
@@ -935,7 +935,7 @@ export default function App() {
                   <h4 className="text-xs font-black text-[#0f2a44] uppercase">Kontak ASN</h4>
                   <button
                     onClick={() => {
-                      setProfileForm({ namaPegawai: profile.namaPegawai || '', jabatan: profile.jabatan || '', statusPegawai: profile.statusPegawai || '', pangkatGolongan: profile.pangkatGolongan || '', pendidikanTerakhir: profile.pendidikanTerakhir || '', nomorHp: profile.nomorHp || '', email: profile.email || '', alamat: profile.alamat || '' });
+                      setProfileForm({ namaPegawai: profile.namaPegawai || '', jabatan: profile.jabatan || '', statusPegawai: profile.statusPegawai || '', pangkatGolongan: profile.pangkatGolongan || '', pendidikanTerakhir: profile.pendidikanTerakhir || '', nomorHp: profile.nomorHp || '', email: profile.email || '', alamat: profile.alamat || '', namaInstansi: profile.namaInstansi || '' });
                       setProfileEditing(!profileEditing);
                     }}
                     className="text-xs text-[#1d4ed8] font-bold"
@@ -1996,7 +1996,7 @@ export default function App() {
                 <div className="flex justify-between items-center border-b border-slate-100 pb-2 mb-3">
                   <h4 className="text-xs font-black text-[#0f2a44] uppercase">Biodata ASN</h4>
                   <button onClick={() => {
-                      setProfileForm({ namaPegawai: profile.namaPegawai || '', jabatan: profile.jabatan || '', statusPegawai: profile.statusPegawai || '', pangkatGolongan: profile.pangkatGolongan || '', pendidikanTerakhir: profile.pendidikanTerakhir || '', nomorHp: profile.nomorHp || '', email: profile.email || '', alamat: profile.alamat || '' });
+                      setProfileForm({ namaPegawai: profile.namaPegawai || '', jabatan: profile.jabatan || '', statusPegawai: profile.statusPegawai || '', pangkatGolongan: profile.pangkatGolongan || '', pendidikanTerakhir: profile.pendidikanTerakhir || '', nomorHp: profile.nomorHp || '', email: profile.email || '', alamat: profile.alamat || '', namaInstansi: profile.namaInstansi || '' });
                       setProfileEditing(!profileEditing);
                     }} className="text-xs text-[#1d4ed8] font-bold">
                     {profileEditing ? 'Batal' : 'Edit Profil'}
@@ -2046,6 +2046,10 @@ export default function App() {
                     <div>
                       <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Pendidikan Terakhir</label>
                       <input type="text" value={profileForm.pendidikanTerakhir} onChange={e => setProfileForm(p => ({ ...p, pendidikanTerakhir: e.target.value }))} className="w-full h-10 border border-slate-200 rounded-lg px-3 text-xs" />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Instansi / Unit</label>
+                      <input type="text" value={profileForm.namaInstansi} onChange={e => setProfileForm(p => ({ ...p, namaInstansi: e.target.value }))} className="w-full h-10 border border-slate-200 rounded-lg px-3 text-xs" />
                     </div>
                     <hr className="border-slate-100" />
                     <div>
