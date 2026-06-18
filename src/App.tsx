@@ -310,8 +310,8 @@ export default function App() {
   const openFileViewer = (id: string, url: string) => {
     const match = myArchives.find(a => a.id === id) || allArchives.find(a => a.id === id);
     setActiveFileName(match ? `${match.jenisDokumen} - ${match.namaDokumen}` : 'Dokumen Arsip');
-    // If url is empty, try storagePath (base64 data URI from migration)
-    const fileUrl = url || match?.storagePath || '';
+    // Use download URL if available; otherwise fetch via API (handles base64 from DB)
+    const fileUrl = url || `/api/files/download?arsipId=${id}`;
     setActiveFileUrl(fileUrl);
   };
 

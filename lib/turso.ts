@@ -177,7 +177,7 @@ export async function updatePegawai(id: string, updates: Record<string, unknown>
 
 // ARSIP
 export async function listArsipByPegawai(pegawaiId: string) {
-  const r = await query('SELECT * FROM arsip WHERE pegawai_id = ? AND deleted = 0 ORDER BY updated_at DESC', [pegawaiId]);
+  const r = await query(`SELECT id, pegawai_id, nip, nik, nama_pegawai, instansi_id, nama_instansi, kelompok_arsip, jenis_dokumen, nama_dokumen, nomor_dokumen, tanggal_dokumen, tahun, file_name, file_type, file_size, download_url, status_validasi, catatan_admin, deleted, uploaded_at, updated_at, uploaded_by, updated_by, version_history FROM arsip WHERE pegawai_id = ? AND deleted = 0 ORDER BY updated_at DESC`, [pegawaiId]);
   if (!r) return [];
   return (r.rows as any[]).map(mapArsipRow);
 }
@@ -217,7 +217,8 @@ export async function updateArsip(id: string, updates: Record<string, unknown>) 
 }
 
 export async function listArsipAdmin(instansiId?: string) {
-  let sql = 'SELECT * FROM arsip WHERE deleted = 0';
+  // Exclude storagePath (base64 data) to keep response small
+  let sql = `SELECT id, pegawai_id, nip, nik, nama_pegawai, instansi_id, nama_instansi, kelompok_arsip, jenis_dokumen, nama_dokumen, nomor_dokumen, tanggal_dokumen, tahun, file_name, file_type, file_size, download_url, status_validasi, catatan_admin, deleted, uploaded_at, updated_at, uploaded_by, updated_by, version_history FROM arsip WHERE deleted = 0`;
   const args: unknown[] = [];
   if (instansiId) { sql += ' AND instansi_id = ?'; args.push(instansiId); }
   sql += ' ORDER BY updated_at DESC';
@@ -342,6 +343,14 @@ export async function seedKategoriDanJenis() {
     await query('INSERT INTO jenis_dokumen (id, kategori_id, nama_kategori, nama_dokumen, berlaku_untuk, wajib, urutan) VALUES (?, ?, ?, ?, ?, ?, ?)',
       [jd.id, jd.kategoriId, jd.namaKategori, jd.namaDokumen, jd.berlakuUntuk, jd.wajib ? 1 : 0, 0]);
   }
+}
+
+export async function bulkValidasiArsip(instansiId?: string, statusValidasi: string = 'Valid', updatedBy: string = 'system') {
+  let sql = `UPDATE arsip SET status_validasi = ?, updated_at = datetime('now'), updated_by = ? WHERE deleted = 0`;
+  const args: unknown[] = [statusValidasi, updatedBy];
+  if (instansiId) { sql += ' AND instansi_id = ?'; args.push(instansiId); }
+  const r = await query(sql, args);
+  return r !== null;
 }
 
 export async function ensureSuperAdmin() {

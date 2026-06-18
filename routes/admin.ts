@@ -8,7 +8,7 @@ import {
   createJenisDokumen, updateJenisDokumen, deleteJenisDokumen,
   getKategoriList, getJenisDokumenList,
   bulkImportPegawai, clearPegawai, updateAllInstansiName,
-  createArsipData, bulkDeleteArsipByUploader
+  createArsipData, bulkDeleteArsipByUploader, bulkValidasiArsip
 } from '../lib/data';
 import { validasiSchema, createPegawaiSchema, settingSchema } from '../lib/validation';
 import { STATIC_JENIS_DOKUMEN } from '../lib/constants';
@@ -123,6 +123,19 @@ export function createAdminRouter(requireAuth: any, requireRole: any, logAction:
       return res.json({ message: 'Status validasi berhasil diperbarui.', arsip: result });
     } catch {
       return res.status(500).json({ error: 'Gagal memproses validasi.' });
+    }
+  });
+
+  router.post('/arsip/bulk-validasi', requireAuth, requireRole(['super_admin']), async (req, res) => {
+    const session = (req as any).session as SessionData;
+    const { statusValidasi, instansiId } = req.body || {};
+    try {
+      const success = await bulkValidasiArsip(instansiId || undefined, statusValidasi || 'Valid', session.id);
+      if (!success) return res.status(500).json({ error: 'Gagal melakukan update massal.' });
+      await logAction(session, 'BULK_VALIDASI_ARSIP', `Validasi massal semua arsip${instansiId ? ` (instansi: ${instansiId})` : ''} ke status: ${statusValidasi || 'Valid'}`);
+      return res.json({ message: 'Semua arsip berhasil divalidasi.' });
+    } catch {
+      return res.status(500).json({ error: 'Gagal memproses validasi massal.' });
     }
   });
 

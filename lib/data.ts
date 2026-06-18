@@ -158,6 +158,10 @@ export const deleteJenisDokumen = isTursoConfigured
   ? async (id: string) => turso.deleteJenisDokumen(id)
   : async (id: string) => { console.warn('deleteJenisDokumen not available (Firestore fallback)'); };
 
+export const bulkValidasiArsip = isTursoConfigured
+  ? async (instansiId?: string, statusValidasi: string = 'Valid', updatedBy: string = 'system') => turso.bulkValidasiArsip(instansiId, statusValidasi, updatedBy)
+  : async (_instansiId?: string, _statusValidasi?: string, _updatedBy?: string) => { console.warn('bulkValidasiArsip not available (Firestore fallback)'); return false; };
+
 export const setPegawaiPassword = isTursoConfigured
   ? async (id: string, hashed: string) => turso.setPegawaiPassword(id, hashed)
   : async (id: string, _hashed: string) => { console.warn('setPegawaiPassword not available (Firestore fallback)'); };
