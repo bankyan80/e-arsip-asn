@@ -137,8 +137,8 @@ export default function App() {
       setIdentifier('198501012008011002');
       setTanggalLahir('1985-01-01');
     } else if (type === 'super') {
-      setIdentifier('198001012002012001');
-      setTanggalLahir('1980-01-01');
+      setIdentifier('199208152015031004');
+      setTanggalLahir('1992-08-15');
     }
   };
 

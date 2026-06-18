@@ -17,7 +17,7 @@ export function useAdminData() {
       fetch('/api/admin/logs').then(r => r.json()).then(setSystemLogs).catch(() => {}),
     ]);
 
-    if (role === 'admin_instansi') {
+    if (role === 'admin_instansi' || role === 'super_admin') {
       fetch('/api/admin/instansi').then(r => r.json()).then(setInstansiList).catch(() => {});
       fetch('/api/admin/settings').then(r => r.json()).then(setAdminSettings).catch(() => {});
     }

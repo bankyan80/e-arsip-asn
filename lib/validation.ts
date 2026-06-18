@@ -39,7 +39,7 @@ export const createPegawaiSchema = z.object({
   nomorHp: z.string().optional(),
   email: z.string().optional(),
   alamat: z.string().optional(),
-  role: z.enum(['pegawai', 'admin_instansi']).optional(),
+  role: z.enum(['pegawai', 'admin_instansi', 'super_admin']).optional(),
   instansiId: z.string().optional(),
   statusAktif: z.boolean().optional()
 });

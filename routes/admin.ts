@@ -52,7 +52,7 @@ export function createAdminRouter(requireAuth: any, requireRole: any, logAction:
         pangkatGolongan: body.pangkatGolongan || 'Penata / III.c',
         pendidikanTerakhir: body.pendidikanTerakhir || 'S1',
         nomorHp: body.nomorHp || '', email: body.email || '', alamat: body.alamat || '',
-        role: body.role === 'admin_instansi' ? 'admin_instansi' : 'pegawai',
+        role: body.role === 'admin_instansi' || body.role === 'super_admin' ? body.role : 'pegawai',
         statusAktif: body.statusAktif !== undefined ? body.statusAktif : true,
         createdAt: new Date().toISOString(), updatedAt: new Date().toISOString()
       };
