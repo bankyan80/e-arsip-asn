@@ -6,7 +6,8 @@ import {
   getLogsData, listAllInstansi, getSettingValue, updateSettingValue, setPegawaiPassword,
   createKategori, updateKategori, deleteKategori,
   createJenisDokumen, updateJenisDokumen, deleteJenisDokumen,
-  getKategoriList, getJenisDokumenList
+  getKategoriList, getJenisDokumenList,
+  bulkImportPegawai, clearPegawai
 } from '../lib/data';
 import { validasiSchema, createPegawaiSchema, settingSchema } from '../lib/validation';
 import { STATIC_JENIS_DOKUMEN } from '../lib/constants';
@@ -282,6 +283,28 @@ export function createAdminRouter(requireAuth: any, requireRole: any, logAction:
 
   router.get('/jenis-dokumen-list', requireAuth, requireRole(['super_admin', 'admin_instansi']), async (_req, res) => {
     try { return res.json(await getJenisDokumenList()); } catch { return res.status(500).json({ error: 'Gagal mengambil jenis dokumen.' }); }
+  });
+
+  // BULK IMPORT PEGAWAI (super_admin only)
+  router.post('/import-pegawai', requireAuth, requireRole(['super_admin']), async (req, res) => {
+    const { instansi, pegawai } = req.body;
+    if (!Array.isArray(pegawai) || pegawai.length === 0) {
+      return res.status(400).json({ error: 'Data pegawai wajib dikirim sebagai array.' });
+    }
+    try {
+      await clearPegawai();
+      if (Array.isArray(instansi) && instansi.length > 0) {
+        const { createInstansi: createIns } = await import('../lib/turso');
+        for (const i of instansi) {
+          try { await createIns(i); } catch {}
+        }
+      }
+      await bulkImportPegawai(pegawai);
+      return res.json({ message: `Berhasil import ${pegawai.length} pegawai.` });
+    } catch (err: any) {
+      console.error('Import error:', err?.message || err);
+      return res.status(500).json({ error: 'Gagal import pegawai: ' + (err?.message || 'unknown') });
+    }
   });
 
   return router;

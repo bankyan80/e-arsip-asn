@@ -74,6 +74,14 @@ export const adminCreatePegawai: typeof firestore.adminCreatePegawai = isTursoCo
   ? async (data: any) => turso.createPegawai(data) as any
   : firestore.adminCreatePegawai;
 
+export const bulkImportPegawai = isTursoConfigured
+  ? async (list: any[]) => turso.bulkCreatePegawai(list)
+  : async (_list: any[]) => { console.warn('bulkImportPegawai not available (Firestore fallback)'); };
+
+export const clearPegawai = isTursoConfigured
+  ? async () => turso.clearPegawaiExceptSuperAdmin()
+  : async () => { console.warn('clearPegawai not available (Firestore fallback)'); };
+
 export const listArsipByPegawai: typeof firestore.listArsipByPegawai = isTursoConfigured
   ? async (pegawaiId: string) => turso.listArsipByPegawai(pegawaiId) as any
   : firestore.listArsipByPegawai;

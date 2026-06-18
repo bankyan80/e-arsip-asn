@@ -69,6 +69,43 @@ var init_constants = __esm({
 });
 
 // lib/turso.ts
+var turso_exports = {};
+__export(turso_exports, {
+  bulkCreatePegawai: () => bulkCreatePegawai,
+  clearPegawaiExceptSuperAdmin: () => clearPegawaiExceptSuperAdmin,
+  createArsip: () => createArsip,
+  createInstansi: () => createInstansi,
+  createJenisDokumen: () => createJenisDokumen,
+  createKategori: () => createKategori,
+  createLog: () => createLog,
+  createPegawai: () => createPegawai,
+  deleteJenisDokumen: () => deleteJenisDokumen,
+  deleteKategori: () => deleteKategori,
+  ensureSuperAdmin: () => ensureSuperAdmin,
+  findPegawaiByNipNik: () => findPegawaiByNipNik,
+  findPegawaiByNipNikWithPassword: () => findPegawaiByNipNikWithPassword,
+  getArsip: () => getArsip,
+  getInstansi: () => getInstansi,
+  getPegawai: () => getPegawai,
+  getSetting: () => getSetting,
+  initSchema: () => initSchema,
+  isTursoConfigured: () => isConfigured,
+  listArsipAdmin: () => listArsipAdmin,
+  listArsipByPegawai: () => listArsipByPegawai,
+  listInstansi: () => listInstansi,
+  listJenisDokumen: () => listJenisDokumen,
+  listKategori: () => listKategori,
+  listLogs: () => listLogs,
+  listPegawai: () => listPegawai,
+  seedDefaultPasswords: () => seedDefaultPasswords,
+  seedKategoriDanJenis: () => seedKategoriDanJenis,
+  setPegawaiPassword: () => setPegawaiPassword,
+  setSetting: () => setSetting,
+  updateArsip: () => updateArsip,
+  updateJenisDokumen: () => updateJenisDokumen,
+  updateKategori: () => updateKategori,
+  updatePegawai: () => updatePegawai
+});
 import { createClient } from "@libsql/client";
 import bcrypt from "bcryptjs";
 async function getClient() {
@@ -158,6 +195,12 @@ async function getPegawai(id) {
   if (!r || r.rows.length === 0) return null;
   return mapRow(r.rows[0]);
 }
+async function findPegawaiByNipNik(identifier, type) {
+  const col = type === "NIP" ? "nip" : "nik";
+  const r = await query(`SELECT * FROM pegawai WHERE ${col} = ?`, [identifier]);
+  if (!r || r.rows.length === 0) return null;
+  return mapRow(r.rows[0]);
+}
 async function findPegawaiByNipNikWithPassword(identifier, type) {
   const col = type === "NIP" ? "nip" : "nik";
   const r = await query(`SELECT * FROM pegawai WHERE ${col} = ?`, [identifier]);
@@ -177,11 +220,23 @@ async function listPegawai(instansiId) {
   return r.rows.map(mapRow);
 }
 async function createPegawai(data) {
+  const pass = data.password || (data.nip ? data.nip.slice(-6) : data.nik ? data.nik.slice(-6) : "123456");
+  const hashed = await bcrypt.hash(pass, 10);
   await query(
     `INSERT INTO pegawai (id, instansi_id, nama_instansi, nama_pegawai, nip, nik, tanggal_lahir, jenis_kelamin, jabatan, status_pegawai, pangkat_golongan, pendidikan_terakhir, nomor_hp, email, alamat, password, role, status_aktif, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    [data.id, data.instansiId, data.namaInstansi, data.namaPegawai, data.nip, data.nik, data.tanggalLahir, data.jenisKelamin, data.jabatan, data.statusPegawai, data.pangkatGolongan, data.pendidikanTerakhir, data.nomorHp, data.email, data.alamat, data.password || "", data.role, data.statusAktif ? 1 : 0, data.createdAt, data.updatedAt]
+    [data.id, data.instansiId, data.namaInstansi, data.namaPegawai, data.nip, data.nik, data.tanggalLahir, data.jenisKelamin, data.jabatan, data.statusPegawai, data.pangkatGolongan, data.pendidikanTerakhir, data.nomorHp, data.email, data.alamat, hashed, data.role, data.statusAktif ? 1 : 0, data.createdAt, data.updatedAt]
   );
   return data;
+}
+async function bulkCreatePegawai(list) {
+  for (const data of list) {
+    await createPegawai(data);
+  }
+}
+async function clearPegawaiExceptSuperAdmin() {
+  await query("DELETE FROM arsip WHERE pegawai_id IN (SELECT id FROM pegawai WHERE id != 'PGW004')");
+  await query("DELETE FROM logs WHERE pegawai_id IN (SELECT id FROM pegawai WHERE id != 'PGW004')");
+  await query("DELETE FROM pegawai WHERE id != 'PGW004'");
 }
 async function updatePegawai(id, updates) {
   const setClauses = [];
@@ -908,6 +963,8 @@ var init_firestore = __esm({
 var data_exports = {};
 __export(data_exports, {
   adminCreatePegawai: () => adminCreatePegawai2,
+  bulkImportPegawai: () => bulkImportPegawai,
+  clearPegawai: () => clearPegawai,
   createArsipData: () => createArsipData2,
   createJenisDokumen: () => createJenisDokumen2,
   createKategori: () => createKategori2,
@@ -984,7 +1041,7 @@ async function seedInitialDb2() {
   }
   return seedInitialDb();
 }
-var getInstansiData2, listAllInstansi2, getPegawaiData2, findPegawaiByCredentials2, updatePegawaiData2, listAllPegawai2, adminCreatePegawai2, listArsipByPegawai3, getArsipData2, createArsipData2, updateArsipData2, listAllArsipAdmin2, createLogEntry2, getLogsData2, getSettingValue2, updateSettingValue2, getKategoriList2, createKategori2, updateKategori2, deleteKategori2, getJenisDokumenList2, createJenisDokumen2, updateJenisDokumen2, deleteJenisDokumen2, setPegawaiPassword2, readLocalDb2, writeLocalDb2;
+var getInstansiData2, listAllInstansi2, getPegawaiData2, findPegawaiByCredentials2, updatePegawaiData2, listAllPegawai2, adminCreatePegawai2, bulkImportPegawai, clearPegawai, listArsipByPegawai3, getArsipData2, createArsipData2, updateArsipData2, listAllArsipAdmin2, createLogEntry2, getLogsData2, getSettingValue2, updateSettingValue2, getKategoriList2, createKategori2, updateKategori2, deleteKategori2, getJenisDokumenList2, createJenisDokumen2, updateJenisDokumen2, deleteJenisDokumen2, setPegawaiPassword2, readLocalDb2, writeLocalDb2;
 var init_data = __esm({
   "lib/data.ts"() {
     "use strict";
@@ -1017,6 +1074,12 @@ var init_data = __esm({
     } : updatePegawaiData;
     listAllPegawai2 = isConfigured ? async (instansiId) => listPegawai(instansiId) : listAllPegawai;
     adminCreatePegawai2 = isConfigured ? async (data) => createPegawai(data) : adminCreatePegawai;
+    bulkImportPegawai = isConfigured ? async (list) => bulkCreatePegawai(list) : async (_list) => {
+      console.warn("bulkImportPegawai not available (Firestore fallback)");
+    };
+    clearPegawai = isConfigured ? async () => clearPegawaiExceptSuperAdmin() : async () => {
+      console.warn("clearPegawai not available (Firestore fallback)");
+    };
     listArsipByPegawai3 = isConfigured ? async (pegawaiId) => listArsipByPegawai(pegawaiId) : listArsipByPegawai2;
     getArsipData2 = isConfigured ? async (id) => getArsip(id) : getArsipData;
     createArsipData2 = isConfigured ? async (data) => createArsip(data) : createArsipData;
@@ -1908,6 +1971,29 @@ function createAdminRouter(requireAuth2, requireRole2, logAction2) {
       return res.json(await getJenisDokumenList2());
     } catch {
       return res.status(500).json({ error: "Gagal mengambil jenis dokumen." });
+    }
+  });
+  router.post("/import-pegawai", requireAuth2, requireRole2(["super_admin"]), async (req, res) => {
+    const { instansi, pegawai } = req.body;
+    if (!Array.isArray(pegawai) || pegawai.length === 0) {
+      return res.status(400).json({ error: "Data pegawai wajib dikirim sebagai array." });
+    }
+    try {
+      await clearPegawai();
+      if (Array.isArray(instansi) && instansi.length > 0) {
+        const { createInstansi: createIns } = await Promise.resolve().then(() => (init_turso(), turso_exports));
+        for (const i of instansi) {
+          try {
+            await createIns(i);
+          } catch {
+          }
+        }
+      }
+      await bulkImportPegawai(pegawai);
+      return res.json({ message: `Berhasil import ${pegawai.length} pegawai.` });
+    } catch (err) {
+      console.error("Import error:", err?.message || err);
+      return res.status(500).json({ error: "Gagal import pegawai: " + (err?.message || "unknown") });
     }
   });
   return router;

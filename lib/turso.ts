@@ -132,11 +132,25 @@ export async function listPegawai(instansiId?: string) {
 }
 
 export async function createPegawai(data: any) {
+  const pass = data.password || (data.nip ? data.nip.slice(-6) : (data.nik ? data.nik.slice(-6) : '123456'));
+  const hashed = await bcrypt.hash(pass, 10);
   await query(
     `INSERT INTO pegawai (id, instansi_id, nama_instansi, nama_pegawai, nip, nik, tanggal_lahir, jenis_kelamin, jabatan, status_pegawai, pangkat_golongan, pendidikan_terakhir, nomor_hp, email, alamat, password, role, status_aktif, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    [data.id, data.instansiId, data.namaInstansi, data.namaPegawai, data.nip, data.nik, data.tanggalLahir, data.jenisKelamin, data.jabatan, data.statusPegawai, data.pangkatGolongan, data.pendidikanTerakhir, data.nomorHp, data.email, data.alamat, data.password || '', data.role, data.statusAktif ? 1 : 0, data.createdAt, data.updatedAt]
+    [data.id, data.instansiId, data.namaInstansi, data.namaPegawai, data.nip, data.nik, data.tanggalLahir, data.jenisKelamin, data.jabatan, data.statusPegawai, data.pangkatGolongan, data.pendidikanTerakhir, data.nomorHp, data.email, data.alamat, hashed, data.role, data.statusAktif ? 1 : 0, data.createdAt, data.updatedAt]
   );
   return data;
+}
+
+export async function bulkCreatePegawai(list: any[]) {
+  for (const data of list) {
+    await createPegawai(data);
+  }
+}
+
+export async function clearPegawaiExceptSuperAdmin() {
+  await query("DELETE FROM arsip WHERE pegawai_id IN (SELECT id FROM pegawai WHERE id != 'PGW004')");
+  await query("DELETE FROM logs WHERE pegawai_id IN (SELECT id FROM pegawai WHERE id != 'PGW004')");
+  await query("DELETE FROM pegawai WHERE id != 'PGW004'");
 }
 
 export async function updatePegawai(id: string, updates: Record<string, unknown>) {
