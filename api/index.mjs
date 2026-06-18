@@ -2009,6 +2009,18 @@ function createAdminRouter(requireAuth2, requireRole2, logAction2) {
       return res.status(500).json({ error: "Gagal import pegawai: " + (err?.message || "unknown") });
     }
   });
+  router.patch("/pegawai/update-instansi", requireAuth2, requireRole2(["super_admin"]), async (req, res) => {
+    const { namaInstansi } = req.body;
+    if (!namaInstansi) return res.status(400).json({ error: "namaInstansi wajib diisi." });
+    try {
+      const { query: query2 } = await Promise.resolve().then(() => (init_turso(), turso_exports));
+      await query2("UPDATE pegawai SET nama_instansi = ?, updated_at = datetime('now')", [namaInstansi]);
+      await query2("UPDATE instansi SET nama_instansi = ?, updated_at = datetime('now')", [namaInstansi]);
+      return res.json({ message: `Semua instansi diubah menjadi "${namaInstansi}".` });
+    } catch (err) {
+      return res.status(500).json({ error: "Gagal update instansi: " + (err?.message || "unknown") });
+    }
+  });
   return router;
 }
 

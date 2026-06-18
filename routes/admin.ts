@@ -307,5 +307,19 @@ export function createAdminRouter(requireAuth: any, requireRole: any, logAction:
     }
   });
 
+  // UPDATE ALL PEGAWAI INSTANSI NAME (super_admin only)
+  router.patch('/pegawai/update-instansi', requireAuth, requireRole(['super_admin']), async (req, res) => {
+    const { namaInstansi } = req.body;
+    if (!namaInstansi) return res.status(400).json({ error: 'namaInstansi wajib diisi.' });
+    try {
+      const { query } = await import('../lib/turso');
+      await query("UPDATE pegawai SET nama_instansi = ?, updated_at = datetime('now')", [namaInstansi]);
+      await query("UPDATE instansi SET nama_instansi = ?, updated_at = datetime('now')", [namaInstansi]);
+      return res.json({ message: `Semua instansi diubah menjadi "${namaInstansi}".` });
+    } catch (err: any) {
+      return res.status(500).json({ error: 'Gagal update instansi: ' + (err?.message || 'unknown') });
+    }
+  });
+
   return router;
 }
