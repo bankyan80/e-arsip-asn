@@ -41,14 +41,15 @@ const sessionCookie = cookies.find(c => c.startsWith('session='));
 if (!sessionCookie) { console.error('Login failed'); process.exit(1); }
 console.log('Logged in');
 
-// Send in batches
-const BATCH = 100;
+// Send in batches (first batch clears previous migration)
+const BATCH = 20;
 for (let i = 0; i < arsip.length; i += BATCH) {
   const batch = arsip.slice(i, i + BATCH);
+  const body = JSON.stringify({ arsip: batch });
   const res = await fetch(BASE + '/api/admin/migrate-arsip', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'Cookie': sessionCookie.split(';')[0] },
-    body: JSON.stringify({ arsip: batch, clear: true })
+    body
   });
   const data = await res.json();
   const batchNum = Math.floor(i / BATCH) + 1;

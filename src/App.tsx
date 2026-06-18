@@ -310,7 +310,9 @@ export default function App() {
   const openFileViewer = (id: string, url: string) => {
     const match = myArchives.find(a => a.id === id) || allArchives.find(a => a.id === id);
     setActiveFileName(match ? `${match.jenisDokumen} - ${match.namaDokumen}` : 'Dokumen Arsip');
-    setActiveFileUrl(url);
+    // If url is empty, try storagePath (base64 data URI from migration)
+    const fileUrl = url || match?.storagePath || '';
+    setActiveFileUrl(fileUrl);
   };
 
   // CLIENT SIDE CSV EXPORT
@@ -854,7 +856,7 @@ export default function App() {
                                 Upload
                               </button>
                             ) : (
-                              item.downloadUrl && (
+                              (item.downloadUrl || item.storagePath) && (
                                 <button
                                   onClick={() => openFileViewer(item.arsipId || '', item.downloadUrl)}
                                   className="p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg"
