@@ -1,0 +1,455 @@
+{
+  "instansi": [
+    {
+      "id": "INST001",
+      "namaInstansi": "SD Negeri 1 Lemahabang",
+      "alamat": "Jl. Raya Lemahabang",
+      "kecamatan": "Lemahabang",
+      "kabupaten": "Cirebon",
+      "statusAktif": true
+    },
+    {
+      "id": "INST002",
+      "namaInstansi": "Kantor Kepegawaian Daerah Cirebon",
+      "alamat": "Jl. Pemuda No. 12",
+      "kecamatan": "Kesambi",
+      "kabupaten": "Cirebon",
+      "statusAktif": true
+    }
+  ],
+  "pegawai": [
+    {
+      "id": "PGW001",
+      "instansiId": "INST001",
+      "namaInstansi": "SD Negeri 1 Lemahabang",
+      "namaPegawai": "Ahmad Hidayat",
+      "nip": "198705122010012003",
+      "nik": "3209123456780001",
+      "tanggalLahir": "1987-05-12",
+      "jenisKelamin": "Laki-laki",
+      "jabatan": "Guru Kelas",
+      "statusPegawai": "PNS",
+      "pangkatGolongan": "Penata / III.c",
+      "pendidikanTerakhir": "S1",
+      "nomorHp": "081234567890",
+      "email": "ahmad.hidayat@asn.id",
+      "alamat": "Jl. Merdeka No. 4, Lemahabang, Cirebon",
+      "role": "pegawai",
+      "statusAktif": true,
+      "createdAt": "2026-06-18T05:23:23.317Z",
+      "updatedAt": "2026-06-18T05:31:08.763Z",
+      "loginTerakhir": "2026-06-18T05:31:08.762Z"
+    },
+    {
+      "id": "PGW002",
+      "instansiId": "INST001",
+      "namaInstansi": "SD Negeri 1 Lemahabang",
+      "namaPegawai": "Budi Santoso",
+      "nip": "198501012008011002",
+      "nik": "3209123456780002",
+      "tanggalLahir": "1985-01-01",
+      "jenisKelamin": "Laki-laki",
+      "jabatan": "Kepala Sekolah",
+      "statusPegawai": "PNS",
+      "pangkatGolongan": "Penata Tk. I / III.d",
+      "pendidikanTerakhir": "S2",
+      "nomorHp": "081398765432",
+      "email": "budi.santoso@asn.id",
+      "alamat": "Kompleks Gria Indah Blok C5, Cirebon",
+      "role": "admin_instansi",
+      "statusAktif": true,
+      "createdAt": "2026-06-18T05:23:23.318Z",
+      "updatedAt": "2026-06-18T05:23:23.318Z"
+    },
+    {
+      "id": "PGW003",
+      "instansiId": "INSTALL",
+      "namaInstansi": "Badan Kepegawaian Nasional",
+      "namaPegawai": "Siti Aminah",
+      "nip": "198001012002012001",
+      "nik": "3209123456780003",
+      "tanggalLahir": "1980-01-01",
+      "jenisKelamin": "Perempuan",
+      "jabatan": "Analis Kepegawaian Madya",
+      "statusPegawai": "PNS",
+      "pangkatGolongan": "Pembina / IV.a",
+      "pendidikanTerakhir": "S2 Pendidikan",
+      "nomorHp": "082111223344",
+      "email": "siti.aminah@asn.id",
+      "alamat": "Jl. Diponegoro No. 8, Cirebon",
+      "role": "admin_instansi",
+      "statusAktif": true,
+      "createdAt": "2026-06-18T05:23:23.318Z",
+      "updatedAt": "2026-06-18T05:23:23.318Z"
+    }
+  ],
+  "arsip": [],
+  "logs": [
+    {
+      "id": "LOG_1781760668768_811",
+      "tanggal": "2026-06-18T05:31:08.768Z",
+      "userId": "PGW001",
+      "pegawaiId": "PGW001",
+      "nip": "198705122010012003",
+      "namaPegawai": "Ahmad Hidayat",
+      "role": "pegawai",
+      "aksi": "LOGIN",
+      "detail": "Pegawai dengan NIP 198705122010012003 berhasil login."
+    },
+    {
+      "id": "L0",
+      "tanggal": "2026-06-18T05:23:23.319Z",
+      "userId": "SYSTEM",
+      "pegawaiId": "SYSTEM",
+      "nip": "000000",
+      "namaPegawai": "System Seeder",
+      "role": "admin_instansi",
+      "aksi": "SEED_DATA",
+      "detail": "Sistem berhasil melakukan seeding data awal."
+    }
+  ],
+  "settings": [
+    {
+      "key": "allowDeleteValid",
+      "value": "false",
+      "keterangan": "Mengizinkan pegawai mendelete dokumen yang sudah divalidasi"
+    },
+    {
+      "key": "limitSizeMB",
+      "value": "10",
+      "keterangan": "Ukuran file maks dalam satuan MB"
+    }
+  ],
+  "kategoriArsip": [
+    {
+      "id": "KAT1",
+      "namaKategori": "Riwayat Karier",
+      "urutan": 1,
+      "statusAktif": true
+    },
+    {
+      "id": "KAT2",
+      "namaKategori": "Pendidikan",
+      "urutan": 2,
+      "statusAktif": true
+    },
+    {
+      "id": "KAT3",
+      "namaKategori": "Kinerja",
+      "urutan": 3,
+      "statusAktif": true
+    },
+    {
+      "id": "KAT4",
+      "namaKategori": "Data Pribadi",
+      "urutan": 4,
+      "statusAktif": true
+    },
+    {
+      "id": "KAT5",
+      "namaKategori": "Kesehatan dan Disiplin",
+      "urutan": 5,
+      "statusAktif": true
+    }
+  ],
+  "jenisDokumen": [
+    {
+      "id": "JD1_1",
+      "kategoriId": "KAT1",
+      "namaKategori": "Riwayat Karier",
+      "namaDokumen": "SK CPNS/PNS",
+      "wajib": false,
+      "berlakuUntuk": "PNS",
+      "statusAktif": true
+    },
+    {
+      "id": "JD1_2",
+      "kategoriId": "KAT1",
+      "namaKategori": "Riwayat Karier",
+      "namaDokumen": "SK PPPK",
+      "wajib": false,
+      "berlakuUntuk": "PPPK",
+      "statusAktif": true
+    },
+    {
+      "id": "JD1_3",
+      "kategoriId": "KAT1",
+      "namaKategori": "Riwayat Karier",
+      "namaDokumen": "SK Kenaikan Pangkat",
+      "wajib": true,
+      "berlakuUntuk": "Semua",
+      "statusAktif": true
+    },
+    {
+      "id": "JD1_4",
+      "kategoriId": "KAT1",
+      "namaKategori": "Riwayat Karier",
+      "namaDokumen": "SK Jabatan",
+      "wajib": true,
+      "berlakuUntuk": "Semua",
+      "statusAktif": true
+    },
+    {
+      "id": "JD1_5",
+      "kategoriId": "KAT1",
+      "namaKategori": "Riwayat Karier",
+      "namaDokumen": "SK Mutasi",
+      "wajib": false,
+      "berlakuUntuk": "Semua",
+      "statusAktif": true
+    },
+    {
+      "id": "JD1_6",
+      "kategoriId": "KAT1",
+      "namaKategori": "Riwayat Karier",
+      "namaDokumen": "SK Penempatan",
+      "wajib": true,
+      "berlakuUntuk": "Semua",
+      "statusAktif": true
+    },
+    {
+      "id": "JD1_7",
+      "kategoriId": "KAT1",
+      "namaKategori": "Riwayat Karier",
+      "namaDokumen": "SK Pembagian Tugas",
+      "wajib": false,
+      "berlakuUntuk": "Semua",
+      "statusAktif": true
+    },
+    {
+      "id": "JD2_1",
+      "kategoriId": "KAT2",
+      "namaKategori": "Pendidikan",
+      "namaDokumen": "Ijazah",
+      "wajib": true,
+      "berlakuUntuk": "Semua",
+      "statusAktif": true
+    },
+    {
+      "id": "JD2_2",
+      "kategoriId": "KAT2",
+      "namaKategori": "Pendidikan",
+      "namaDokumen": "Transkrip Nilai",
+      "wajib": true,
+      "berlakuUntuk": "Semua",
+      "statusAktif": true
+    },
+    {
+      "id": "JD2_3",
+      "kategoriId": "KAT2",
+      "namaKategori": "Pendidikan",
+      "namaDokumen": "Sertifikat Pendidik",
+      "wajib": false,
+      "berlakuUntuk": "Semua",
+      "statusAktif": true
+    },
+    {
+      "id": "JD2_4",
+      "kategoriId": "KAT2",
+      "namaKategori": "Pendidikan",
+      "namaDokumen": "Sertifikat Pelatihan/Diklat",
+      "wajib": false,
+      "berlakuUntuk": "Semua",
+      "statusAktif": true
+    },
+    {
+      "id": "JD2_5",
+      "kategoriId": "KAT2",
+      "namaKategori": "Pendidikan",
+      "namaDokumen": "Sertifikat Workshop/Seminar",
+      "wajib": false,
+      "berlakuUntuk": "Semua",
+      "statusAktif": true
+    },
+    {
+      "id": "JD3_1",
+      "kategoriId": "KAT3",
+      "namaKategori": "Kinerja",
+      "namaDokumen": "SKP",
+      "wajib": true,
+      "berlakuUntuk": "Semua",
+      "statusAktif": true
+    },
+    {
+      "id": "JD3_2",
+      "kategoriId": "KAT3",
+      "namaKategori": "Kinerja",
+      "namaDokumen": "Rekap Absensi",
+      "wajib": false,
+      "berlakuUntuk": "Semua",
+      "statusAktif": true
+    },
+    {
+      "id": "JD3_3",
+      "kategoriId": "KAT3",
+      "namaKategori": "Kinerja",
+      "namaDokumen": "Penilaian Kinerja",
+      "wajib": true,
+      "berlakuUntuk": "Semua",
+      "statusAktif": true
+    },
+    {
+      "id": "JD3_4",
+      "kategoriId": "KAT3",
+      "namaKategori": "Kinerja",
+      "namaDokumen": "Laporan Kinerja",
+      "wajib": false,
+      "berlakuUntuk": "Semua",
+      "statusAktif": true
+    },
+    {
+      "id": "JD4_1",
+      "kategoriId": "KAT4",
+      "namaKategori": "Data Pribadi",
+      "namaDokumen": "KTP",
+      "wajib": true,
+      "berlakuUntuk": "Semua",
+      "statusAktif": true
+    },
+    {
+      "id": "JD4_2",
+      "kategoriId": "KAT4",
+      "namaKategori": "Data Pribadi",
+      "namaDokumen": "Kartu Keluarga",
+      "wajib": true,
+      "berlakuUntuk": "Semua",
+      "statusAktif": true
+    },
+    {
+      "id": "JD4_3",
+      "kategoriId": "KAT4",
+      "namaKategori": "Data Pribadi",
+      "namaDokumen": "NPWP",
+      "wajib": true,
+      "berlakuUntuk": "Semua",
+      "statusAktif": true
+    },
+    {
+      "id": "JD4_4",
+      "kategoriId": "KAT4",
+      "namaKategori": "Data Pribadi",
+      "namaDokumen": "BPJS",
+      "wajib": true,
+      "berlakuUntuk": "Semua",
+      "statusAktif": true
+    },
+    {
+      "id": "JD4_5",
+      "kategoriId": "KAT4",
+      "namaKategori": "Data Pribadi",
+      "namaDokumen": "Surat Nikah",
+      "wajib": false,
+      "berlakuUntuk": "Semua",
+      "statusAktif": true
+    },
+    {
+      "id": "JD4_6",
+      "kategoriId": "KAT4",
+      "namaKategori": "Data Pribadi",
+      "namaDokumen": "Akta Anak",
+      "wajib": false,
+      "berlakuUntuk": "Semua",
+      "statusAktif": true
+    },
+    {
+      "id": "JD4_7",
+      "kategoriId": "KAT4",
+      "namaKategori": "Data Pribadi",
+      "namaDokumen": "Buku Rekening",
+      "wajib": false,
+      "berlakuUntuk": "Semua",
+      "statusAktif": true
+    },
+    {
+      "id": "JD4_8",
+      "kategoriId": "KAT4",
+      "namaKategori": "Data Pribadi",
+      "namaDokumen": "Daftar Riwayat Hidup",
+      "wajib": true,
+      "berlakuUntuk": "Semua",
+      "statusAktif": true
+    },
+    {
+      "id": "JD4_9",
+      "kategoriId": "KAT4",
+      "namaKategori": "Data Pribadi",
+      "namaDokumen": "Karpeg",
+      "wajib": false,
+      "berlakuUntuk": "PNS",
+      "statusAktif": true
+    },
+    {
+      "id": "JD4_10",
+      "kategoriId": "KAT4",
+      "namaKategori": "Data Pribadi",
+      "namaDokumen": "Taspen",
+      "wajib": false,
+      "berlakuUntuk": "PNS",
+      "statusAktif": true
+    },
+    {
+      "id": "JD4_11",
+      "kategoriId": "KAT4",
+      "namaKategori": "Data Pribadi",
+      "namaDokumen": "KARIS/KARSU",
+      "wajib": false,
+      "berlakuUntuk": "PNS",
+      "statusAktif": true
+    },
+    {
+      "id": "JD5_1",
+      "kategoriId": "KAT5",
+      "namaKategori": "Kesehatan dan Disiplin",
+      "namaDokumen": "Surat Cuti",
+      "wajib": false,
+      "berlakuPour": "Semua",
+      "statusAktif": true,
+      "berlakuUntuk": "Semua"
+    },
+    {
+      "id": "JD5_2",
+      "kategoriId": "KAT5",
+      "namaKategori": "Kesehatan dan Disiplin",
+      "namaDokumen": "Riwayat Kesehatan",
+      "wajib": false,
+      "berlakuUntuk": "Semua",
+      "statusAktif": true
+    },
+    {
+      "id": "JD5_3",
+      "kategoriId": "KAT5",
+      "namaKategori": "Kesehatan dan Disiplin",
+      "namaDokumen": "Surat Sakit",
+      "wajib": false,
+      "berlakuUntuk": "Semua",
+      "statusAktif": true
+    },
+    {
+      "id": "JD5_4",
+      "kategoriId": "KAT5",
+      "namaKategori": "Kesehatan dan Disiplin",
+      "namaDokumen": "SK Hukuman Disiplin",
+      "wajib": false,
+      "berlakuUntuk": "Semua",
+      "statusAktif": true
+    },
+    {
+      "id": "JD5_5",
+      "kategoriId": "KAT5",
+      "namaKategori": "Kesehatan dan Disiplin",
+      "namaDokumen": "Surat Teguran",
+      "wajib": false,
+      "berlakuUntuk": "Semua",
+      "statusAktif": true
+    },
+    {
+      "id": "JD5_6",
+      "kategoriId": "KAT5",
+      "namaKategori": "Kesehatan dan Disiplin",
+      "namaDokumen": "Berita Acara Pemeriksaan",
+      "wajib": false,
+      "berlakuUntuk": "Semua",
+      "statusAktif": true
+    }
+  ]
+}
