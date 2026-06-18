@@ -101,6 +101,7 @@ __export(turso_exports, {
   seedKategoriDanJenis: () => seedKategoriDanJenis,
   setPegawaiPassword: () => setPegawaiPassword,
   setSetting: () => setSetting,
+  updateAllInstansiName: () => updateAllInstansiName,
   updateArsip: () => updateArsip,
   updateJenisDokumen: () => updateJenisDokumen,
   updateKategori: () => updateKategori,
@@ -237,6 +238,10 @@ async function clearPegawaiExceptSuperAdmin() {
   await query("DELETE FROM arsip WHERE pegawai_id IN (SELECT id FROM pegawai WHERE id != 'PGW004')");
   await query("DELETE FROM logs WHERE pegawai_id IN (SELECT id FROM pegawai WHERE id != 'PGW004')");
   await query("DELETE FROM pegawai WHERE id != 'PGW004'");
+}
+async function updateAllInstansiName(namaInstansi) {
+  await query("UPDATE pegawai SET nama_instansi = ?, updated_at = datetime('now')", [namaInstansi]);
+  await query("UPDATE instansi SET nama_instansi = ?, updated_at = datetime('now')", [namaInstansi]);
 }
 async function updatePegawai(id, updates) {
   const setClauses = [];
@@ -986,6 +991,7 @@ __export(data_exports, {
   readLocalDb: () => readLocalDb2,
   seedInitialDb: () => seedInitialDb2,
   setPegawaiPassword: () => setPegawaiPassword2,
+  updateAllInstansiName: () => updateAllInstansiName2,
   updateArsipData: () => updateArsipData2,
   updateJenisDokumen: () => updateJenisDokumen2,
   updateKategori: () => updateKategori2,
@@ -1041,7 +1047,7 @@ async function seedInitialDb2() {
   }
   return seedInitialDb();
 }
-var getInstansiData2, listAllInstansi2, getPegawaiData2, findPegawaiByCredentials2, updatePegawaiData2, listAllPegawai2, adminCreatePegawai2, bulkImportPegawai, clearPegawai, listArsipByPegawai3, getArsipData2, createArsipData2, updateArsipData2, listAllArsipAdmin2, createLogEntry2, getLogsData2, getSettingValue2, updateSettingValue2, getKategoriList2, createKategori2, updateKategori2, deleteKategori2, getJenisDokumenList2, createJenisDokumen2, updateJenisDokumen2, deleteJenisDokumen2, setPegawaiPassword2, readLocalDb2, writeLocalDb2;
+var getInstansiData2, listAllInstansi2, getPegawaiData2, findPegawaiByCredentials2, updatePegawaiData2, listAllPegawai2, adminCreatePegawai2, bulkImportPegawai, clearPegawai, updateAllInstansiName2, listArsipByPegawai3, getArsipData2, createArsipData2, updateArsipData2, listAllArsipAdmin2, createLogEntry2, getLogsData2, getSettingValue2, updateSettingValue2, getKategoriList2, createKategori2, updateKategori2, deleteKategori2, getJenisDokumenList2, createJenisDokumen2, updateJenisDokumen2, deleteJenisDokumen2, setPegawaiPassword2, readLocalDb2, writeLocalDb2;
 var init_data = __esm({
   "lib/data.ts"() {
     "use strict";
@@ -1079,6 +1085,9 @@ var init_data = __esm({
     };
     clearPegawai = isConfigured ? async () => clearPegawaiExceptSuperAdmin() : async () => {
       console.warn("clearPegawai not available (Firestore fallback)");
+    };
+    updateAllInstansiName2 = isConfigured ? async (namaInstansi) => updateAllInstansiName(namaInstansi) : async (_namaInstansi) => {
+      console.warn("updateAllInstansiName not available (Firestore fallback)");
     };
     listArsipByPegawai3 = isConfigured ? async (pegawaiId) => listArsipByPegawai(pegawaiId) : listArsipByPegawai2;
     getArsipData2 = isConfigured ? async (id) => getArsip(id) : getArsipData;
@@ -2013,9 +2022,7 @@ function createAdminRouter(requireAuth2, requireRole2, logAction2) {
     const { namaInstansi } = req.body;
     if (!namaInstansi) return res.status(400).json({ error: "namaInstansi wajib diisi." });
     try {
-      const { query: query2 } = await Promise.resolve().then(() => (init_turso(), turso_exports));
-      await query2("UPDATE pegawai SET nama_instansi = ?, updated_at = datetime('now')", [namaInstansi]);
-      await query2("UPDATE instansi SET nama_instansi = ?, updated_at = datetime('now')", [namaInstansi]);
+      await updateAllInstansiName2(namaInstansi);
       return res.json({ message: `Semua instansi diubah menjadi "${namaInstansi}".` });
     } catch (err) {
       return res.status(500).json({ error: "Gagal update instansi: " + (err?.message || "unknown") });

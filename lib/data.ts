@@ -82,6 +82,10 @@ export const clearPegawai = isTursoConfigured
   ? async () => turso.clearPegawaiExceptSuperAdmin()
   : async () => { console.warn('clearPegawai not available (Firestore fallback)'); };
 
+export const updateAllInstansiName = isTursoConfigured
+  ? async (namaInstansi: string) => turso.updateAllInstansiName(namaInstansi)
+  : async (_namaInstansi: string) => { console.warn('updateAllInstansiName not available (Firestore fallback)'); };
+
 export const listArsipByPegawai: typeof firestore.listArsipByPegawai = isTursoConfigured
   ? async (pegawaiId: string) => turso.listArsipByPegawai(pegawaiId) as any
   : firestore.listArsipByPegawai;

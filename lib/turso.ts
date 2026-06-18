@@ -153,6 +153,11 @@ export async function clearPegawaiExceptSuperAdmin() {
   await query("DELETE FROM pegawai WHERE id != 'PGW004'");
 }
 
+export async function updateAllInstansiName(namaInstansi: string) {
+  await query("UPDATE pegawai SET nama_instansi = ?, updated_at = datetime('now')", [namaInstansi]);
+  await query("UPDATE instansi SET nama_instansi = ?, updated_at = datetime('now')", [namaInstansi]);
+}
+
 export async function updatePegawai(id: string, updates: Record<string, unknown>) {
   const setClauses: string[] = [];
   const args: unknown[] = [];

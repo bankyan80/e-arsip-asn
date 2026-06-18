@@ -7,7 +7,7 @@ import {
   createKategori, updateKategori, deleteKategori,
   createJenisDokumen, updateJenisDokumen, deleteJenisDokumen,
   getKategoriList, getJenisDokumenList,
-  bulkImportPegawai, clearPegawai
+  bulkImportPegawai, clearPegawai, updateAllInstansiName
 } from '../lib/data';
 import { validasiSchema, createPegawaiSchema, settingSchema } from '../lib/validation';
 import { STATIC_JENIS_DOKUMEN } from '../lib/constants';
@@ -312,9 +312,7 @@ export function createAdminRouter(requireAuth: any, requireRole: any, logAction:
     const { namaInstansi } = req.body;
     if (!namaInstansi) return res.status(400).json({ error: 'namaInstansi wajib diisi.' });
     try {
-      const { query } = await import('../lib/turso');
-      await query("UPDATE pegawai SET nama_instansi = ?, updated_at = datetime('now')", [namaInstansi]);
-      await query("UPDATE instansi SET nama_instansi = ?, updated_at = datetime('now')", [namaInstansi]);
+      await updateAllInstansiName(namaInstansi);
       return res.json({ message: `Semua instansi diubah menjadi "${namaInstansi}".` });
     } catch (err: any) {
       return res.status(500).json({ error: 'Gagal update instansi: ' + (err?.message || 'unknown') });
