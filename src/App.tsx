@@ -22,7 +22,7 @@ export default function App() {
   const { session, loadingSession, login: sessionLogin, logout: handleLogout } = useSession();
   const pegawaiData = usePegawaiData();
   const adminData = useAdminData();
-  const { profile, setProfile, kategoriList, jenisDokumenList, myArchives, setMyArchives, checklist, setChecklist, loadAllPegawaiData, fetchMyArchives, fetchMyChecklist, fetchMyProfile } = pegawaiData;
+  const { profile, setProfile, kategoriList, setKategoriList, jenisDokumenList, setJenisDokumenList, myArchives, setMyArchives, checklist, setChecklist, loadAllPegawaiData, fetchMyArchives, fetchMyChecklist, fetchMyProfile } = pegawaiData;
   const { allEmployees, allArchives, rekapData, systemLogs, instansiList, adminSettings } = adminData;
 
   // Form states (Login)
