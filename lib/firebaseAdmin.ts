@@ -8,19 +8,23 @@ const projectId = process.env.FIREBASE_PROJECT_ID;
 const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
 const privateKey = process.env.FIREBASE_PRIVATE_KEY;
 const storageBucket = process.env.FIREBASE_STORAGE_BUCKET;
+const apiKey = process.env.FIREBASE_API_KEY;
+const authDomain = process.env.FIREBASE_AUTH_DOMAIN;
+const messagingSenderId = process.env.FIREBASE_MESSAGING_SENDER_ID;
+const appId = process.env.FIREBASE_APP_ID;
 
-// We consider Firebase configured if all essential admin authentication credentials are set
-const isFirebaseConfigured = !!(projectId && clientEmail && privateKey);
+const hasAdminCreds = !!(projectId && clientEmail && privateKey);
+const hasClientCreds = !!(apiKey && projectId);
+const isFirebaseConfigured = hasAdminCreds || hasClientCreds;
 
-if (isFirebaseConfigured) {
-  try {
+async function init() {
+  if (hasAdminCreds) {
     const certPrivateKey = privateKey!.replace(/\\n/g, '\n').replace(/"/g, '');
     const adminAny = admin as any;
     if (!adminAny.apps || !adminAny.apps.length) {
       app = adminAny.initializeApp({
         credential: adminAny.credential.cert({
-          projectId,
-          clientEmail,
+          projectId, clientEmail,
           privateKey: certPrivateKey,
         }),
         storageBucket: storageBucket || `${projectId}.appspot.com`,
@@ -35,9 +39,23 @@ if (isFirebaseConfigured) {
       console.warn('Real Firebase Storage bucket could not be resolved, using default:', bucketErr);
     }
     console.log('Firebase Admin SDK successfully initialized.');
-  } catch (error) {
-    console.error('Failed to initialize real Firebase Admin SDK:', error);
+  } else if (hasClientCreds) {
+    try {
+      const { default: firebase } = await import('firebase/compat/app');
+      await import('firebase/compat/firestore');
+      const config: Record<string, any> = { apiKey, authDomain, projectId, messagingSenderId, appId };
+      if (storageBucket) config.storageBucket = storageBucket;
+      app = firebase.initializeApp(config);
+      db = app.firestore();
+      console.log('Firebase Client SDK (compat) initialized. Storage falls back to local.');
+    } catch (error) {
+      console.error('Failed to initialize Firebase Client SDK:', error);
+    }
   }
+}
+
+if (isFirebaseConfigured) {
+  init().catch(e => console.error('Firebase init error:', e));
 } else {
   console.log('Firebase credentials not detected in .env. Falling back to local data store.');
 }
