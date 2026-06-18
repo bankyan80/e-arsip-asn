@@ -2,7 +2,6 @@ import express from 'express';
 import path from 'path';
 import multer from 'multer';
 import rateLimit from 'express-rate-limit';
-import { createServer as createViteServer } from 'vite';
 
 import { seedInitialDb, createLogEntry } from './lib/firestore';
 import { verifySession } from './lib/session';
@@ -132,6 +131,7 @@ export async function createApp() {
   // SPA Middleware
   // -------------------------------------------------------
   if (process.env.NODE_ENV !== 'production') {
+    const { createServer: createViteServer } = await import('vite');
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: 'spa',

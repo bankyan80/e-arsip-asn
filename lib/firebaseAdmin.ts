@@ -18,19 +18,19 @@ const isFirebaseConfigured = hasAdminCreds || hasClientCreds;
 async function init() {
   if (hasAdminCreds) {
     try {
-      const admin = await import('firebase-admin');
-      const adminAny = admin.default || admin;
+      const mod = await import('firebase-admin');
+      const admin = (mod.default || mod) as any;
       const certPrivateKey = privateKey!.replace(/\\n/g, '\n').replace(/"/g, '');
-      if (!adminAny.apps || !adminAny.apps.length) {
-        app = adminAny.initializeApp({
-          credential: adminAny.credential.cert({ projectId, clientEmail, privateKey: certPrivateKey }),
+      if (!admin.apps || !admin.apps.length) {
+        app = admin.initializeApp({
+          credential: admin.credential.cert({ projectId, clientEmail, privateKey: certPrivateKey }),
           storageBucket: storageBucket || `${projectId}.appspot.com`,
         });
       } else {
-        app = adminAny.apps[0];
+        app = admin.apps[0];
       }
-      db = adminAny.firestore();
-      try { bucket = adminAny.storage().bucket(); } catch {}
+      db = admin.firestore();
+      try { bucket = admin.storage().bucket(); } catch {}
       console.log('Firebase Admin SDK initialized.');
     } catch (error: any) {
       console.error('Admin SDK init failed:', error?.message || error);
