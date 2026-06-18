@@ -319,5 +319,74 @@ export function createAdminRouter(requireAuth: any, requireRole: any, logAction:
     }
   });
 
+  // MIGRATE ARSIP FROM TIM-KERJA (super_admin only)
+  router.post('/migrate-arsip', requireAuth, requireRole(['super_admin']), async (req, res) => {
+    const { arsip: arsipList } = req.body;
+    if (!Array.isArray(arsipList) || arsipList.length === 0) return res.status(400).json({ error: 'Data arsip wajib dikirim.' });
+    try {
+      const { getStorage } = await import('firebase-admin/storage');
+      const { initializeApp, getApps, cert } = await import('firebase-admin');
+      const { query } = await import('../lib/turso');
+      const { extname } = await import('path');
+
+      if (!getApps().length) {
+        const pk = (process.env.FIREBASE_PRIVATE_KEY || '').replace(/\\n/g, '\n');
+        initializeApp({
+          credential: cert({
+            projectId: process.env.FIREBASE_PROJECT_ID,
+            clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+            privateKey: pk
+          }),
+          storageBucket: process.env.FIREBASE_STORAGE_BUCKET
+        });
+      }
+      const bucket = getStorage().bucket(process.env.FIREBASE_STORAGE_BUCKET);
+
+      // Load all pegawai for name matching
+      const pegRows = await query("SELECT id, nip, nama_pegawai, instansi_id, nama_instansi FROM pegawai");
+      const pegawaiMap = {};
+      if (pegRows) for (const r of pegRows.rows) {
+        pegawaiMap[((r as any).nama_pegawai || '').toUpperCase()] = r;
+      }
+
+      let success = 0, skipped = 0, errors = 0;
+
+      for (const a of arsipList) {
+        const pemilik = (a.pemilik || '').trim().toUpperCase();
+        const peg = pegawaiMap[pemilik];
+        if (!peg) { skipped++; continue; }
+
+        const kelompok = ['KTP','KK','Ijazah','SK','Sertifikat','BPJS','NPWP','Akta','Pass Foto','Kartu']
+          .some(k => (a.jenis_dokumen || '').includes(k)) ? 'Dokumen Pendukung' : 'Dokumen Kepegawaian';
+
+        let storagePath = '', downloadUrl = '';
+        const fileData = a.file || '';
+        if (fileData.startsWith('data:')) {
+          const [mimeHdr, b64] = fileData.split(',');
+          const buf = Buffer.from(b64, 'base64');
+          const ext = extname(a.file_name || 'dokumen.pdf') || '.pdf';
+          storagePath = `arsip-asn/${peg.instansi_id}/${peg.id}/${kelompok.replace(/[^a-zA-Z0-9]/g,'_')}/${a.tahun}_${(a.jenis_dokumen||'X').replace(/[^a-zA-Z0-9]/g,'_')}_${(peg.nama_pegawai||'').replace(/[^a-zA-Z0-9]/g,'_')}_${Date.now()}${ext}`;
+          const file = bucket.file(storagePath);
+          await file.save(buf, { metadata: { contentType: mimeHdr.includes('pdf')?'application/pdf':mimeHdr.includes('png')?'image/png':'image/jpeg' }, resumable: false });
+          downloadUrl = `https://firebasestorage.googleapis.com/v0/b/${bucket.name}/o/${encodeURIComponent(storagePath)}?alt=media`;
+        }
+
+        const arsipId = 'ARS_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7);
+        await query(`INSERT INTO arsip (id, pegawai_id, nip, nik, nama_pegawai, instansi_id, nama_instansi, kelompok_arsip, jenis_dokumen, nama_dokumen, nomor_dokumen, tanggal_dokumen, tahun, file_name, file_type, file_size, storage_path, download_url, status_validasi, deleted, uploaded_at, updated_at, uploaded_by)
+          VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,'Valid',0,?,?,'migration@tim-kerja')`, [
+          arsipId, peg.id, peg.nip||'', '', peg.nama_pegawai, peg.instansi_id, peg.nama_instansi,
+          kelompok, a.jenis_dokumen||'', a.file_name||'', a.bulan?`Bulan ${a.bulan}`:'',
+          a.tahun?`${a.tahun}-01-01`:'', a.tahun||'', a.file_name||'', '', fileData.length,
+          storagePath, downloadUrl, a.created_at||new Date().toISOString(), new Date().toISOString()
+        ]);
+        success++;
+      }
+
+      return res.json({ message: `Migrasi selesai: ${success} berhasil, ${skipped} dilewati, ${errors} gagal.` });
+    } catch (err: any) {
+      return res.status(500).json({ error: 'Migrasi gagal: ' + (err?.message || 'unknown') });
+    }
+  });
+
   return router;
 }
