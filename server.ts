@@ -21,7 +21,7 @@ seedInitialDb()
 
 const PORT = 3000;
 
-async function startServer() {
+export async function createApp() {
   const app = express();
 
   app.use(express.json({ limit: '50mb' }));
@@ -145,9 +145,16 @@ async function startServer() {
     });
   }
 
+  return app;
+}
+
+async function startServer() {
+  const app = await createApp();
   app.listen(PORT, '0.0.0.0', () => {
     console.log(`[E-Arsip ASN] Server ready and serving on http://localhost:${PORT}`);
   });
 }
 
-startServer();
+if (process.env.VERCEL !== '1') {
+  startServer();
+}
