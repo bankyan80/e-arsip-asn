@@ -1,5 +1,18 @@
-export default function handler(_req: any, res: any) {
-  res.statusCode = 200;
-  res.setHeader('Content-Type', 'application/json');
-  res.end(JSON.stringify({ status: 'ok', message: 'API handler works' }));
+import { createApp } from '../server';
+
+let app: any;
+
+export default async function handler(req: any, res: any) {
+  try {
+    if (!app) app = await createApp();
+    return new Promise<void>((resolve, reject) => {
+      res.on('finish', resolve);
+      res.on('error', reject);
+      app(req, res);
+    });
+  } catch (err: any) {
+    res.statusCode = 500;
+    res.setHeader('Content-Type', 'application/json');
+    res.end(JSON.stringify({ error: 'Server error', detail: err?.message || 'unknown' }));
+  }
 }
