@@ -12,6 +12,7 @@ coverage/
 api/index.js
 api/index.cjs
 api/index.mjs
+api-build/
 
 cookies.txt
 session.txt
