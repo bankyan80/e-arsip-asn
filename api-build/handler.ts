@@ -72,15 +72,6 @@ export default async function handler(req: any, res: any) {
     message: { error: 'Terlalu banyak permintaan. Coba lagi dalam 1 menit.' }
   });
 
-  // Temporary: bulk-validasi without auth (single-use, remove after)
-  app.post('/api/admin/arsip/bulk-validasi-all', async (req, res) => {
-    try {
-      const { bulkValidasiArsip } = await import('../lib/data');
-      await bulkValidasiArsip(undefined, 'Valid', 'system');
-      return res.json({ message: 'Semua arsip berhasil divalidasi.' });
-    } catch { return res.status(500).json({ error: 'Gagal.' }); }
-  });
-
   app.use('/api/', generalLimiter);
   app.use('/api/auth/login', strictLimiter);
   app.use('/api/auth', createAuthRouter(requireAuth, rateLimit));
