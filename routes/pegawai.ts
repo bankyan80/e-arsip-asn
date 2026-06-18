@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { getPegawaiData, updatePegawaiData, getKategoriList, getJenisDokumenList } from '../lib/firestore';
+import { getPegawaiData, updatePegawaiData, getKategoriList, getJenisDokumenList } from '../lib/data';
 import { profileUpdateSchema } from '../lib/validation';
 import { SessionData, Pegawai } from '../src/types';
 

@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import path from 'path';
-import { listArsipByPegawai, getArsipData, createArsipData, updateArsipData } from '../lib/firestore';
+import { listArsipByPegawai, getArsipData, createArsipData, updateArsipData } from '../lib/data';
 import { uploadFile, deleteFile } from '../lib/storage';
 import { arsipUploadSchema } from '../lib/validation';
 import { Arsip, DocumentVersion, SessionData } from '../src/types';

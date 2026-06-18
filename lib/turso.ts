@@ -1,0 +1,228 @@
+import { createClient } from '@libsql/client';
+
+const url = process.env.TURSO_DATABASE_URL;
+const authToken = process.env.TURSO_AUTH_TOKEN;
+const isConfigured = !!(url && authToken);
+
+let client: Awaited<ReturnType<typeof createClient>> | null = null;
+
+async function getClient() {
+  if (!isConfigured) return null;
+  if (!client) {
+    client = createClient({ url: url!, authToken: authToken! });
+  }
+  return client;
+}
+
+function sanitize(arr: unknown[]) {
+  return arr.map(v => v === undefined ? null : v);
+}
+
+async function query(sql: string, args?: unknown[]) {
+  const c = await getClient();
+  if (!c) return null;
+  return c.execute(sql, (args ? sanitize(args) : undefined) as any);
+}
+
+function mapRow(row: Record<string, unknown>) {
+  const result: Record<string, unknown> = {};
+  for (const [key, val] of Object.entries(row)) {
+    const camel = key.replace(/_([a-z])/g, (_, c) => c.toUpperCase());
+    if (key === 'status_aktif' || key === 'deleted' || key === 'wajib') {
+      result[camel] = val == 1 || val === true;
+    } else if (key === 'version_history') {
+      continue;
+    } else {
+      result[camel] = val;
+    }
+  }
+  return result;
+}
+
+function mapArsipRow(row: Record<string, unknown>) {
+  const base = mapRow(row);
+  base.versionHistory = JSON.parse((row.version_history as string) || '[]');
+  return base;
+}
+
+export async function initSchema() {
+  const c = await getClient();
+  if (!c) return;
+  await c.batch([
+    `CREATE TABLE IF NOT EXISTS instansi (id TEXT PRIMARY KEY, nama_instansi TEXT NOT NULL, alamat TEXT, kecamatan TEXT, kabupaten TEXT, status_aktif INTEGER DEFAULT 1)`,
+    `CREATE TABLE IF NOT EXISTS pegawai (id TEXT PRIMARY KEY, instansi_id TEXT NOT NULL, nama_instansi TEXT, nama_pegawai TEXT NOT NULL, nip TEXT, nik TEXT, tanggal_lahir TEXT, jenis_kelamin TEXT, jabatan TEXT, status_pegawai TEXT, pangkat_golongan TEXT, pendidikan_terakhir TEXT, nomor_hp TEXT, email TEXT, alamat TEXT, role TEXT DEFAULT 'pegawai', status_aktif INTEGER DEFAULT 1, login_terakhir TEXT, created_at TEXT, updated_at TEXT)`,
+    `CREATE TABLE IF NOT EXISTS arsip (id TEXT PRIMARY KEY, pegawai_id TEXT NOT NULL, nip TEXT, nik TEXT, nama_pegawai TEXT, instansi_id TEXT, nama_instansi TEXT, kelompok_arsip TEXT, jenis_dokumen TEXT, nama_dokumen TEXT, nomor_dokumen TEXT, tanggal_dokumen TEXT, tahun TEXT, file_name TEXT, file_type TEXT, file_size INTEGER, storage_path TEXT, download_url TEXT, status_validasi TEXT DEFAULT 'Menunggu Validasi', catatan_admin TEXT, deleted INTEGER DEFAULT 0, uploaded_at TEXT, updated_at TEXT, uploaded_by TEXT, updated_by TEXT, version_history TEXT DEFAULT '[]')`,
+    `CREATE TABLE IF NOT EXISTS logs (id TEXT PRIMARY KEY, tanggal TEXT, user_id TEXT, pegawai_id TEXT, nip TEXT, nama_pegawai TEXT, role TEXT, aksi TEXT, detail TEXT, arsip_id TEXT, nama_dokumen TEXT)`,
+    `CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT, keterangan TEXT)`,
+    `CREATE TABLE IF NOT EXISTS kategori_arsip (id TEXT PRIMARY KEY, nama_kategori TEXT, urutan INTEGER, deskripsi TEXT)`,
+    `CREATE TABLE IF NOT EXISTS jenis_dokumen (id TEXT PRIMARY KEY, kategori_id TEXT, nama_kategori TEXT, nama_dokumen TEXT, berlaku_untuk TEXT, wajib INTEGER DEFAULT 0, urutan INTEGER)`,
+  ]);
+}
+
+// INSTANSI
+export async function getInstansi(id: string) {
+  const r = await query('SELECT * FROM instansi WHERE id = ?', [id]);
+  if (!r || r.rows.length === 0) return null;
+  return mapRow(r.rows[0] as any);
+}
+
+export async function listInstansi() {
+  const r = await query('SELECT * FROM instansi ORDER BY nama_instansi');
+  if (!r) return [];
+  return (r.rows as any[]).map(mapRow);
+}
+
+export async function createInstansi(data: {
+  id: string; namaInstansi: string; alamat?: string; kecamatan?: string; kabupaten?: string; statusAktif: boolean;
+}) {
+  await query(
+    `INSERT INTO instansi (id, nama_instansi, alamat, kecamatan, kabupaten, status_aktif) VALUES (?, ?, ?, ?, ?, ?)`,
+    [data.id, data.namaInstansi, data.alamat, data.kecamatan, data.kabupaten, data.statusAktif ? 1 : 0]
+  );
+  return data;
+}
+
+// PEGAWAI
+export async function getPegawai(id: string) {
+  const r = await query('SELECT * FROM pegawai WHERE id = ?', [id]);
+  if (!r || r.rows.length === 0) return null;
+  return mapRow(r.rows[0] as any);
+}
+
+export async function findPegawaiByNipNik(identifier: string, type: 'NIP' | 'NIK', tanggalLahir: string) {
+  const col = type === 'NIP' ? 'nip' : 'nik';
+  const r = await query(`SELECT * FROM pegawai WHERE ${col} = ? AND tanggal_lahir = ?`, [identifier, tanggalLahir]);
+  if (!r || r.rows.length === 0) return null;
+  return mapRow(r.rows[0] as any);
+}
+
+export async function listPegawai(instansiId?: string) {
+  let sql = 'SELECT * FROM pegawai';
+  const args: unknown[] = [];
+  if (instansiId) { sql += ' WHERE instansi_id = ?'; args.push(instansiId); }
+  sql += ' ORDER BY nama_pegawai';
+  const r = await query(sql, args.length > 0 ? args : undefined);
+  if (!r) return [];
+  return (r.rows as any[]).map(mapRow);
+}
+
+export async function createPegawai(data: any) {
+  await query(
+    `INSERT INTO pegawai (id, instansi_id, nama_instansi, nama_pegawai, nip, nik, tanggal_lahir, jenis_kelamin, jabatan, status_pegawai, pangkat_golongan, pendidikan_terakhir, nomor_hp, email, alamat, role, status_aktif, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [data.id, data.instansiId, data.namaInstansi, data.namaPegawai, data.nip, data.nik, data.tanggalLahir, data.jenisKelamin, data.jabatan, data.statusPegawai, data.pangkatGolongan, data.pendidikanTerakhir, data.nomorHp, data.email, data.alamat, data.role, data.statusAktif ? 1 : 0, data.createdAt, data.updatedAt]
+  );
+  return data;
+}
+
+export async function updatePegawai(id: string, updates: Record<string, unknown>) {
+  const setClauses: string[] = [];
+  const args: unknown[] = [];
+  for (const [key, val] of Object.entries(updates)) {
+    const col = key.replace(/([A-Z])/g, '_$1').toLowerCase();
+    setClauses.push(`${col} = ?`);
+    args.push(key === 'statusAktif' ? (val ? 1 : 0) : val);
+  }
+  args.push(id);
+  await query(`UPDATE pegawai SET ${setClauses.join(', ')}, updated_at = datetime('now') WHERE id = ?`, args);
+}
+
+// ARSIP
+export async function listArsipByPegawai(pegawaiId: string) {
+  const r = await query('SELECT * FROM arsip WHERE pegawai_id = ? AND deleted = 0 ORDER BY updated_at DESC', [pegawaiId]);
+  if (!r) return [];
+  return (r.rows as any[]).map(mapArsipRow);
+}
+
+export async function getArsip(id: string) {
+  const r = await query('SELECT * FROM arsip WHERE id = ?', [id]);
+  if (!r || r.rows.length === 0) return null;
+  return mapArsipRow(r.rows[0] as any);
+}
+
+export async function createArsip(data: any) {
+  await query(
+    `INSERT INTO arsip (id, pegawai_id, nip, nik, nama_pegawai, instansi_id, nama_instansi, kelompok_arsip, jenis_dokumen, nama_dokumen, nomor_dokumen, tanggal_dokumen, tahun, file_name, file_type, file_size, storage_path, download_url, status_validasi, deleted, uploaded_at, updated_at, uploaded_by, updated_by, version_history) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [data.id, data.pegawaiId, data.nip, data.nik, data.namaPegawai, data.instansiId, data.namaInstansi, data.kelompokArsip, data.jenisDokumen, data.namaDokumen, data.nomorDokumen, data.tanggalDokumen, data.tahun, data.fileName, data.fileType, data.fileSize, data.storagePath, data.downloadUrl, data.statusValidasi, data.deleted ? 1 : 0, data.uploadedAt, data.updatedAt, data.uploadedBy, data.updatedBy, JSON.stringify(data.versionHistory || [])]
+  );
+  return data;
+}
+
+export async function updateArsip(id: string, updates: Record<string, unknown>) {
+  const setClauses: string[] = [];
+  const args: unknown[] = [];
+  for (const [key, val] of Object.entries(updates)) {
+    const col = key.replace(/([A-Z])/g, '_$1').toLowerCase();
+    if (key === 'versionHistory') {
+      setClauses.push(`${col} = ?`);
+      args.push(JSON.stringify(val));
+    } else if (key === 'deleted') {
+      setClauses.push(`${col} = ?`);
+      args.push(val ? 1 : 0);
+    } else {
+      setClauses.push(`${col} = ?`);
+      args.push(val);
+    }
+  }
+  args.push(id);
+  await query(`UPDATE arsip SET ${setClauses.join(', ')}, updated_at = datetime('now') WHERE id = ?`, args);
+}
+
+export async function listArsipAdmin(instansiId?: string) {
+  let sql = 'SELECT * FROM arsip WHERE deleted = 0';
+  const args: unknown[] = [];
+  if (instansiId) { sql += ' AND instansi_id = ?'; args.push(instansiId); }
+  sql += ' ORDER BY updated_at DESC';
+  const r = await query(sql, args.length > 0 ? args : undefined);
+  if (!r) return [];
+  return (r.rows as any[]).map(mapArsipRow);
+}
+
+// LOGS
+export async function createLog(data: any) {
+  await query(
+    `INSERT INTO logs (id, tanggal, user_id, pegawai_id, nip, nama_pegawai, role, aksi, detail, arsip_id, nama_dokumen) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [data.id, data.tanggal, data.userId, data.pegawaiId, data.nip, data.namaPegawai, data.role, data.aksi, data.detail, data.arsipId || null, data.namaDokumen || null]
+  );
+}
+
+export async function listLogs() {
+  const r = await query('SELECT * FROM logs ORDER BY tanggal DESC LIMIT 200');
+  if (!r) return [];
+  return (r.rows as any[]).map(mapRow);
+}
+
+// SETTINGS
+export async function getSetting(key: string) {
+  const r = await query('SELECT value FROM settings WHERE key = ?', [key]);
+  if (!r || r.rows.length === 0) return null;
+  return (r.rows[0] as any).value;
+}
+
+export async function setSetting(key: string, value: string) {
+  await query('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)', [key, value]);
+}
+
+// KATEGORI & JENIS DOKUMEN
+export async function listKategori() {
+  const r = await query('SELECT * FROM kategori_arsip ORDER BY urutan');
+  if (!r) return [];
+  return (r.rows as any[]).map(mapRow);
+}
+
+export async function listJenisDokumen() {
+  const r = await query('SELECT * FROM jenis_dokumen ORDER BY urutan');
+  if (!r) return [];
+  return (r.rows as any[]).map(mapRow);
+}
+
+export async function ensureSuperAdmin() {
+  const existing = await query("SELECT id FROM pegawai WHERE id = ?", ['PGW004']);
+  if (existing && existing.rows.length > 0) return;
+  const now = new Date().toISOString();
+  await query(
+    `INSERT INTO pegawai (id, instansi_id, nama_instansi, nama_pegawai, nip, nik, tanggal_lahir, jenis_kelamin, jabatan, status_pegawai, pangkat_golongan, pendidikan_terakhir, nomor_hp, email, alamat, role, status_aktif, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+    ['PGW004', 'INST002', 'Kantor Kepegawaian Daerah Cirebon', 'Doni Prasetyo', '199208152015031004', '3209876543210002', '1992-08-15', 'Laki-laki', 'Admin Database', 'PNS', 'Penata Muda / III.a', 'D3', '085678912345', 'doni.prasetyo@asn.id', 'Perum Cipta Asri No. 7, Kesambi, Cirebon', 'super_admin', 1, now, now]
+  );
+}
+
+export { isConfigured as isTursoConfigured };

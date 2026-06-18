@@ -3,7 +3,7 @@ import {
   listAllPegawai, listAllArsipAdmin, getArsipData, updateArsipData,
   findPegawaiByCredentials, getInstansiData, adminCreatePegawai,
   getLogsData, listAllInstansi, getSettingValue, updateSettingValue
-} from '../lib/firestore';
+} from '../lib/data';
 import { validasiSchema, createPegawaiSchema, settingSchema } from '../lib/validation';
 import { STATIC_JENIS_DOKUMEN } from '../lib/constants';
 import { SessionData, Pegawai, DocumentVersion } from '../src/types';

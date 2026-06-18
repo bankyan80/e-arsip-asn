@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { findPegawaiByCredentials, updatePegawaiData, createLogEntry } from '../lib/firestore';
+import { findPegawaiByCredentials, updatePegawaiData, createLogEntry } from '../lib/data';
 import { signSession, verifySession } from '../lib/session';
 import { loginSchema } from '../lib/validation';
 import { SessionData, Log } from '../src/types';
@@ -39,7 +39,7 @@ export function createAuthRouter(requireAuth: any, rateLimit: any) {
         nip: p.nip,
         nik: p.nik,
         nama: p.namaPegawai,
-        role: (p.role === 'super_admin' || p.role === 'admin_instansi') ? 'admin_instansi' : 'pegawai',
+        role: p.role,
         instansiId: p.instansiId,
         namaInstansi: p.namaInstansi
       };
@@ -62,7 +62,8 @@ export function createAuthRouter(requireAuth: any, rateLimit: any) {
       await createLogEntry(log);
 
       return res.json({ message: 'Login berhasil.', user: sessionData });
-    } catch {
+    } catch (err: any) {
+      console.error('Login error:', err?.stack || err?.message || err);
       return res.status(500).json({ error: 'Terjadi kesalahan pada server saat login.' });
     }
   });

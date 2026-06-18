@@ -131,7 +131,7 @@ export interface SessionData {
   nip: string;
   nik: string;
   nama: string;
-  role: 'pegawai' | 'admin_instansi';
+  role: 'pegawai' | 'admin_instansi' | 'super_admin';
   instansiId: string;
   namaInstansi: string;
 }

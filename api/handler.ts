@@ -3,7 +3,7 @@ import path from 'path';
 import multer from 'multer';
 import rateLimit from 'express-rate-limit';
 import { verifySession } from '../lib/session';
-import { seedInitialDb, createLogEntry } from '../lib/firestore';
+import { seedInitialDb, createLogEntry } from '../lib/data';
 import { SessionData } from '../src/types';
 import { createAuthRouter } from '../routes/auth';
 import { createPegawaiRouter, createMetadataRouter } from '../routes/pegawai';
@@ -46,11 +46,12 @@ let seedingDone = false;
 export default async function handler(req: any, res: any) {
   if (!seedingDone) {
     seedingDone = true;
-    seedInitialDb().catch(() => {});
+    seedInitialDb().catch((err) => console.error('Seed initial DB error:', err));
   }
   try {
     if (!appInstance) {
       const app = express();
+      app.set('trust proxy', 1);
       app.use(express.json({ limit: '50mb' }));
       app.use(express.urlencoded({ extended: true, limit: '50mb' }));
       app.use((req, _res, next) => {
@@ -72,7 +73,7 @@ export default async function handler(req: any, res: any) {
       app.get('/api/kelengkapan/me', requireAuth, async (req, res) => {
         const session = (req as any).session as SessionData;
         try {
-          const { getPegawaiData, listArsipByPegawai } = await import('../lib/firestore');
+          const { getPegawaiData, listArsipByPegawai } = await import('../lib/data');
           const { STATIC_JENIS_DOKUMEN } = await import('../lib/constants');
           const userPegawai = await getPegawaiData(session.pegawaiId);
           if (!userPegawai) return res.status(404).json({ error: 'Data tidak ditemukan.' });
@@ -82,7 +83,7 @@ export default async function handler(req: any, res: any) {
             const p = doc.berlakuUntuk === 'Semua' || doc.berlakuUntuk === userPegawai.statusPegawai;
             return { id: doc.id, namaDokumen: doc.namaDokumen, status: m ? m.statusValidasi : 'Belum Upload', wajib: doc.wajib && p };
           }));
-        } catch { return res.status(500).json({ error: 'Gagal memuat rekap.' }); }
+        } catch (err: any) { console.error('Rekap error:', err?.message || err); return res.status(500).json({ error: 'Gagal memuat rekap.' }); }
       });
       const distPath = path.join(process.cwd(), 'dist');
       app.use(express.static(distPath));

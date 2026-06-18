@@ -30,9 +30,9 @@ export const Header: React.FC<HeaderProps> = ({ userName, agencyName, role, onLo
             <div className="text-right hidden sm:block">
               <span className="block text-xs font-semibold text-white truncate max-w-[140px]">{userName}</span>
               <span className={`inline-block text-[9px] font-bold uppercase tracking-wider px-2 py-0.2 rounded-full ${
-                role === 'admin_instansi' ? 'bg-indigo-500/20 text-indigo-200 border border-indigo-400/30' : 'bg-emerald-500/20 text-emerald-200 border border-emerald-400/30'
+                role === 'admin_instansi' || role === 'super_admin' ? 'bg-indigo-500/20 text-indigo-200 border border-indigo-400/30' : 'bg-emerald-500/20 text-emerald-200 border border-emerald-400/30'
               }`}>
-                {role === 'admin_instansi' ? 'Admin' : 'ASN'}
+                {role === 'admin_instansi' ? 'Admin' : role === 'super_admin' ? 'Super Admin' : 'ASN'}
               </span>
             </div>
           )}

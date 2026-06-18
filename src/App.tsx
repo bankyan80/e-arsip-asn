@@ -1194,7 +1194,7 @@ export default function App() {
               </div>
 
               {/* Global Settings policies block */}
-              {session.role === 'admin_instansi' && (
+              {(session.role === 'admin_instansi' || session.role === 'super_admin') && (
                 <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
                   <div className="flex items-center gap-2 mb-3">
                     <Settings className="w-5 h-5 text-indigo-600" />
@@ -1239,7 +1239,7 @@ export default function App() {
                 </div>
 
                 <div className="flex items-center gap-2">
-                  {session.role === 'admin_instansi' && (
+                  {(session.role === 'admin_instansi' || session.role === 'super_admin') && (
                     <button
                       onClick={() => setShowAddPegawai(!showAddPegawai)}
                       className="h-10 px-3 bg-[#1d4ed8] text-white text-xs font-bold rounded-xl flex items-center gap-1.5 hover:bg-opacity-95"
@@ -1252,7 +1252,7 @@ export default function App() {
               </div>
 
               {/* ADMIN INLINE PEGWAWI REGISTER FORM */}
-              {showAddPegawai && session.role === 'admin_instansi' && (
+              {showAddPegawai && (session.role === 'admin_instansi' || session.role === 'super_admin') && (
                 <div className="bg-white p-5 rounded-2xl border border-indigo-100 shadow-md animate-slide-up">
                   <span className="block text-[10px] font-bold text-indigo-500 uppercase tracking-widest leading-none mb-1">
                     Admin Console
@@ -1338,14 +1338,15 @@ export default function App() {
                       </div>
                       <div>
                         <label className="block text-[10px] font-bold text-slate-600 mb-1">HAK AKSES / ROLE</label>
-                        <select
-                          value={newPegawaiForm.role}
-                          onChange={(e) => setNewPegawaiForm({ ...newPegawaiForm, role: e.target.value })}
-                          className="w-full h-10 border rounded-lg px-2 bg-white"
-                        >
-                          <option value="pegawai">pegawai</option>
-                          <option value="admin_instansi">admin_instansi</option>
-                        </select>
+                          <select
+                            value={newPegawaiForm.role}
+                            onChange={(e) => setNewPegawaiForm({ ...newPegawaiForm, role: e.target.value })}
+                            className="w-full h-10 border rounded-lg px-2 bg-white"
+                          >
+                            <option value="pegawai">pegawai</option>
+                            <option value="admin_instansi">admin_instansi</option>
+                            {session.role === 'super_admin' && <option value="super_admin">super_admin</option>}
+                          </select>
                       </div>
                     </div>
 
