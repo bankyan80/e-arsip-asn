@@ -1,5 +1,3 @@
-import admin from 'firebase-admin';
-
 let app: any = null;
 let db: any = null;
 let bucket: any = null;
@@ -19,47 +17,45 @@ const isFirebaseConfigured = hasAdminCreds || hasClientCreds;
 
 async function init() {
   if (hasAdminCreds) {
-    const certPrivateKey = privateKey!.replace(/\\n/g, '\n').replace(/"/g, '');
-    const adminAny = admin as any;
-    if (!adminAny.apps || !adminAny.apps.length) {
-      app = adminAny.initializeApp({
-        credential: adminAny.credential.cert({
-          projectId, clientEmail,
-          privateKey: certPrivateKey,
-        }),
-        storageBucket: storageBucket || `${projectId}.appspot.com`,
-      });
-    } else {
-      app = adminAny.apps[0];
-    }
-    db = adminAny.firestore();
     try {
-      bucket = adminAny.storage().bucket();
-    } catch (bucketErr) {
-      console.warn('Firebase Storage bucket could not be resolved:', bucketErr);
+      const admin = await import('firebase-admin');
+      const adminAny = admin.default || admin;
+      const certPrivateKey = privateKey!.replace(/\\n/g, '\n').replace(/"/g, '');
+      if (!adminAny.apps || !adminAny.apps.length) {
+        app = adminAny.initializeApp({
+          credential: adminAny.credential.cert({ projectId, clientEmail, privateKey: certPrivateKey }),
+          storageBucket: storageBucket || `${projectId}.appspot.com`,
+        });
+      } else {
+        app = adminAny.apps[0];
+      }
+      db = adminAny.firestore();
+      try { bucket = adminAny.storage().bucket(); } catch {}
+      console.log('Firebase Admin SDK initialized.');
+    } catch (error: any) {
+      console.error('Admin SDK init failed:', error?.message || error);
     }
-    console.log('Firebase Admin SDK initialized.');
-  } else if (hasClientCreds) {
+  }
+  if (!db && hasClientCreds) {
     try {
-      const mod = await import('firebase/compat/app');
+      const compat = await import('firebase/compat/app');
       await import('firebase/compat/firestore');
-      const firebase = mod.default || mod;
+      const firebase = compat.default || compat;
       const config: Record<string, any> = { apiKey, authDomain, projectId, messagingSenderId, appId };
       if (storageBucket) config.storageBucket = storageBucket;
       app = firebase.initializeApp(config);
       db = app.firestore();
       console.log('Firebase Client SDK (compat) initialized. Storage falls back to local.');
     } catch (error: any) {
-      console.error('Firebase Client SDK init failed, will use local DB:', error?.message || error);
+      console.error('Client SDK init failed, will use local DB:', error?.message || error);
     }
   }
 }
 
 if (isFirebaseConfigured) {
   init().catch(e => console.error('Firebase init error:', e));
-} else {
-  console.log('Firebase credentials not detected. Using local data store.');
 }
 
+const _defaultAdmin: any = null;
 export { app, db, bucket, isFirebaseConfigured };
-export default admin;
+export default _defaultAdmin;
