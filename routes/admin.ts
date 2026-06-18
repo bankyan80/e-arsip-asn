@@ -46,7 +46,7 @@ export function createAdminRouter(requireAuth: any, requireRole: any, logAction:
         if (ins) instansiName = ins.namaInstansi;
       }
 
-      const defaultPass = await bcrypt.hash('12345678', 10);
+      const defaultPass = await bcrypt.hash(body.nip.slice(-6), 10);
 
       const p: Pegawai = {
         id: 'PGW_' + Date.now(), instansiId, namaInstansi: instansiName,

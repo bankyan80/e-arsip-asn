@@ -146,10 +146,10 @@ export default function App() {
     setLoginType('BOTH');
     if (type === 'pegawai') {
       setIdentifier('198705122010012003');
-      setPassword('12345678');
+      setPassword('012003');
     } else if (type === 'admin') {
       setIdentifier('198501012008011002');
-      setPassword('12345678');
+      setPassword('011002');
     } else if (type === 'super') {
       setIdentifier('198001292025211035');
       setPassword('admin456');

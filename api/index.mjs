@@ -334,17 +334,22 @@ async function setPegawaiPassword(id, hashed) {
   await query("UPDATE pegawai SET password = ? WHERE id = ?", [hashed, id]);
 }
 async function seedDefaultPasswords() {
-  const defaultPass = await bcrypt.hash("12345678", 10);
-  for (const id of ["PGW001", "PGW002", "PGW003"]) {
-    const r = await query("SELECT id, password FROM pegawai WHERE id = ?", [id]);
-    if (r && r.rows.length > 0 && !r.rows[0].password) {
-      await query("UPDATE pegawai SET password = ? WHERE id = ?", [defaultPass, id]);
+  const seeds = [
+    { id: "PGW001", nip: "198705122010012003" },
+    { id: "PGW002", nip: "198501012008011002" },
+    { id: "PGW003", nip: "199003102014022001" }
+  ];
+  for (const s of seeds) {
+    const pass = s.nip.slice(-6);
+    const hashed = await bcrypt.hash(pass, 10);
+    const r = await query("SELECT id, password FROM pegawai WHERE id = ?", [s.id]);
+    if (r && r.rows.length > 0) {
+      await query("UPDATE pegawai SET password = ? WHERE id = ?", [hashed, s.id]);
     }
   }
   const saPass = await bcrypt.hash("admin456", 10);
-  const sa = await query("SELECT id, password, nip FROM pegawai WHERE id = ?", ["PGW004"]);
+  const sa = await query("SELECT id FROM pegawai WHERE id = ?", ["PGW004"]);
   if (sa && sa.rows.length > 0) {
-    const row = sa.rows[0];
     await query("UPDATE pegawai SET nip = ?, password = ? WHERE id = ?", ["198001292025211035", saPass, "PGW004"]);
   }
 }
@@ -1642,7 +1647,7 @@ function createAdminRouter(requireAuth2, requireRole2, logAction2) {
         const ins = await getInstansiData2(instansiId);
         if (ins) instansiName = ins.namaInstansi;
       }
-      const defaultPass = await bcrypt3.hash("12345678", 10);
+      const defaultPass = await bcrypt3.hash(body.nip.slice(-6), 10);
       const p = {
         id: "PGW_" + Date.now(),
         instansiId,
