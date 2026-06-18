@@ -241,7 +241,7 @@ async function clearPegawaiExceptSuperAdmin() {
 }
 async function updateAllInstansiName(namaInstansi) {
   await query("UPDATE pegawai SET nama_instansi = ?, updated_at = datetime('now')", [namaInstansi]);
-  await query("UPDATE instansi SET nama_instansi = ?, updated_at = datetime('now')", [namaInstansi]);
+  await query("UPDATE instansi SET nama_instansi = ?", [namaInstansi]);
 }
 async function updatePegawai(id, updates) {
   const setClauses = [];

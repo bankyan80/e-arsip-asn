@@ -155,7 +155,7 @@ export async function clearPegawaiExceptSuperAdmin() {
 
 export async function updateAllInstansiName(namaInstansi: string) {
   await query("UPDATE pegawai SET nama_instansi = ?, updated_at = datetime('now')", [namaInstansi]);
-  await query("UPDATE instansi SET nama_instansi = ?, updated_at = datetime('now')", [namaInstansi]);
+  await query("UPDATE instansi SET nama_instansi = ?", [namaInstansi]);
 }
 
 export async function updatePegawai(id: string, updates: Record<string, unknown>) {
