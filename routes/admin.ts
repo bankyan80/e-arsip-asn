@@ -7,7 +7,8 @@ import {
   createKategori, updateKategori, deleteKategori,
   createJenisDokumen, updateJenisDokumen, deleteJenisDokumen,
   getKategoriList, getJenisDokumenList,
-  bulkImportPegawai, clearPegawai, updateAllInstansiName
+  bulkImportPegawai, clearPegawai, updateAllInstansiName,
+  createArsipData
 } from '../lib/data';
 import { validasiSchema, createPegawaiSchema, settingSchema } from '../lib/validation';
 import { STATIC_JENIS_DOKUMEN } from '../lib/constants';
@@ -326,7 +327,6 @@ export function createAdminRouter(requireAuth: any, requireRole: any, logAction:
     try {
       const { getStorage } = await import('firebase-admin/storage');
       const { initializeApp, getApps, cert } = await import('firebase-admin');
-      const { query } = await import('../lib/turso');
       const { extname } = await import('path');
 
       if (!getApps().length) {
@@ -343,10 +343,10 @@ export function createAdminRouter(requireAuth: any, requireRole: any, logAction:
       const bucket = getStorage().bucket(process.env.FIREBASE_STORAGE_BUCKET);
 
       // Load all pegawai for name matching
-      const pegRows = await query("SELECT id, nip, nama_pegawai, instansi_id, nama_instansi FROM pegawai");
-      const pegawaiMap = {};
-      if (pegRows) for (const r of pegRows.rows) {
-        pegawaiMap[((r as any).nama_pegawai || '').toUpperCase()] = r;
+      const allPeg = await listAllPegawai();
+      const pegawaiMap: Record<string, any> = {};
+      for (const p of allPeg) {
+        pegawaiMap[(p.namaPegawai || '').toUpperCase()] = p;
       }
 
       let success = 0, skipped = 0, errors = 0;
@@ -365,20 +365,29 @@ export function createAdminRouter(requireAuth: any, requireRole: any, logAction:
           const [mimeHdr, b64] = fileData.split(',');
           const buf = Buffer.from(b64, 'base64');
           const ext = extname(a.file_name || 'dokumen.pdf') || '.pdf';
-          storagePath = `arsip-asn/${peg.instansi_id}/${peg.id}/${kelompok.replace(/[^a-zA-Z0-9]/g,'_')}/${a.tahun}_${(a.jenis_dokumen||'X').replace(/[^a-zA-Z0-9]/g,'_')}_${(peg.nama_pegawai||'').replace(/[^a-zA-Z0-9]/g,'_')}_${Date.now()}${ext}`;
+          storagePath = `arsip-asn/${peg.instansiId}/${peg.id}/${kelompok.replace(/[^a-zA-Z0-9]/g,'_')}/${a.tahun}_${(a.jenis_dokumen||'X').replace(/[^a-zA-Z0-9]/g,'_')}_${(peg.namaPegawai||'').replace(/[^a-zA-Z0-9]/g,'_')}_${Date.now()}${ext}`;
           const file = bucket.file(storagePath);
           await file.save(buf, { metadata: { contentType: mimeHdr.includes('pdf')?'application/pdf':mimeHdr.includes('png')?'image/png':'image/jpeg' }, resumable: false });
           downloadUrl = `https://firebasestorage.googleapis.com/v0/b/${bucket.name}/o/${encodeURIComponent(storagePath)}?alt=media`;
         }
 
-        const arsipId = 'ARS_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7);
-        await query(`INSERT INTO arsip (id, pegawai_id, nip, nik, nama_pegawai, instansi_id, nama_instansi, kelompok_arsip, jenis_dokumen, nama_dokumen, nomor_dokumen, tanggal_dokumen, tahun, file_name, file_type, file_size, storage_path, download_url, status_validasi, deleted, uploaded_at, updated_at, uploaded_by)
-          VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,'Valid',0,?,?,'migration@tim-kerja')`, [
-          arsipId, peg.id, peg.nip||'', '', peg.nama_pegawai, peg.instansi_id, peg.nama_instansi,
-          kelompok, a.jenis_dokumen||'', a.file_name||'', a.bulan?`Bulan ${a.bulan}`:'',
-          a.tahun?`${a.tahun}-01-01`:'', a.tahun||'', a.file_name||'', '', fileData.length,
-          storagePath, downloadUrl, a.created_at||new Date().toISOString(), new Date().toISOString()
-        ]);
+        const arsipData = {
+          id: 'ARS_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
+          pegawaiId: peg.id, nip: peg.nip || '', nik: '',
+          namaPegawai: peg.namaPegawai, instansiId: peg.instansiId,
+          namaInstansi: peg.namaInstansi,
+          kelompokArsip: kelompok, jenisDokumen: a.jenis_dokumen || '',
+          namaDokumen: a.file_name || '', nomorDokumen: a.bulan ? `Bulan ${a.bulan}` : '',
+          tanggalDokumen: a.tahun ? `${a.tahun}-01-01` : '', tahun: a.tahun || '',
+          fileName: a.file_name || '', fileType: '', fileSize: fileData.length,
+          storagePath, downloadUrl,
+          statusValidasi: 'Valid', deleted: false,
+          uploadedAt: a.created_at || new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          uploadedBy: 'migration@tim-kerja', updatedBy: 'migration@tim-kerja',
+          versionHistory: []
+        };
+        await createArsipData(arsipData);
         success++;
       }
 

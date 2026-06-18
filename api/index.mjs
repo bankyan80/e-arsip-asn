@@ -2035,7 +2035,6 @@ function createAdminRouter(requireAuth2, requireRole2, logAction2) {
     try {
       const { getStorage } = await import("firebase-admin/storage");
       const { initializeApp, getApps, cert } = await import("firebase-admin");
-      const { query: query2 } = await Promise.resolve().then(() => (init_turso(), turso_exports));
       const { extname: extname2 } = await import("path");
       if (!getApps().length) {
         const pk = (process.env.FIREBASE_PRIVATE_KEY || "").replace(/\\n/g, "\n");
@@ -2049,10 +2048,10 @@ function createAdminRouter(requireAuth2, requireRole2, logAction2) {
         });
       }
       const bucket2 = getStorage().bucket(process.env.FIREBASE_STORAGE_BUCKET);
-      const pegRows = await query2("SELECT id, nip, nama_pegawai, instansi_id, nama_instansi FROM pegawai");
+      const allPeg = await listAllPegawai2();
       const pegawaiMap = {};
-      if (pegRows) for (const r of pegRows.rows) {
-        pegawaiMap[(r.nama_pegawai || "").toUpperCase()] = r;
+      for (const p of allPeg) {
+        pegawaiMap[(p.namaPegawai || "").toUpperCase()] = p;
       }
       let success = 0, skipped = 0, errors = 0;
       for (const a of arsipList) {
@@ -2069,35 +2068,39 @@ function createAdminRouter(requireAuth2, requireRole2, logAction2) {
           const [mimeHdr, b64] = fileData.split(",");
           const buf = Buffer.from(b64, "base64");
           const ext = extname2(a.file_name || "dokumen.pdf") || ".pdf";
-          storagePath = `arsip-asn/${peg.instansi_id}/${peg.id}/${kelompok.replace(/[^a-zA-Z0-9]/g, "_")}/${a.tahun}_${(a.jenis_dokumen || "X").replace(/[^a-zA-Z0-9]/g, "_")}_${(peg.nama_pegawai || "").replace(/[^a-zA-Z0-9]/g, "_")}_${Date.now()}${ext}`;
+          storagePath = `arsip-asn/${peg.instansiId}/${peg.id}/${kelompok.replace(/[^a-zA-Z0-9]/g, "_")}/${a.tahun}_${(a.jenis_dokumen || "X").replace(/[^a-zA-Z0-9]/g, "_")}_${(peg.namaPegawai || "").replace(/[^a-zA-Z0-9]/g, "_")}_${Date.now()}${ext}`;
           const file = bucket2.file(storagePath);
           await file.save(buf, { metadata: { contentType: mimeHdr.includes("pdf") ? "application/pdf" : mimeHdr.includes("png") ? "image/png" : "image/jpeg" }, resumable: false });
           downloadUrl = `https://firebasestorage.googleapis.com/v0/b/${bucket2.name}/o/${encodeURIComponent(storagePath)}?alt=media`;
         }
-        const arsipId = "ARS_" + Date.now() + "_" + Math.random().toString(36).slice(2, 7);
-        await query2(`INSERT INTO arsip (id, pegawai_id, nip, nik, nama_pegawai, instansi_id, nama_instansi, kelompok_arsip, jenis_dokumen, nama_dokumen, nomor_dokumen, tanggal_dokumen, tahun, file_name, file_type, file_size, storage_path, download_url, status_validasi, deleted, uploaded_at, updated_at, uploaded_by)
-          VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,'Valid',0,?,?,'migration@tim-kerja')`, [
-          arsipId,
-          peg.id,
-          peg.nip || "",
-          "",
-          peg.nama_pegawai,
-          peg.instansi_id,
-          peg.nama_instansi,
-          kelompok,
-          a.jenis_dokumen || "",
-          a.file_name || "",
-          a.bulan ? `Bulan ${a.bulan}` : "",
-          a.tahun ? `${a.tahun}-01-01` : "",
-          a.tahun || "",
-          a.file_name || "",
-          "",
-          fileData.length,
+        const arsipData = {
+          id: "ARS_" + Date.now() + "_" + Math.random().toString(36).slice(2, 7),
+          pegawaiId: peg.id,
+          nip: peg.nip || "",
+          nik: "",
+          namaPegawai: peg.namaPegawai,
+          instansiId: peg.instansiId,
+          namaInstansi: peg.namaInstansi,
+          kelompokArsip: kelompok,
+          jenisDokumen: a.jenis_dokumen || "",
+          namaDokumen: a.file_name || "",
+          nomorDokumen: a.bulan ? `Bulan ${a.bulan}` : "",
+          tanggalDokumen: a.tahun ? `${a.tahun}-01-01` : "",
+          tahun: a.tahun || "",
+          fileName: a.file_name || "",
+          fileType: "",
+          fileSize: fileData.length,
           storagePath,
           downloadUrl,
-          a.created_at || (/* @__PURE__ */ new Date()).toISOString(),
-          (/* @__PURE__ */ new Date()).toISOString()
-        ]);
+          statusValidasi: "Valid",
+          deleted: false,
+          uploadedAt: a.created_at || (/* @__PURE__ */ new Date()).toISOString(),
+          updatedAt: (/* @__PURE__ */ new Date()).toISOString(),
+          uploadedBy: "migration@tim-kerja",
+          updatedBy: "migration@tim-kerja",
+          versionHistory: []
+        };
+        await createArsipData2(arsipData);
         success++;
       }
       return res.json({ message: `Migrasi selesai: ${success} berhasil, ${skipped} dilewati, ${errors} gagal.` });
