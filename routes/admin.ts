@@ -325,23 +325,6 @@ export function createAdminRouter(requireAuth: any, requireRole: any, logAction:
     const { arsip: arsipList } = req.body;
     if (!Array.isArray(arsipList) || arsipList.length === 0) return res.status(400).json({ error: 'Data arsip wajib dikirim.' });
     try {
-      const { getStorage } = await import('firebase-admin/storage');
-      const { initializeApp, getApps, cert } = await import('firebase-admin');
-      const { extname } = await import('path');
-
-      if (!getApps().length) {
-        const pk = (process.env.FIREBASE_PRIVATE_KEY || '').replace(/\\n/g, '\n');
-        initializeApp({
-          credential: cert({
-            projectId: process.env.FIREBASE_PROJECT_ID,
-            clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-            privateKey: pk
-          }),
-          storageBucket: process.env.FIREBASE_STORAGE_BUCKET
-        });
-      }
-      const bucket = getStorage().bucket();
-
       // Load all pegawai for name matching
       const allPeg = await listAllPegawai();
       const pegawaiMap: Record<string, any> = {};
@@ -359,17 +342,8 @@ export function createAdminRouter(requireAuth: any, requireRole: any, logAction:
         const kelompok = ['KTP','KK','Ijazah','SK','Sertifikat','BPJS','NPWP','Akta','Pass Foto','Kartu']
           .some(k => (a.jenis_dokumen || '').includes(k)) ? 'Dokumen Pendukung' : 'Dokumen Kepegawaian';
 
-        let storagePath = '', downloadUrl = '';
         const fileData = a.file || '';
-        if (fileData.startsWith('data:')) {
-          const [mimeHdr, b64] = fileData.split(',');
-          const buf = Buffer.from(b64, 'base64');
-          const ext = extname(a.file_name || 'dokumen.pdf') || '.pdf';
-          storagePath = `arsip-asn/${peg.instansiId}/${peg.id}/${kelompok.replace(/[^a-zA-Z0-9]/g,'_')}/${a.tahun}_${(a.jenis_dokumen||'X').replace(/[^a-zA-Z0-9]/g,'_')}_${(peg.namaPegawai||'').replace(/[^a-zA-Z0-9]/g,'_')}_${Date.now()}${ext}`;
-          const file = bucket.file(storagePath);
-          await file.save(buf, { metadata: { contentType: mimeHdr.includes('pdf')?'application/pdf':mimeHdr.includes('png')?'image/png':'image/jpeg' }, resumable: false });
-          downloadUrl = `https://firebasestorage.googleapis.com/v0/b/${bucket.name}/o/${encodeURIComponent(storagePath)}?alt=media`;
-        }
+        const storagePath = fileData.startsWith('data:') ? fileData : '';
 
         const arsipData = {
           id: 'ARS_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
@@ -380,7 +354,7 @@ export function createAdminRouter(requireAuth: any, requireRole: any, logAction:
           namaDokumen: a.file_name || '', nomorDokumen: a.bulan ? `Bulan ${a.bulan}` : '',
           tanggalDokumen: a.tahun ? `${a.tahun}-01-01` : '', tahun: a.tahun || '',
           fileName: a.file_name || '', fileType: '', fileSize: fileData.length,
-          storagePath, downloadUrl,
+          storagePath, downloadUrl: '',
           statusValidasi: 'Valid', deleted: false,
           uploadedAt: a.created_at || new Date().toISOString(),
           updatedAt: new Date().toISOString(),

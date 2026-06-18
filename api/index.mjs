@@ -2033,21 +2033,6 @@ function createAdminRouter(requireAuth2, requireRole2, logAction2) {
     const { arsip: arsipList } = req.body;
     if (!Array.isArray(arsipList) || arsipList.length === 0) return res.status(400).json({ error: "Data arsip wajib dikirim." });
     try {
-      const { getStorage } = await import("firebase-admin/storage");
-      const { initializeApp, getApps, cert } = await import("firebase-admin");
-      const { extname: extname2 } = await import("path");
-      if (!getApps().length) {
-        const pk = (process.env.FIREBASE_PRIVATE_KEY || "").replace(/\\n/g, "\n");
-        initializeApp({
-          credential: cert({
-            projectId: process.env.FIREBASE_PROJECT_ID,
-            clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-            privateKey: pk
-          }),
-          storageBucket: process.env.FIREBASE_STORAGE_BUCKET
-        });
-      }
-      const bucket2 = getStorage().bucket();
       const allPeg = await listAllPegawai2();
       const pegawaiMap = {};
       for (const p of allPeg) {
@@ -2062,17 +2047,8 @@ function createAdminRouter(requireAuth2, requireRole2, logAction2) {
           continue;
         }
         const kelompok = ["KTP", "KK", "Ijazah", "SK", "Sertifikat", "BPJS", "NPWP", "Akta", "Pass Foto", "Kartu"].some((k) => (a.jenis_dokumen || "").includes(k)) ? "Dokumen Pendukung" : "Dokumen Kepegawaian";
-        let storagePath = "", downloadUrl = "";
         const fileData = a.file || "";
-        if (fileData.startsWith("data:")) {
-          const [mimeHdr, b64] = fileData.split(",");
-          const buf = Buffer.from(b64, "base64");
-          const ext = extname2(a.file_name || "dokumen.pdf") || ".pdf";
-          storagePath = `arsip-asn/${peg.instansiId}/${peg.id}/${kelompok.replace(/[^a-zA-Z0-9]/g, "_")}/${a.tahun}_${(a.jenis_dokumen || "X").replace(/[^a-zA-Z0-9]/g, "_")}_${(peg.namaPegawai || "").replace(/[^a-zA-Z0-9]/g, "_")}_${Date.now()}${ext}`;
-          const file = bucket2.file(storagePath);
-          await file.save(buf, { metadata: { contentType: mimeHdr.includes("pdf") ? "application/pdf" : mimeHdr.includes("png") ? "image/png" : "image/jpeg" }, resumable: false });
-          downloadUrl = `https://firebasestorage.googleapis.com/v0/b/${bucket2.name}/o/${encodeURIComponent(storagePath)}?alt=media`;
-        }
+        const storagePath = fileData.startsWith("data:") ? fileData : "";
         const arsipData = {
           id: "ARS_" + Date.now() + "_" + Math.random().toString(36).slice(2, 7),
           pegawaiId: peg.id,
@@ -2091,7 +2067,7 @@ function createAdminRouter(requireAuth2, requireRole2, logAction2) {
           fileType: "",
           fileSize: fileData.length,
           storagePath,
-          downloadUrl,
+          downloadUrl: "",
           statusValidasi: "Valid",
           deleted: false,
           uploadedAt: a.created_at || (/* @__PURE__ */ new Date()).toISOString(),
@@ -2114,11 +2090,38 @@ function createAdminRouter(requireAuth2, requireRole2, logAction2) {
 // routes/files.ts
 import { Router as Router5 } from "express";
 import path4 from "path";
+init_data();
 function createFilesRouter(requireAuth2) {
   const router = Router5();
-  router.get("/download", requireAuth2, (req, res) => {
+  router.get("/download", requireAuth2, async (req, res) => {
+    const arsipId = req.query.arsipId;
     const filePath = req.query.path;
-    if (!filePath) return res.status(400).json({ error: "Path file tidak ditentukan." });
+    if (arsipId) {
+      const session2 = req.session;
+      const arsip = await getArsipData2(arsipId);
+      if (!arsip) return res.status(404).json({ error: "Arsip tidak ditemukan." });
+      if (session2.role === "pegawai" && arsip.pegawaiId !== session2.pegawaiId) {
+        return res.status(403).json({ error: "Akses ditolak." });
+      }
+      if (session2.role === "admin_instansi" && arsip.instansiId !== session2.instansiId) {
+        return res.status(403).json({ error: "Akses ditolak." });
+      }
+      const sp = arsip.storagePath || "";
+      if (sp.startsWith("data:")) {
+        const [mimeHdr, b64] = sp.split(",");
+        const mime = mimeHdr.replace("data:", "").split(";")[0] || "application/octet-stream";
+        const buf = Buffer.from(b64, "base64");
+        res.setHeader("Content-Type", mime);
+        res.setHeader("Content-Disposition", `inline; filename="${arsip.fileName || "dokumen"}"`);
+        return res.send(buf);
+      }
+      const result2 = getLocalFileBuffer(sp);
+      if (!result2) return res.status(404).json({ error: "Berkas dokumen tidak ditemukan." });
+      res.setHeader("Content-Type", result2.mimeType);
+      res.setHeader("Content-Disposition", `inline; filename="${path4.basename(sp)}"`);
+      return res.send(result2.buffer);
+    }
+    if (!filePath) return res.status(400).json({ error: "Parameter path atau arsipId diperlukan." });
     const session = req.session;
     const pathParts = filePath.split("/");
     if (pathParts[0] === "arsip-asn") {
