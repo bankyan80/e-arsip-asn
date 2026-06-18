@@ -340,7 +340,7 @@ export function createAdminRouter(requireAuth: any, requireRole: any, logAction:
           storageBucket: process.env.FIREBASE_STORAGE_BUCKET
         });
       }
-      const bucket = getStorage().bucket(process.env.FIREBASE_STORAGE_BUCKET);
+      const bucket = getStorage().bucket();
 
       // Load all pegawai for name matching
       const allPeg = await listAllPegawai();

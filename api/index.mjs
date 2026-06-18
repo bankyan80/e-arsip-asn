@@ -2047,7 +2047,7 @@ function createAdminRouter(requireAuth2, requireRole2, logAction2) {
           storageBucket: process.env.FIREBASE_STORAGE_BUCKET
         });
       }
-      const bucket2 = getStorage().bucket(process.env.FIREBASE_STORAGE_BUCKET);
+      const bucket2 = getStorage().bucket();
       const allPeg = await listAllPegawai2();
       const pegawaiMap = {};
       for (const p of allPeg) {
