@@ -4,7 +4,7 @@ import multer from 'multer';
 import rateLimit from 'express-rate-limit';
 import { verifySession } from '../lib/session';
 import { seedInitialDb, createLogEntry } from '../lib/firestore';
-import { SessionData, Log } from '../src/types';
+import { SessionData } from '../src/types';
 import { createAuthRouter } from '../routes/auth';
 import { createPegawaiRouter, createMetadataRouter } from '../routes/pegawai';
 import { createArsipRouter } from '../routes/arsip';
@@ -85,6 +85,7 @@ export default async function handler(req: any, res: any) {
         } catch { return res.status(500).json({ error: 'Gagal memuat rekap.' }); }
       });
       const distPath = path.join(process.cwd(), 'dist');
+      app.get('/api/debug', (req, res) => res.json({ url: req.url, originalUrl: (req as any).originalUrl, method: req.method, headers: req.headers }));
       app.use(express.static(distPath));
       app.get('*', (_req, res) => res.sendFile(path.join(distPath, 'index.html')));
       appInstance = app;
