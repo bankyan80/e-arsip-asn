@@ -96,6 +96,9 @@ export default function App() {
       loadAllPegawaiData();
     } else {
       adminData.fetchAdminData(session.role);
+      // Also fetch kategori/jenis-dokumen for admin kategori page
+      fetch('/api/kategori').then(r => r.json()).then(setKategoriList).catch(() => {});
+      fetch('/api/jenis-dokumen').then(r => r.json()).then(setJenisDokumenList).catch(() => {});
     }
   }, [session]);
 
