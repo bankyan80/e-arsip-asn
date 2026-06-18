@@ -925,7 +925,10 @@ export default function App() {
                 <div className="flex justify-between items-center border-b border-slate-100 pb-2 mb-3">
                   <h4 className="text-xs font-black text-[#0f2a44] uppercase">Kontak ASN</h4>
                   <button
-                    onClick={() => setProfileEditing(!profileEditing)}
+                    onClick={() => {
+                      setProfileForm({ nomorHp: profile.nomorHp || '', email: profile.email || '', alamat: profile.alamat || '' });
+                      setProfileEditing(!profileEditing);
+                    }}
                     className="text-xs text-[#1d4ed8] font-bold"
                   >
                     {profileEditing ? 'Batal' : 'Ubah Kontak'}
@@ -2008,7 +2011,10 @@ export default function App() {
               <div className="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm">
                 <div className="flex justify-between items-center border-b border-slate-100 pb-2 mb-3">
                   <h4 className="text-xs font-black text-[#0f2a44] uppercase">Kontak ASN</h4>
-                  <button onClick={() => setProfileEditing(!profileEditing)} className="text-xs text-[#1d4ed8] font-bold">
+                  <button onClick={() => {
+                      setProfileForm({ nomorHp: profile.nomorHp || '', email: profile.email || '', alamat: profile.alamat || '' });
+                      setProfileEditing(!profileEditing);
+                    }} className="text-xs text-[#1d4ed8] font-bold">
                     {profileEditing ? 'Batal' : 'Ubah Kontak'}
                   </button>
                 </div>
