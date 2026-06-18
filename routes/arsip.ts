@@ -1,9 +1,31 @@
 import { Router } from 'express';
 import path from 'path';
-import { listArsipByPegawai, getArsipData, createArsipData, updateArsipData } from '../lib/data';
+import { listArsipByPegawai, getArsipData, createArsipData, updateArsipData, getSettingValue } from '../lib/data';
 import { uploadFile, deleteFile } from '../lib/storage';
 import { arsipUploadSchema } from '../lib/validation';
 import { Arsip, DocumentVersion, SessionData } from '../src/types';
+
+const MIME_MAP: Record<string, string[]> = {
+  '.pdf': ['application/pdf'],
+  '.jpg': ['image/jpeg'],
+  '.jpeg': ['image/jpeg'],
+  '.png': ['image/png'],
+  '.doc': ['application/msword'],
+  '.docx': ['application/vnd.openxmlformats-officedocument.wordprocessingml.document'],
+  '.xls': ['application/vnd.ms-excel'],
+  '.xlsx': ['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'],
+};
+const ALLOWED_EXT = Object.keys(MIME_MAP);
+
+function validateFile(reqFile: Express.Multer.File): string | null {
+  const ext = path.extname(reqFile.originalname).toLowerCase();
+  if (!ALLOWED_EXT.includes(ext)) return 'Format berkas tidak diizinkan.';
+  const expectedMimes = MIME_MAP[ext];
+  if (expectedMimes && !expectedMimes.includes(reqFile.mimetype)) {
+    return `Tipe berkas "${reqFile.mimetype}" tidak sesuai dengan ekstensi "${ext}".`;
+  }
+  return null;
+}
 
 export function createArsipRouter(requireAuth: any, upload: any, logAction: any) {
   const router = Router();
@@ -27,21 +49,20 @@ export function createArsipRouter(requireAuth: any, upload: any, logAction: any)
     if (!parsed.success) return res.status(400).json({ error: 'Semua metadata arsip wajib diisi.' });
     const { kelompokArsip, jenisDokumen, namaDokumen, nomorDokumen, tanggalDokumen, tahun } = parsed.data;
 
-    const allowed = ['.pdf', '.jpg', '.jpeg', '.png', '.doc', '.docx', '.xls', '.xlsx'];
-    const ext = path.extname(req.file.originalname).toLowerCase();
-    if (!allowed.includes(ext)) return res.status(400).json({ error: 'Format berkas tidak diizinkan.' });
+    const fileErr = validateFile(req.file);
+    if (fileErr) return res.status(400).json({ error: fileErr });
 
     try {
       const uploadDetails = await uploadFile(req.file.buffer, req.file.originalname, req.file.mimetype, {
-        instansiId: session.instansiId || 'INST001', pegawaiId: session.pegawaiId,
+        instansiId: session.instansiId, pegawaiId: session.pegawaiId,
         kelompokArsip, tahun, jenisDokumen, namaPegawai: session.nama
       });
 
       const newArsip: Arsip = {
         id: 'ARS_' + Date.now() + '_' + Math.floor(Math.random() * 1000),
         pegawaiId: session.pegawaiId, nip: session.nip, nik: session.nik,
-        namaPegawai: session.nama, instansiId: session.instansiId || 'INST001',
-        namaInstansi: session.namaInstansi || 'SD Negeri 1 Lemahabang',
+        namaPegawai: session.nama, instansiId: session.instansiId,
+        namaInstansi: session.namaInstansi,
         kelompokArsip, jenisDokumen, namaDokumen, nomorDokumen, tanggalDokumen, tahun,
         fileName: req.file.originalname, fileType: req.file.mimetype, fileSize: req.file.size,
         storagePath: uploadDetails.storagePath, downloadUrl: uploadDetails.downloadUrl,
@@ -85,9 +106,8 @@ export function createArsipRouter(requireAuth: any, upload: any, logAction: any)
       if (tahun) updates.tahun = tahun;
 
       if (req.file) {
-        const allowed = ['.pdf', '.jpg', '.jpeg', '.png', '.doc', '.docx', '.xls', '.xlsx'];
-        const ext = path.extname(req.file.originalname).toLowerCase();
-        if (!allowed.includes(ext)) return res.status(400).json({ error: 'Format berkas baru tidak diizinkan.' });
+        const fileErr = validateFile(req.file);
+        if (fileErr) return res.status(400).json({ error: fileErr });
 
         if (existingArsip.storagePath) await deleteFile(existingArsip.storagePath);
         const uRes = await uploadFile(req.file.buffer, req.file.originalname, req.file.mimetype, {
@@ -153,7 +173,10 @@ export function createArsipRouter(requireAuth: any, upload: any, logAction: any)
         return res.status(403).json({ error: 'Akses ditolak. Dokumen ini bukan milik Anda.' });
       }
       if (existingArsip.statusValidasi === 'Valid') {
-        return res.status(400).json({ error: 'Dokumen yang telah berstatus VALID tidak diperbolehkan untuk dihapus pegawai.' });
+        const allowDelete = await getSettingValue('allowDeleteValid', 'false');
+        if (allowDelete !== 'true') {
+          return res.status(400).json({ error: 'Dokumen yang telah berstatus VALID tidak diperbolehkan untuk dihapus pegawai.' });
+        }
       }
       await updateArsipData(id, { deleted: true, statusValidasi: 'Ditolak' as any });
       if (existingArsip.storagePath) await deleteFile(existingArsip.storagePath);

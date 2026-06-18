@@ -45,16 +45,10 @@ export const STATIC_JENIS_DOKUMEN: JenisDokumen[] = [
   { id: 'JD4_11', kategoriId: 'KAT4', namaKategori: 'Data Pribadi', namaDokumen: 'KARIS/KARSU', wajib: false, berlakuUntuk: 'PNS', statusAktif: true },
 
   // Kesehatan dan Disiplin
-  { id: 'JD5_1', kategoriId: 'KAT5', namaKategori: 'Kesehatan dan Disiplin', namaDokumen: 'Surat Cuti', wajib: false, berlakuPour: 'Semua', statusAktif: true } as any,
+  { id: 'JD5_1', kategoriId: 'KAT5', namaKategori: 'Kesehatan dan Disiplin', namaDokumen: 'Surat Cuti', wajib: false, berlakuUntuk: 'Semua', statusAktif: true },
   { id: 'JD5_2', kategoriId: 'KAT5', namaKategori: 'Kesehatan dan Disiplin', namaDokumen: 'Riwayat Kesehatan', wajib: false, berlakuUntuk: 'Semua', statusAktif: true },
   { id: 'JD5_3', kategoriId: 'KAT5', namaKategori: 'Kesehatan dan Disiplin', namaDokumen: 'Surat Sakit', wajib: false, berlakuUntuk: 'Semua', statusAktif: true },
   { id: 'JD5_4', kategoriId: 'KAT5', namaKategori: 'Kesehatan dan Disiplin', namaDokumen: 'SK Hukuman Disiplin', wajib: false, berlakuUntuk: 'Semua', statusAktif: true },
   { id: 'JD5_5', kategoriId: 'KAT5', namaKategori: 'Kesehatan dan Disiplin', namaDokumen: 'Surat Teguran', wajib: false, berlakuUntuk: 'Semua', statusAktif: true },
   { id: 'JD5_6', kategoriId: 'KAT5', namaKategori: 'Kesehatan dan Disiplin', namaDokumen: 'Berita Acara Pemeriksaan', wajib: false, berlakuUntuk: 'Semua', statusAktif: true },
 ];
-
-STATIC_JENIS_DOKUMEN.forEach(doc => {
-  if (!doc.berlakuUntuk) {
-    doc.berlakuUntuk = 'Semua';
-  }
-});

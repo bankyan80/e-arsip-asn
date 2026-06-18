@@ -11,7 +11,7 @@ export function useSession() {
       .then(data => {
         if (data.user) setSession(data.user);
       })
-      .catch(() => {})
+      .catch(err => console.error('Session check failed:', err))
       .finally(() => setLoadingSession(false));
   }, []);
 

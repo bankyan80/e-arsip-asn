@@ -412,7 +412,8 @@ export default function App() {
               </button>
             </form>
 
-            {/* Test accounts quick fills */}
+            {/* Test accounts quick fills — only in dev */}
+            {import.meta.env.DEV && (
             <div className="mt-6 border-t border-slate-100 pt-4">
               <span className="block text-[10px] text-slate-400 font-bold uppercase text-center mb-2">
                 Gunakan Data Contoh Berikut (Uji Coba):
@@ -438,6 +439,7 @@ export default function App() {
                 </button>
               </div>
             </div>
+            )}
 
           </div>
 
@@ -1062,7 +1064,6 @@ export default function App() {
         agencyName={session.namaInstansi}
         role={session.role}
         onLogout={handleLogoutClick}
-        isAdminView={true}
       />
 
       {/* 2. Admin Desktop Layout layout */}

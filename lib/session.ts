@@ -1,24 +1,23 @@
 import jwt from 'jsonwebtoken';
 import { SessionData } from '../src/types';
 
-const SECRET_KEY = process.env.SESSION_SECRET || 'e_arsip_asn_super_secret_session_secret_123';
-if (!process.env.SESSION_SECRET) {
-  console.warn('⚠️  WARNING: SESSION_SECRET tidak diatur di .env! Menggunakan fallback default. Jangan deploy ke production tanpa mengatur secret ini.');
+const SECRET_KEY = process.env.SESSION_SECRET;
+if (!SECRET_KEY) {
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('SESSION_SECRET wajib diatur di production!');
+  }
+  console.warn('SESSION_SECRET tidak diatur! Gunakan fallback default (hanya untuk development).');
 }
+const DEV_FALLBACK = 'e_arsip_asn_dev_fallback_do_not_use_in_production';
+const ACTIVE_KEY = SECRET_KEY || DEV_FALLBACK;
 
-/**
- * Signs a JWT session token for the authenticated employee/administrator.
- */
 export function signSession(data: SessionData): string {
-  return jwt.sign(data, SECRET_KEY, { expiresIn: '7d' });
+  return jwt.sign(data, ACTIVE_KEY, { expiresIn: '7d' });
 }
 
-/**
- * Decodes and validates a session token payload. Returns null if invalid or expired.
- */
 export function verifySession(token: string): SessionData | null {
   try {
-    const decoded = jwt.verify(token, SECRET_KEY) as jwt.JwtPayload;
+    const decoded = jwt.verify(token, ACTIVE_KEY) as jwt.JwtPayload;
     if (decoded && decoded.id) {
       return {
         id: decoded.id,
@@ -31,8 +30,8 @@ export function verifySession(token: string): SessionData | null {
         namaInstansi: decoded.namaInstansi
       };
     }
-  } catch (error) {
-    // Decryption or expiration failed
+  } catch {
+    return null;
   }
   return null;
 }

@@ -20,7 +20,7 @@ export function createFilesRouter(requireAuth: any) {
       if (session.role === 'pegawai' && session.pegawaiId !== pegawaiId) {
         return res.status(403).json({ error: 'Akses ditolak. Anda tidak berhak melihat dokumen pegawai lain.' });
       }
-      if (session.role === 'admin_instansi' && session.instansiId !== instansiId && instansiId !== 'INSTALL') {
+      if (session.role === 'admin_instansi' && session.instansiId !== instansiId) {
         return res.status(403).json({ error: 'Akses ditolak. Anda tidak berhak melihat dokumen di luar instansi Anda.' });
       }
     }

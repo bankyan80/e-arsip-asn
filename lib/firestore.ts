@@ -138,20 +138,20 @@ export async function seedInitialDb() {
     },
     {
       id: 'PGW003',
-      instansiId: 'INSTALL',
-      namaInstansi: 'Badan Kepegawaian Nasional',
-      namaPegawai: 'Siti Aminah',
-      nip: '198001012002012001',
-      nik: '3209123456780003',
-      tanggalLahir: '1980-01-01',
+      instansiId: 'INST002',
+      namaInstansi: 'Kantor Kepegawaian Daerah Cirebon',
+      namaPegawai: 'Citra Dewi Lestari',
+      nip: '199003102014022001',
+      nik: '3209876543210001',
+      tanggalLahir: '1990-03-10',
       jenisKelamin: 'Perempuan',
-      jabatan: 'Analis Kepegawaian Madya',
+      jabatan: 'Analis Kepegawaian',
       statusPegawai: 'PNS',
-      pangkatGolongan: 'Pembina / IV.a',
-      pendidikanTerakhir: 'S2 Pendidikan',
-      nomorHp: '082111223344',
-      email: 'siti.aminah@asn.id',
-      alamat: 'Jl. Diponegoro No. 8, Cirebon',
+      pangkatGolongan: 'Penata Muda Tk. I / III.b',
+      pendidikanTerakhir: 'S1',
+      nomorHp: '082134567891',
+      email: 'citra.dewi@asn.id',
+      alamat: 'Jl. Diponegoro No. 23, Kesambi, Cirebon',
       role: 'admin_instansi',
       statusAktif: true,
       createdAt: new Date().toISOString(),
@@ -340,7 +340,7 @@ export async function updatePegawaiData(id: string, updates: Partial<Pegawai>): 
 export async function listAllPegawai(instansiId?: string): Promise<Pegawai[]> {
   if (isFirebaseConfigured && db) {
     let q: any = db.collection('pegawai');
-    if (instansiId && instansiId !== 'INSTALL') {
+    if (instansiId) {
       q = q.where('instansiId', '==', instansiId);
     }
     const qs = await q.get();
@@ -348,7 +348,7 @@ export async function listAllPegawai(instansiId?: string): Promise<Pegawai[]> {
   }
 
   const local = readLocalDb();
-  if (instansiId && instansiId !== 'INSTALL') {
+  if (instansiId) {
     return local.pegawai.filter(p => p.instansiId === instansiId);
   }
   return local.pegawai;
@@ -455,7 +455,7 @@ export async function updateArsipData(id: string, updates: Partial<Arsip>): Prom
 export async function listAllArsipAdmin(instansiId?: string): Promise<Arsip[]> {
   if (isFirebaseConfigured && db) {
     let q: any = db.collection('arsip').where('deleted', '==', false);
-    if (instansiId && instansiId !== 'INSTALL') {
+    if (instansiId) {
       q = q.where('instansiId', '==', instansiId);
     }
     const qs = await q.get();
@@ -464,7 +464,7 @@ export async function listAllArsipAdmin(instansiId?: string): Promise<Arsip[]> {
 
   const local = readLocalDb();
   let list = local.arsip.filter(item => !item.deleted);
-  if (instansiId && instansiId !== 'INSTALL') {
+  if (instansiId) {
     list = list.filter(item => item.instansiId === instansiId);
   }
   return list;

@@ -6,7 +6,6 @@ interface HeaderProps {
   agencyName?: string;
   role?: string;
   onLogout: () => void;
-  isAdminView?: boolean;
 }
 
 export const Header: React.FC<HeaderProps> = ({ userName, agencyName, role, onLogout }) => {

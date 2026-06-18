@@ -1,6 +1,7 @@
 import express from 'express';
 import path from 'path';
 import multer from 'multer';
+import cookieParser from 'cookie-parser';
 import rateLimit from 'express-rate-limit';
 import { verifySession } from '../lib/session';
 import { seedInitialDb, createLogEntry } from '../lib/data';
@@ -16,8 +17,7 @@ function requireAuth(req: express.Request, res: express.Response, next: express.
   if (!token) return res.status(401).json({ error: 'Akses ditolak. Silakan login terlebih dahulu.' });
   const session = verifySession(token);
   if (!session) {
-    const isSecure = process.env.NODE_ENV === 'production';
-    res.setHeader('Set-Cookie', `session=; HttpOnly; Path=/; Max-Age=0; SameSite=Strict${isSecure ? '; Secure' : ''}`);
+    res.setHeader('Set-Cookie', 'session=; HttpOnly; Path=/; Max-Age=0; SameSite=Strict; Secure');
     return res.status(401).json({ error: 'Sesi Anda telah berakhir. Silakan login kembali.' });
   }
   (req as any).session = session;
@@ -41,28 +41,20 @@ async function logAction(session: SessionData, aksi: string, detail: string, ars
 }
 
 let appInstance: express.Application | null = null;
-let seedingDone = false;
+let seedingPromise: Promise<void> | null = null;
 
 export default async function handler(req: any, res: any) {
-  if (!seedingDone) {
-    seedingDone = true;
-    seedInitialDb().catch((err) => console.error('Seed initial DB error:', err));
+  if (!seedingPromise) {
+    seedingPromise = seedInitialDb().catch((err) => console.error('Seed initial DB error:', err));
   }
+  await seedingPromise;
   try {
     if (!appInstance) {
       const app = express();
       app.set('trust proxy', 1);
       app.use(express.json({ limit: '50mb' }));
       app.use(express.urlencoded({ extended: true, limit: '50mb' }));
-      app.use((req, _res, next) => {
-        const cookies: Record<string, string> = {};
-        (req.headers.cookie || '').split(';').forEach(c => {
-          const parts = c.trim().split('=');
-          if (parts.length === 2) cookies[parts[0]] = parts[1];
-        });
-        (req as any).cookies = cookies;
-        next();
-      });
+      app.use(cookieParser());
       const upload = multer({ limits: { fileSize: 10 * 1024 * 1024 } });
       app.use('/api/auth', createAuthRouter(requireAuth, rateLimit));
       app.use('/api', createMetadataRouter(requireAuth));

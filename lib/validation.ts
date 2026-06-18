@@ -2,7 +2,9 @@ import { z } from 'zod';
 
 export const loginSchema = z.object({
   loginType: z.enum(['NIP', 'NIK', 'BOTH']),
-  identifier: z.string().min(1, 'NIP/NIK wajib diisi.'),
+  identifier: z.string()
+    .regex(/^\d{16,18}$/, 'NIP harus 18 digit atau NIK 16 digit.')
+    .refine(v => v.length === 16 || v.length === 18, 'NIP harus 18 digit atau NIK 16 digit.'),
   tanggalLahir: z.string().min(1, 'Tanggal lahir wajib diisi.')
 });
 
@@ -22,14 +24,14 @@ export const arsipUploadSchema = z.object({
 });
 
 export const validasiSchema = z.object({
-  statusValidasi: z.enum(['Valid', 'Perlu Perbaikan', 'Ditolak', 'Menunggu Validasi']),
+  statusValidasi: z.enum(['Valid', 'Perlu Perbaikan', 'Ditolak']),
   catatanAdmin: z.string().optional()
 });
 
 export const createPegawaiSchema = z.object({
   namaPegawai: z.string().min(1, 'Nama pegawai wajib diisi.'),
-  nip: z.string().min(1, 'NIP wajib diisi.'),
-  nik: z.string().min(1, 'NIK wajib diisi.'),
+  nip: z.string().regex(/^\d{18}$/, 'NIP harus 18 digit angka.'),
+  nik: z.string().regex(/^\d{16}$/, 'NIK harus 16 digit angka.'),
   tanggalLahir: z.string().min(1, 'Tanggal lahir wajib diisi.'),
   statusPegawai: z.string().min(1, 'Status pegawai wajib diisi.'),
   jenisKelamin: z.string().optional(),

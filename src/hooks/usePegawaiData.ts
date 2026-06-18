@@ -12,35 +12,35 @@ export function usePegawaiData() {
     try {
       const res = await fetch('/api/kategori');
       setKategoriList(await res.json());
-    } catch {}
+    } catch (err) { console.error('Fetch kategori failed:', err); }
   }, []);
 
   const fetchJenisDokumen = useCallback(async () => {
     try {
       const res = await fetch('/api/jenis-dokumen');
       setJenisDokumenList(await res.json());
-    } catch {}
+    } catch (err) { console.error('Fetch jenis dokumen failed:', err); }
   }, []);
 
   const fetchMyArchives = useCallback(async () => {
     try {
       const res = await fetch('/api/arsip/me');
       setMyArchives(await res.json());
-    } catch {}
+    } catch (err) { console.error('Fetch my archives failed:', err); }
   }, []);
 
   const fetchMyChecklist = useCallback(async () => {
     try {
       const res = await fetch('/api/kelengkapan/me');
       setChecklist(await res.json());
-    } catch {}
+    } catch (err) { console.error('Fetch checklist failed:', err); }
   }, []);
 
   const fetchMyProfile = useCallback(async () => {
     try {
       const res = await fetch('/api/pegawai/me');
       setProfile(await res.json());
-    } catch {}
+    } catch (err) { console.error('Fetch profile failed:', err); }
   }, []);
 
   const loadAllPegawaiData = useCallback(async () => {
