@@ -1,12 +1,19 @@
-import serverless from 'serverless-http';
 import { createApp } from '../server';
 
-let handler: any;
+let app: any;
 
-export default async function (req: any, res: any) {
-  if (!handler) {
-    const app = await createApp();
-    handler = serverless(app);
+export default async function handler(req: any, res: any) {
+  try {
+    if (!app) app = await createApp();
+    return new Promise<void>((resolve, reject) => {
+      res.on('finish', resolve);
+      res.on('error', reject);
+      app(req, res);
+    });
+  } catch (err: any) {
+    console.error('Handler error:', err?.message || err);
+    res.statusCode = 500;
+    res.setHeader('Content-Type', 'application/json');
+    res.end(JSON.stringify({ error: 'Terjadi kesalahan server.' }));
   }
-  return handler(req, res);
 }
