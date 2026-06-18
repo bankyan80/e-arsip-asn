@@ -23,14 +23,23 @@ export function createPegawaiRouter(requireAuth: any, logAction: any) {
     if (!parsed.success) {
       return res.status(400).json({ error: parsed.error.issues[0]?.message || 'Data profil tidak valid.' });
     }
-    const { nomorHp, email, alamat } = parsed.data;
+    const data = parsed.data;
     try {
       const updates: Partial<Pegawai> = {};
-      if (nomorHp !== undefined) updates.nomorHp = nomorHp;
-      if (email !== undefined) updates.email = email;
-      if (alamat !== undefined) updates.alamat = alamat;
+      const adminFields = ['namaPegawai', 'jabatan', 'statusPegawai', 'pangkatGolongan', 'pendidikanTerakhir'];
+      const kontakFields = ['nomorHp', 'email', 'alamat'];
+      for (const key of kontakFields) {
+        if ((data as any)[key] !== undefined) (updates as any)[key] = (data as any)[key];
+      }
+      // Admin fields: only super_admin and admin_instansi can edit
+      if (session.role !== 'pegawai') {
+        for (const key of adminFields) {
+          if ((data as any)[key] !== undefined) (updates as any)[key] = (data as any)[key];
+        }
+      }
       const p = await updatePegawaiData(session.pegawaiId, updates);
-      await logAction(session, 'EDIT_PROFIL', `Pegawai memperbaharui data kontak: HP=${nomorHp}, Email=${email}.`);
+      const changedKeys = Object.keys(updates).join(', ');
+      await logAction(session, 'EDIT_PROFIL', `Pegawai memperbaharui profil: ${changedKeys}.`);
       return res.json({ message: 'Profil berhasil diperbarui.', data: p });
     } catch {
       return res.status(500).json({ error: 'Gagal memperbarui data profil.' });

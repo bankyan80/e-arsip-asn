@@ -1183,6 +1183,11 @@ var loginSchema = z.object({
   password: z.string().min(1, "Password wajib diisi.")
 });
 var profileUpdateSchema = z.object({
+  namaPegawai: z.string().min(1, "Nama wajib diisi.").optional(),
+  jabatan: z.string().optional(),
+  statusPegawai: z.string().optional(),
+  pangkatGolongan: z.string().optional(),
+  pendidikanTerakhir: z.string().optional(),
   nomorHp: z.string().optional(),
   email: z.string().email("Format email tidak valid.").optional().or(z.literal("")),
   alamat: z.string().optional()
@@ -1329,14 +1334,22 @@ function createPegawaiRouter(requireAuth2, logAction2) {
     if (!parsed.success) {
       return res.status(400).json({ error: parsed.error.issues[0]?.message || "Data profil tidak valid." });
     }
-    const { nomorHp, email, alamat } = parsed.data;
+    const data = parsed.data;
     try {
       const updates = {};
-      if (nomorHp !== void 0) updates.nomorHp = nomorHp;
-      if (email !== void 0) updates.email = email;
-      if (alamat !== void 0) updates.alamat = alamat;
+      const adminFields = ["namaPegawai", "jabatan", "statusPegawai", "pangkatGolongan", "pendidikanTerakhir"];
+      const kontakFields = ["nomorHp", "email", "alamat"];
+      for (const key of kontakFields) {
+        if (data[key] !== void 0) updates[key] = data[key];
+      }
+      if (session.role !== "pegawai") {
+        for (const key of adminFields) {
+          if (data[key] !== void 0) updates[key] = data[key];
+        }
+      }
       const p = await updatePegawaiData2(session.pegawaiId, updates);
-      await logAction2(session, "EDIT_PROFIL", `Pegawai memperbaharui data kontak: HP=${nomorHp}, Email=${email}.`);
+      const changedKeys = Object.keys(updates).join(", ");
+      await logAction2(session, "EDIT_PROFIL", `Pegawai memperbaharui profil: ${changedKeys}.`);
       return res.json({ message: "Profil berhasil diperbarui.", data: p });
     } catch {
       return res.status(500).json({ error: "Gagal memperbarui data profil." });

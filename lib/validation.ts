@@ -9,6 +9,11 @@ export const loginSchema = z.object({
 });
 
 export const profileUpdateSchema = z.object({
+  namaPegawai: z.string().min(1, 'Nama wajib diisi.').optional(),
+  jabatan: z.string().optional(),
+  statusPegawai: z.string().optional(),
+  pangkatGolongan: z.string().optional(),
+  pendidikanTerakhir: z.string().optional(),
   nomorHp: z.string().optional(),
   email: z.string().email('Format email tidak valid.').optional().or(z.literal('')),
   alamat: z.string().optional()
