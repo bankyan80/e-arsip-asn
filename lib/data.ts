@@ -30,6 +30,7 @@ async function seedTurso() {
   await turso.setSetting('app_nama', 'Arsip Digital ASN');
   await turso.setSetting('app_instansi', 'Pemerintah Kabupaten Cirebon');
   await turso.seedDefaultPasswords();
+  await turso.seedKategoriDanJenis();
   console.log('Seeding complete');
 }
 

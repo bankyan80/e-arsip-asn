@@ -1,5 +1,6 @@
 import { createClient } from '@libsql/client';
 import bcrypt from 'bcryptjs';
+import { STATIC_KATEGORI, STATIC_JENIS_DOKUMEN } from './constants';
 
 const url = process.env.TURSO_DATABASE_URL;
 const authToken = process.env.TURSO_AUTH_TOKEN;
@@ -250,6 +251,19 @@ export async function seedDefaultPasswords() {
     if (r && r.rows.length > 0 && !(r.rows[0] as any).password) {
       await query('UPDATE pegawai SET password = ? WHERE id = ?', [defaultPass, id]);
     }
+  }
+}
+
+export async function seedKategoriDanJenis() {
+  const existingK = await query('SELECT COUNT(*) as cnt FROM kategori_arsip');
+  if (existingK && (existingK.rows[0] as any).cnt > 0) return;
+  for (const k of STATIC_KATEGORI) {
+    await query('INSERT INTO kategori_arsip (id, nama_kategori, urutan, deskripsi) VALUES (?, ?, ?, ?)',
+      [k.id, k.namaKategori, k.urutan, k.deskripsi || '']);
+  }
+  for (const jd of STATIC_JENIS_DOKUMEN) {
+    await query('INSERT INTO jenis_dokumen (id, kategori_id, nama_kategori, nama_dokumen, berlaku_untuk, wajib, urutan) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      [jd.id, jd.kategoriId, jd.namaKategori, jd.namaDokumen, jd.berlakuUntuk, jd.wajib ? 1 : 0, 0]);
   }
 }
 
