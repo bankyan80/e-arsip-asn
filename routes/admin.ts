@@ -327,8 +327,7 @@ export function createAdminRouter(requireAuth: any, requireRole: any, logAction:
     try {
       // Optionally clear previous migration
       if (clear) {
-        const { bulkDeleteArsipByUploader } = await import('../lib/turso');
-        if (bulkDeleteArsipByUploader) await bulkDeleteArsipByUploader('migration@tim-kerja');
+        await bulkDeleteArsipByUploader('migration@tim-kerja');
       }
 
       // Load all pegawai for name matching

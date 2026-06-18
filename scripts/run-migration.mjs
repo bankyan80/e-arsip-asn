@@ -48,7 +48,7 @@ for (let i = 0; i < arsip.length; i += BATCH) {
   const res = await fetch(BASE + '/api/admin/migrate-arsip', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'Cookie': sessionCookie.split(';')[0] },
-    body: JSON.stringify({ arsip: batch })
+    body: JSON.stringify({ arsip: batch, clear: true })
   });
   const data = await res.json();
   const batchNum = Math.floor(i / BATCH) + 1;

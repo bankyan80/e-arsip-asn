@@ -2043,8 +2043,7 @@ function createAdminRouter(requireAuth2, requireRole2, logAction2) {
     if (!Array.isArray(arsipList) || arsipList.length === 0) return res.status(400).json({ error: "Data arsip wajib dikirim." });
     try {
       if (clear) {
-        const { bulkDeleteArsipByUploader: bulkDeleteArsipByUploader4 } = await Promise.resolve().then(() => (init_turso(), turso_exports));
-        if (bulkDeleteArsipByUploader4) await bulkDeleteArsipByUploader4("migration@tim-kerja");
+        await bulkDeleteArsipByUploader2("migration@tim-kerja");
       }
       const allPeg = await listAllPegawai2();
       const pegawaiMap = {};
