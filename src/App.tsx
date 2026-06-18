@@ -346,17 +346,17 @@ export default function App() {
   // --- LOGIN LAYOUT (Android Centered Mobile Screen) ---
   if (!session) {
     return (
-      <div className="min-h-screen bg-[#f3f6fa] flex justify-center items-center py-8 px-4">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-[#f0f4fa] to-[#e8eef6] flex justify-center items-center py-6 px-4">
         
         {/* Android Display bounds container */}
-        <div id="android-login-wrapper" className="w-full max-w-sm bg-white rounded-[32px] shadow-2xl overflow-hidden border border-slate-200/60 flex flex-col justify-between min-h-[640px] animate-fade-in">
+        <div id="android-login-wrapper" className="w-full max-w-sm bg-white rounded-[32px] shadow-2xl shadow-slate-200/60 overflow-hidden border border-slate-200/40 flex flex-col">
           
           {/* Header navy */}
-          <div className="bg-[#0f2a44] p-8 text-center text-white relative rounded-b-[28px] border-b border-[#1e3a5f]/30">
-            <div className="absolute top-4 right-4 bg-white/10 text-[9px] font-bold tracking-widest px-2.5 py-1 rounded-full text-white/90 border border-white/10">
+          <div className="bg-gradient-to-br from-[#0f2a44] to-[#1a3d5e] p-8 text-center text-white relative">
+            <div className="absolute top-4 right-4 bg-white/8 backdrop-blur-sm text-[9px] font-bold tracking-widest px-2.5 py-1 rounded-full text-white/80 border border-white/8">
               V1.2
             </div>
-            <div className="bg-white/10 w-14 h-14 rounded-2xl flex items-center justify-center text-white mx-auto mb-4 border border-white/10 shadow-inner">
+            <div className="bg-white/10 backdrop-blur-sm w-14 h-14 rounded-2xl flex items-center justify-center text-white mx-auto mb-4 border border-white/10 shadow-inner">
               <FileCheck className="w-8 h-8 stroke-[1.8]" />
             </div>
             <h2 className="text-xl font-display font-bold tracking-tight uppercase">Arsip Digital ASN</h2>
@@ -365,56 +365,61 @@ export default function App() {
             </p>
           </div>
 
-          <div className="p-6 flex-1 flex flex-col justify-center">
+          <div className="p-6 flex-1 flex flex-col">
             
             {loginError && (
-              <div className="mb-4 p-3 bg-red-50 border border-red-200/60 text-red-700 text-xs font-semibold rounded-2xl flex items-start gap-2 animate-shake">
-                <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-red-600" />
+              <div className="mb-4 p-3.5 bg-red-50/80 backdrop-blur-sm border border-red-200/50 text-red-700 text-xs font-semibold rounded-2xl flex items-start gap-2.5 shadow-sm">
+                <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-red-500" />
                 <span>{loginError}</span>
               </div>
             )}
 
-            <form onSubmit={handleLogin} className="space-y-4">
+            <form onSubmit={handleLogin} className="space-y-5">
               
               {/* Unified NIP / NIK Identifier Input */}
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1.5 flex justify-between items-center">
-                  <span>NIP atau NIK <span className="text-red-500">*</span></span>
-                  <span className="text-[9px] font-bold text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded">Metode Gabungan</span>
+                <label className="block text-[11px] font-bold text-slate-600 mb-1.5 flex justify-between items-center">
+                  <span>NIP atau NIK <span className="text-red-400">*</span></span>
+                  <span className="text-[9px] font-semibold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full border border-slate-200/50">Otomatis</span>
                 </label>
-                <input
-                  type="text"
-                  value={identifier}
-                  onChange={(e) => setIdentifier(e.target.value.replace(/\D/g, ''))}
-                  placeholder="Masukkan 18 digit NIP atau 16 digit NIK"
-                  maxLength={18}
-                  className="w-full h-11 border border-slate-200 rounded-xl px-3 bg-slate-50 text-slate-800 text-sm font-semibold tracking-wide focus:outline-none focus:border-[#0f2a44] focus:bg-white transition-all"
-                  required
-                />
-                <span className="text-[10px] text-slate-400 mt-1 block">
-                  Autentikasi otomatis mengenali format NIP (18 angka) atau NIK (16 angka).
-                </span>
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={identifier}
+                    onChange={(e) => setIdentifier(e.target.value.replace(/\D/g, ''))}
+                    placeholder="18 digit NIP atau 16 digit NIK"
+                    maxLength={18}
+                    className="w-full h-11 border border-slate-200 rounded-xl px-3.5 bg-slate-50/60 text-slate-800 text-sm font-semibold tracking-wide focus:outline-none focus:border-[#0f2a44] focus:bg-white focus:ring-2 focus:ring-[#0f2a44]/5 transition-all"
+                    required
+                  />
+                </div>
+                <p className="text-[10px] text-slate-400 mt-1.5 flex items-center gap-1">
+                  <span className="inline-block w-1 h-1 rounded-full bg-slate-300" />
+                  Masukkan NIP 18 digit atau NIK 16 digit — sistem mengenali otomatis
+                </p>
               </div>
 
               {/* Password Input */}
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1.5">
-                  Password <span className="text-red-500">*</span>
+                <label className="block text-[11px] font-bold text-slate-600 mb-1.5">
+                  Password <span className="text-red-400">*</span>
                 </label>
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Masukkan password"
-                  className="w-full h-11 border border-slate-200 rounded-xl px-3 bg-slate-50 text-slate-800 text-sm font-semibold focus:outline-none focus:border-[#0f2a44] focus:bg-white transition-all"
-                  required
-                />
+                <div className="relative">
+                  <input
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Masukkan password"
+                    className="w-full h-11 border border-slate-200 rounded-xl px-3.5 bg-slate-50/60 text-slate-800 text-sm font-semibold focus:outline-none focus:border-[#0f2a44] focus:bg-white focus:ring-2 focus:ring-[#0f2a44]/5 transition-all"
+                    required
+                  />
+                </div>
               </div>
 
               <button
                 type="submit"
                 disabled={loginLoading}
-                className="w-full h-12 bg-[#0f2a44] hover:bg-[#1a3d5e] active:scale-95 text-white font-bold text-sm rounded-xl tracking-wide transition-all shadow-sm flex items-center justify-center gap-2"
+                className="w-full h-12 bg-gradient-to-r from-[#0f2a44] to-[#1a3d5e] hover:from-[#1a3d5e] hover:to-[#254b6e] active:scale-[0.98] text-white font-bold text-sm rounded-xl tracking-wide transition-all shadow-md shadow-slate-200 flex items-center justify-center gap-2"
               >
                 {loginLoading ? (
                   <>
@@ -429,26 +434,26 @@ export default function App() {
 
             {/* Test accounts quick fills — only in dev */}
             {import.meta.env.DEV && (
-            <div className="mt-6 border-t border-slate-100 pt-4">
-              <span className="block text-[10px] text-slate-400 font-bold uppercase text-center mb-2">
-                Gunakan Data Contoh Berikut (Uji Coba):
+            <div className="mt-6 border-t border-slate-100 pt-5">
+              <span className="block text-[9px] text-slate-400 font-bold uppercase tracking-wider text-center mb-2.5">
+                Akses Cepat Uji Coba
               </span>
-              <div className="grid grid-cols-3 gap-1.5">
+              <div className="grid grid-cols-3 gap-2">
                 <button
                   onClick={() => fillTestCredentials('pegawai')}
-                  className="text-[10px] py-1.5 px-2 bg-slate-50 hover:bg-[#0f2a44]/5 text-[#0f2a44] font-bold rounded-lg border border-slate-200/50"
+                  className="text-[10px] py-2 bg-slate-50 hover:bg-[#0f2a44]/5 active:scale-95 text-[#0f2a44] font-bold rounded-xl border border-slate-200/60 transition-all"
                 >
-                  Pegawai (PNS)
+                  Pegawai
                 </button>
                 <button
                   onClick={() => fillTestCredentials('admin')}
-                  className="text-[10px] py-1.5 px-2 bg-slate-50 hover:bg-[#0f2a44]/5 text-[#0f2a44] font-bold rounded-lg border border-slate-200/50"
+                  className="text-[10px] py-2 bg-slate-50 hover:bg-[#0f2a44]/5 active:scale-95 text-[#0f2a44] font-bold rounded-xl border border-slate-200/60 transition-all"
                 >
                   Admin
                 </button>
                 <button
                   onClick={() => fillTestCredentials('super')}
-                  className="text-[10px] py-1.5 px-2 bg-slate-50 hover:bg-[#0f2a44]/5 text-[#0f2a44] font-bold rounded-lg border border-slate-200/50"
+                  className="text-[10px] py-2 bg-slate-50 hover:bg-[#0f2a44]/5 active:scale-95 text-[#0f2a44] font-bold rounded-xl border border-slate-200/60 transition-all"
                 >
                   Super Admin
                 </button>
@@ -459,11 +464,15 @@ export default function App() {
           </div>
 
           {/* Footer constraints */}
-          <div className="bg-slate-50/50 py-3 text-center border-t border-slate-100">
-            <p className="text-[7px] text-slate-400 font-bold uppercase tracking-wider">
+          <div className="bg-slate-50/70 py-3.5 text-center border-t border-slate-100/60">
+            <p className="text-[7px] text-slate-400 font-bold uppercase tracking-widest">
               Tim Kerja Bidang SD Kecamatan Lemahabang
             </p>
+            <p className="text-[6px] text-slate-300 font-semibold mt-0.5 tracking-widest uppercase">
+              &copy; {new Date().getFullYear()} &bull; All Rights Reserved
+            </p>
           </div>
+
         </div>
       </div>
     );
