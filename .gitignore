@@ -10,3 +10,4 @@ coverage/
 
 # Build artifacts
 api/index.js
+api/index.cjs
