@@ -969,10 +969,10 @@ export default function App() {
                 </div>
               </div>
 
-              {/* Edit Contact parameters (Only allow editable fields according to instructions: HP, Email, Alamat) */}
+              {/* Edit Profil */}
               <div className="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm">
                 <div className="flex justify-between items-center border-b border-slate-100 pb-2 mb-3">
-                  <h4 className="text-xs font-black text-[#0f2a44] uppercase">Kontak ASN</h4>
+                  <h4 className="text-xs font-black text-[#0f2a44] uppercase">Biodata ASN</h4>
                   <button
                     onClick={() => {
                       setProfileForm({ namaPegawai: profile.namaPegawai || '', jabatan: profile.jabatan || '', statusPegawai: profile.statusPegawai || '', pangkatGolongan: profile.pangkatGolongan || '', pendidikanTerakhir: profile.pendidikanTerakhir || '', nomorHp: profile.nomorHp || '', email: profile.email || '', alamat: profile.alamat || '', namaInstansi: profile.namaInstansi || '' });
@@ -980,7 +980,7 @@ export default function App() {
                     }}
                     className="text-xs text-[#1d4ed8] font-bold"
                   >
-                    {profileEditing ? 'Batal' : 'Ubah Kontak'}
+                    {profileEditing ? 'Batal' : 'Edit Profil'}
                   </button>
                 </div>
 
@@ -1002,18 +1002,51 @@ export default function App() {
                 ) : (
                   <form onSubmit={handleUpdateProfile} className="space-y-3">
                     <div>
+                      <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Nama Lengkap</label>
+                      <input type="text" value={profileForm.namaPegawai} onChange={e => setProfileForm(p => ({ ...p, namaPegawai: e.target.value }))} className="w-full h-10 border border-slate-200 rounded-lg px-3 text-xs" />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Jabatan</label>
+                      <input type="text" value={profileForm.jabatan} onChange={e => setProfileForm(p => ({ ...p, jabatan: e.target.value }))} className="w-full h-10 border border-slate-200 rounded-lg px-3 text-xs" />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Status Kepegawaian</label>
+                      <select value={profileForm.statusPegawai} onChange={e => setProfileForm(p => ({ ...p, statusPegawai: e.target.value }))} className="w-full h-10 border border-slate-200 rounded-lg px-3 text-xs bg-white">
+                        <option value="">Pilih status</option>
+                        <option value="PNS">PNS</option>
+                        <option value="PPPK">PPPK</option>
+                        <option value="PPPK Paruh Waktu">PPPK Paruh Waktu</option>
+                        <option value="CPNS">CPNS</option>
+                        <option value="Honor Daerah TK.II Kab/Kota">Honor Daerah TK.II Kab/Kota</option>
+                        <option value="Lainnya">Lainnya</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Pangkat / Golongan</label>
+                      <input type="text" value={profileForm.pangkatGolongan} onChange={e => setProfileForm(p => ({ ...p, pangkatGolongan: e.target.value }))} className="w-full h-10 border border-slate-200 rounded-lg px-3 text-xs" />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Pendidikan Terakhir</label>
+                      <input type="text" value={profileForm.pendidikanTerakhir} onChange={e => setProfileForm(p => ({ ...p, pendidikanTerakhir: e.target.value }))} className="w-full h-10 border border-slate-200 rounded-lg px-3 text-xs" />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Instansi / Unit</label>
+                      <input type="text" value={profileForm.namaInstansi} onChange={e => setProfileForm(p => ({ ...p, namaInstansi: e.target.value }))} className="w-full h-10 border border-slate-200 rounded-lg px-3 text-xs" />
+                    </div>
+                    <hr className="border-slate-100" />
+                    <div>
                       <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Nomor HP</label>
-                      <input type="text" value={profileForm.nomorHp} onChange={(e) => setProfileForm({ ...profileForm, nomorHp: e.target.value })} className="w-full h-10 border border-slate-200 rounded-lg px-3 text-xs" />
+                      <input type="text" value={profileForm.nomorHp} onChange={e => setProfileForm(p => ({ ...p, nomorHp: e.target.value }))} className="w-full h-10 border border-slate-200 rounded-lg px-3 text-xs" />
                     </div>
                     <div>
                       <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Surel / Email</label>
-                      <input type="email" value={profileForm.email} onChange={(e) => setProfileForm({ ...profileForm, email: e.target.value })} className="w-full h-10 border border-slate-200 rounded-lg px-3 text-xs" />
+                      <input type="email" value={profileForm.email} onChange={e => setProfileForm(p => ({ ...p, email: e.target.value }))} className="w-full h-10 border border-slate-200 rounded-lg px-3 text-xs" />
                     </div>
                     <div>
                       <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Alamat Tinggal</label>
-                      <textarea value={profileForm.alamat} onChange={(e) => setProfileForm({ ...profileForm, alamat: e.target.value })} className="w-full border border-slate-200 rounded-lg p-2 text-xs min-h-[60px]" />
+                      <textarea value={profileForm.alamat} onChange={e => setProfileForm(p => ({ ...p, alamat: e.target.value }))} className="w-full border border-slate-200 rounded-lg p-2 text-xs min-h-[60px]" />
                     </div>
-                    <button type="submit" className="w-full h-10 bg-[#1d4ed8] text-white text-xs font-bold rounded-lg">Simpan Perubahan Kontak</button>
+                    <button type="submit" className="w-full h-10 bg-[#1d4ed8] text-white text-xs font-bold rounded-lg">Simpan Perubahan Profil</button>
                   </form>
                 )}
               </div>
