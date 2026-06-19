@@ -1519,93 +1519,6 @@ export default function App() {
             </div>
           )}
 
-          {/* EDIT PEGAWAI MODAL */}
-          {showEditPegawai && (
-            <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-              <div className="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-xl">
-                <div className="p-5 border-b border-slate-100 flex items-center justify-between">
-                  <h3 className="text-sm font-extrabold text-slate-800">Edit Data Pegawai</h3>
-                  <button onClick={() => setShowEditPegawai(false)} className="text-slate-400 hover:text-slate-600">&times;</button>
-                </div>
-                <form onSubmit={handleUpdatePegawai} className="p-5 space-y-3 text-xs">
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-[10px] font-bold text-slate-600 mb-1">NAMA LENGKAP</label>
-                      <input type="text" required value={editPegawaiForm.namaPegawai || ''} onChange={(e) => setEditPegawaiForm({...editPegawaiForm, namaPegawai: e.target.value})} className="w-full h-10 border rounded-lg px-2" />
-                    </div>
-                    <div>
-                      <label className="block text-[10px] font-bold text-slate-600 mb-1">TANGGAL LAHIR</label>
-                      <input type="date" value={editPegawaiForm.tanggalLahir || ''} onChange={(e) => setEditPegawaiForm({...editPegawaiForm, tanggalLahir: e.target.value})} className="w-full h-10 border rounded-lg px-2" />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-[10px] font-bold text-slate-600 mb-1">NIP</label>
-                      <input type="text" required value={editPegawaiForm.nip || ''} onChange={(e) => setEditPegawaiForm({...editPegawaiForm, nip: e.target.value.replace(/\D/g, '')})} maxLength={18} className="w-full h-10 border rounded-lg px-2 font-mono" />
-                    </div>
-                    <div>
-                      <label className="block text-[10px] font-bold text-slate-600 mb-1">NIK KTP</label>
-                      <input type="text" required value={editPegawaiForm.nik || ''} onChange={(e) => setEditPegawaiForm({...editPegawaiForm, nik: e.target.value.replace(/\D/g, '')})} maxLength={16} className="w-full h-10 border rounded-lg px-2 font-mono" />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-[10px] font-bold text-slate-600 mb-1">JENIS KELAMIN</label>
-                      <select value={editPegawaiForm.jenisKelamin || 'Laki-laki'} onChange={(e) => setEditPegawaiForm({...editPegawaiForm, jenisKelamin: e.target.value})} className="w-full h-10 border rounded-lg px-2 bg-white">
-                        <option value="Laki-laki">Laki-laki</option>
-                        <option value="Perempuan">Perempuan</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-[10px] font-bold text-slate-600 mb-1">STATUS ASN</label>
-                      <select value={editPegawaiForm.statusPegawai || 'PNS'} onChange={(e) => setEditPegawaiForm({...editPegawaiForm, statusPegawai: e.target.value})} className="w-full h-10 border rounded-lg px-2 bg-white">
-                        <option value="PNS">PNS</option>
-                        <option value="PPPK">PPPK</option>
-                        <option value="PPPK Paruh Waktu">PPPK Paruh Waktu</option>
-                        <option value="CPNS">CPNS</option>
-                      </select>
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-[10px] font-bold text-slate-600 mb-1">JABATAN</label>
-                      <input type="text" value={editPegawaiForm.jabatan || ''} onChange={(e) => setEditPegawaiForm({...editPegawaiForm, jabatan: e.target.value})} className="w-full h-10 border rounded-lg px-2" />
-                    </div>
-                    <div>
-                      <label className="block text-[10px] font-bold text-slate-600 mb-1">PANGKAT GOLONGAN</label>
-                      <input type="text" value={editPegawaiForm.pangkatGolongan || ''} onChange={(e) => setEditPegawaiForm({...editPegawaiForm, pangkatGolongan: e.target.value})} className="w-full h-10 border rounded-lg px-2" />
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-[10px] font-bold text-slate-600 mb-1">PASSWORD BARU (kosongkan jika tidak diubah)</label>
-                    <input type="text" value={editPegawaiForm.password || ''} onChange={(e) => setEditPegawaiForm({...editPegawaiForm, password: e.target.value})} className="w-full h-10 border rounded-lg px-2" />
-                  </div>
-                  <div className="flex gap-2.5 pt-3">
-                    <button type="button" onClick={() => setShowEditPegawai(false)} className="flex-1 h-11 border rounded-xl font-bold">Batal</button>
-                    <button type="submit" className="flex-1 h-11 bg-[#1d4ed8] text-white rounded-xl font-bold">Simpan Perubahan</button>
-                  </div>
-                </form>
-              </div>
-            </div>
-          )}
-
-          {/* DELETE CONFIRMATION MODAL */}
-          {showDeleteConfirm && (
-            <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-              <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-xl text-center">
-                <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-red-100 flex items-center justify-center">
-                  <span className="text-red-600 text-xl font-bold">!</span>
-                </div>
-                <h3 className="text-sm font-extrabold text-slate-800 mb-2">Hapus Pegawai</h3>
-                <p className="text-xs text-slate-500 mb-6">Apakah Anda yakin ingin menghapus pegawai ini? Semua arsip terkait juga akan dihapus.</p>
-                <div className="flex gap-3">
-                  <button onClick={() => { setShowDeleteConfirm(false); setDeletePegawaiId(null); }} className="flex-1 h-11 border rounded-xl font-bold text-xs">Batal</button>
-                  <button onClick={handleDeletePegawai} className="flex-1 h-11 bg-red-600 text-white rounded-xl font-bold text-xs">Hapus</button>
-                </div>
-              </div>
-            </div>
-          )}
-
           {/* PAGE C. BUP (BATAS USIA PENSIUN) */}
           {adminTab === 'bup' && (
             <div className="space-y-4 animate-fade-in">
@@ -2219,6 +2132,93 @@ export default function App() {
       <footer className="bg-slate-100 py-3.5 text-center text-[7px] text-slate-400 border-t mt-8">
         Tim Kerja Bidang SD Kecamatan Lemahabang • Arsip Digital ASN Integrated V1.2
       </footer>
+
+      {/* EDIT PEGAWAI MODAL */}
+      {showEditPegawai && (
+        <div className='fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4'>
+          <div className='bg-white rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-xl'>
+            <div className='p-5 border-b border-slate-100 flex items-center justify-between'>
+              <h3 className='text-sm font-extrabold text-slate-800'>Edit Data Pegawai</h3>
+              <button onClick={() => setShowEditPegawai(false)} className='text-slate-400 hover:text-slate-600'>&times;</button>
+            </div>
+            <form onSubmit={handleUpdatePegawai} className='p-5 space-y-3 text-xs'>
+              <div className='grid grid-cols-2 gap-3'>
+                <div>
+                  <label className='block text-[10px] font-bold text-slate-600 mb-1'>NAMA LENGKAP</label>
+                  <input type='text' required value={editPegawaiForm.namaPegawai || ''} onChange={(e) => setEditPegawaiForm({...editPegawaiForm, namaPegawai: e.target.value})} className='w-full h-10 border rounded-lg px-2' />
+                </div>
+                <div>
+                  <label className='block text-[10px] font-bold text-slate-600 mb-1'>TANGGAL LAHIR</label>
+                  <input type='date' value={editPegawaiForm.tanggalLahir || ''} onChange={(e) => setEditPegawaiForm({...editPegawaiForm, tanggalLahir: e.target.value})} className='w-full h-10 border rounded-lg px-2' />
+                </div>
+              </div>
+              <div className='grid grid-cols-2 gap-3'>
+                <div>
+                  <label className='block text-[10px] font-bold text-slate-600 mb-1'>NIP</label>
+                  <input type='text' required value={editPegawaiForm.nip || ''} onChange={(e) => setEditPegawaiForm({...editPegawaiForm, nip: e.target.value.replace(/\D/g, '')})} maxLength={18} className='w-full h-10 border rounded-lg px-2 font-mono' />
+                </div>
+                <div>
+                  <label className='block text-[10px] font-bold text-slate-600 mb-1'>NIK KTP</label>
+                  <input type='text' required value={editPegawaiForm.nik || ''} onChange={(e) => setEditPegawaiForm({...editPegawaiForm, nik: e.target.value.replace(/\D/g, '')})} maxLength={16} className='w-full h-10 border rounded-lg px-2 font-mono' />
+                </div>
+              </div>
+              <div className='grid grid-cols-2 gap-3'>
+                <div>
+                  <label className='block text-[10px] font-bold text-slate-600 mb-1'>JENIS KELAMIN</label>
+                  <select value={editPegawaiForm.jenisKelamin || 'Laki-laki'} onChange={(e) => setEditPegawaiForm({...editPegawaiForm, jenisKelamin: e.target.value})} className='w-full h-10 border rounded-lg px-2 bg-white'>
+                    <option value='Laki-laki'>Laki-laki</option>
+                    <option value='Perempuan'>Perempuan</option>
+                  </select>
+                </div>
+                <div>
+                  <label className='block text-[10px] font-bold text-slate-600 mb-1'>STATUS ASN</label>
+                  <select value={editPegawaiForm.statusPegawai || 'PNS'} onChange={(e) => setEditPegawaiForm({...editPegawaiForm, statusPegawai: e.target.value})} className='w-full h-10 border rounded-lg px-2 bg-white'>
+                    <option value='PNS'>PNS</option>
+                    <option value='PPPK'>PPPK</option>
+                    <option value='PPPK Paruh Waktu'>PPPK Paruh Waktu</option>
+                    <option value='CPNS'>CPNS</option>
+                  </select>
+                </div>
+              </div>
+              <div className='grid grid-cols-2 gap-3'>
+                <div>
+                  <label className='block text-[10px] font-bold text-slate-600 mb-1'>JABATAN</label>
+                  <input type='text' value={editPegawaiForm.jabatan || ''} onChange={(e) => setEditPegawaiForm({...editPegawaiForm, jabatan: e.target.value})} className='w-full h-10 border rounded-lg px-2' />
+                </div>
+                <div>
+                  <label className='block text-[10px] font-bold text-slate-600 mb-1'>PANGKAT GOLONGAN</label>
+                  <input type='text' value={editPegawaiForm.pangkatGolongan || ''} onChange={(e) => setEditPegawaiForm({...editPegawaiForm, pangkatGolongan: e.target.value})} className='w-full h-10 border rounded-lg px-2' />
+                </div>
+              </div>
+              <div>
+                <label className='block text-[10px] font-bold text-slate-600 mb-1'>PASSWORD BARU (kosongkan jika tidak diubah)</label>
+                <input type='text' value={editPegawaiForm.password || ''} onChange={(e) => setEditPegawaiForm({...editPegawaiForm, password: e.target.value})} className='w-full h-10 border rounded-lg px-2' />
+              </div>
+              <div className='flex gap-2.5 pt-3'>
+                <button type='button' onClick={() => setShowEditPegawai(false)} className='flex-1 h-11 border rounded-xl font-bold'>Batal</button>
+                <button type='submit' className='flex-1 h-11 bg-[#1d4ed8] text-white rounded-xl font-bold'>Simpan Perubahan</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* DELETE CONFIRMATION MODAL */}
+      {showDeleteConfirm && (
+        <div className='fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4'>
+          <div className='bg-white rounded-2xl max-w-sm w-full p-6 shadow-xl text-center'>
+            <div className='w-12 h-12 mx-auto mb-3 rounded-full bg-red-100 flex items-center justify-center'>
+              <span className='text-red-600 text-xl font-bold'>!</span>
+            </div>
+            <h3 className='text-sm font-extrabold text-slate-800 mb-2'>Hapus Pegawai</h3>
+            <p className='text-xs text-slate-500 mb-6'>Apakah Anda yakin ingin menghapus pegawai ini? Semua arsip terkait juga akan dihapus.</p>
+            <div className='flex gap-3'>
+              <button onClick={() => { setShowDeleteConfirm(false); setDeletePegawaiId(null); }} className='flex-1 h-11 border rounded-xl font-bold text-xs'>Batal</button>
+              <button onClick={handleDeletePegawai} className='flex-1 h-11 bg-red-600 text-white rounded-xl font-bold text-xs'>Hapus</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* LIGHTBOX FILE VIEWER */}
       {activeFileUrl && (
