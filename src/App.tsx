@@ -1145,7 +1145,7 @@ export default function App() {
       <div className="flex-1 max-w-7xl mx-auto w-full p-4 lg:grid lg:grid-cols-5 lg:gap-6">
         
         {/* Navigation Rail Menu */}
-        <aside className="lg:col-span-1 bg-white rounded-2xl p-4 border border-slate-100 shadow-sm mb-4 lg:mb-0 h-fit">
+        <aside className="lg:col-span-1 bg-white rounded-2xl p-4 border border-slate-100 shadow-sm mb-4 lg:mb-0 lg:sticky lg:top-4 lg:self-start">
           <span className="block text-[10.5px] font-bold uppercase text-slate-400 tracking-widest mb-3 px-2">
             Konsol Administrasi
           </span>
