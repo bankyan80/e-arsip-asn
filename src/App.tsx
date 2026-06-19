@@ -1070,6 +1070,15 @@ export default function App() {
               Rekap Kelengkapan
             </button>
             <button
+              onClick={() => setAdminTab('berkas')}
+              className={`flex-1 lg:flex-initial text-left px-3.5 py-3 rounded-xl font-bold flex items-center gap-2.5 transition-colors ${
+                adminTab === 'berkas' ? 'bg-[#0f2a44] text-white' : 'text-slate-600 hover:bg-slate-50'
+              }`}
+            >
+              <FileText className="w-4 h-4" />
+              Semua Berkas
+            </button>
+            <button
               onClick={() => setAdminTab('kategori')}
               className={`flex-1 lg:flex-initial text-left px-3.5 py-3 rounded-xl font-bold flex items-center gap-2.5 transition-colors ${
                 adminTab === 'kategori' ? 'bg-[#0f2a44] text-white' : 'text-slate-600 hover:bg-slate-50'
@@ -1493,7 +1502,49 @@ export default function App() {
             </div>
           )}
 
-          {/* PAGE E. KATEGORI ARSIP PANEL */}
+          {/* PAGE E. SEMUA BERKAS */}
+          {adminTab === 'berkas' && (
+            <div className="space-y-4 animate-fade-in">
+              <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <h3 className="text-sm font-bold text-slate-800">Semua Berkas Pegawai</h3>
+                  <p className="text-xs text-slate-400 mt-1">Total {allArchives.length} dokumen</p>
+                </div>
+                <input
+                  type="text"
+                  placeholder="Cari pegawai..."
+                  value={adminSearchQuery}
+                  onChange={(e) => setAdminSearchQuery(e.target.value)}
+                  className="w-full sm:w-48 text-xs border rounded-xl px-3 py-2 focus:ring-1 outline-none"
+                />
+              </div>
+
+              {(() => {
+                const filtered = allArchives.filter(a =>
+                  !adminSearchQuery || a.namaPegawai?.toLowerCase().includes(adminSearchQuery.toLowerCase())
+                );
+                if (filtered.length === 0) {
+                  return <EmptyState title="Tidak ada berkas" description="Tidak ditemukan berkas sesuai pencarian." />;
+                }
+                return (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {filtered.map(a => (
+                      <ArsipCard
+                        key={a.id}
+                        arsip={a}
+                        onView={(id) => openFileViewer(id, a.downloadUrl)}
+                        onEdit={() => {}}
+                        onDelete={() => {}}
+                        isEmployeeView={false}
+                      />
+                    ))}
+                  </div>
+                );
+              })()}
+            </div>
+          )}
+
+          {/* PAGE F. KATEGORI ARSIP PANEL */}
           {adminTab === 'kategori' && (
             <div className="space-y-4 animate-fade-in">
               <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-xs flex justify-between items-center">
