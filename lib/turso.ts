@@ -179,7 +179,6 @@ export async function updatePegawai(id: string, updates: Record<string, unknown>
 
 export async function deletePegawai(id: string) {
   await query('UPDATE arsip SET deleted = 1 WHERE pegawai_id = ?', [id]);
-  await query('DELETE FROM logs WHERE pegawai_id = ?', [id]);
   await query('DELETE FROM pegawai WHERE id = ?', [id]);
 }
 
