@@ -44,18 +44,11 @@ export default function App() {
 
   // Filtering states (Admin)
   const [adminSearchQuery, setAdminSearchQuery] = useState('');
-  const [adminStatusFilter, setAdminStatusFilter] = useState('');
 
   // Editing state (Personnel)
   const [editArsip, setEditArsip] = useState<Arsip | null>(null);
   const [profileEditing, setProfileEditing] = useState(false);
   const [profileForm, setProfileForm] = useState({ namaPegawai: '', jabatan: '', statusPegawai: '', pangkatGolongan: '', pendidikanTerakhir: '', nomorHp: '', email: '', alamat: '', namaInstansi: '' });
-
-  // Verification dialog state (Admin)
-  const [verifyingArsip, setVerifyingArsip] = useState<Arsip | null>(null);
-  const [verificationStatus, setVerificationStatus] = useState<'Valid' | 'Perlu Perbaikan' | 'Ditolak'>('Valid');
-  const [verificationNotes, setVerificationNotes] = useState('');
-  const [verifyingProcess, setVerifyingProcess] = useState(false);
 
   // Creation dialog state (Super Admin)
   const [showAddPegawai, setShowAddPegawai] = useState(false);
@@ -222,36 +215,6 @@ export default function App() {
   };
 
   // 4. HANDLERS (ADMIN PROCESSES)
-  const handleValidateDocumentSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!verifyingArsip) return;
-
-    setVerifyingProcess(true);
-    try {
-      const res = await fetch(`/api/admin/arsip/${verifyingArsip.id}/validasi`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          statusValidasi: verificationStatus,
-          catatanAdmin: verificationNotes
-        })
-      });
-
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Verifikasi gagal.');
-
-      showToast(`Arsip pegawai diklasifikasikan sebagai [${verificationStatus}]`);
-      setVerifyingArsip(null);
-      setVerificationNotes('');
-      // Refresh admin dataset
-      if (session) adminData.fetchAdminData(session.role);
-    } catch (err: any) {
-      showToast(err.message, 'error');
-    } finally {
-      setVerifyingProcess(false);
-    }
-  };
-
   const handleCreatePegawai = async (e: React.FormEvent) => {
     e.preventDefault();
     setAddingPegawaiProcess(true);
@@ -1098,22 +1061,6 @@ export default function App() {
               Data Pegawai
             </button>
             <button
-              onClick={() => setAdminTab('arsip')}
-              className={`flex-1 lg:flex-initial text-left px-3.5 py-3 rounded-xl font-bold flex items-center justify-between gap-1.5 transition-colors ${
-                adminTab === 'arsip' ? 'bg-[#0f2a44] text-white' : 'text-slate-600 hover:bg-slate-50'
-              }`}
-            >
-              <span className="flex items-center gap-2.5">
-                <FileText className="w-4 h-4" />
-                Validasi Berkas
-              </span>
-              {sizeWaitingVal > 0 && (
-                <span className="bg-yellow-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full">
-                  {sizeWaitingVal}
-                </span>
-              )}
-            </button>
-            <button
               onClick={() => setAdminTab('rekap')}
               className={`flex-1 lg:flex-initial text-left px-3.5 py-3 rounded-xl font-bold flex items-center gap-2.5 transition-colors ${
                 adminTab === 'rekap' ? 'bg-[#0f2a44] text-white' : 'text-slate-600 hover:bg-slate-50'
@@ -1474,208 +1421,6 @@ export default function App() {
           )}
 
           {/* PAGE C. ARSIP PEGAWAI (VALIDASI) PANEL */}
-          {adminTab === 'arsip' && (
-            <div className="space-y-4 animate-fade-in">
-              
-              <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-xs flex items-center justify-between">
-                <div>
-                  <h3 className="text-sm font-bold text-slate-800">Review & Verifikasi Dokumen</h3>
-                  <p className="text-xs text-slate-400 mt-1">Gunakan dashboard ini untuk verifikasi keabsahan dokumen kepegawaian</p>
-                </div>
-                <div className="bg-blue-50 border border-blue-200 p-2 text-blue-700 text-[10px] font-mono rounded-lg font-bold">
-                  Review Queue: {allArchives.filter(a => a.statusValidasi === 'Menunggu Validasi').length} item
-                </div>
-              </div>
-
-              {/* Validation selection indicators */}
-              <div className="grid grid-cols-3 gap-2">
-                <button
-                  onClick={() => setAdminStatusFilter('')}
-                  className={`py-2 px-3 text-[10px] font-black uppercase tracking-wider rounded-xl border ${
-                    adminStatusFilter === '' ? 'bg-[#0f2a44] text-white border-slate-900' : 'bg-white text-slate-600 hover:bg-slate-50'
-                  }`}
-                >
-                  Semua ({allArchives.length})
-                </button>
-                <button
-                  onClick={() => setAdminStatusFilter('Menunggu Validasi')}
-                  className={`py-2 px-3 text-[10px] font-black uppercase tracking-wider rounded-xl border flex items-center justify-center gap-1.5 ${
-                    adminStatusFilter === 'Menunggu Validasi' ? 'bg-[#0f2a44] text-white border-slate-900' : 'bg-white text-slate-600 hover:bg-slate-50'
-                  }`}
-                >
-                  <Clock className="w-3.5 h-3.5 text-yellow-500" />
-                  Antrean ({allArchives.filter(a => a.statusValidasi === 'Menunggu Validasi').length})
-                </button>
-                <button
-                  onClick={() => setAdminStatusFilter('Perlu Perbaikan')}
-                  className={`py-2 px-3 text-[10px] font-black uppercase tracking-wider rounded-xl border flex items-center justify-center gap-1.5 ${
-                    adminStatusFilter === 'Perlu Perbaikan' ? 'bg-[#0f2a44] text-white border-slate-900' : 'bg-white text-slate-600 hover:bg-slate-50'
-                  }`}
-                >
-                  <AlertTriangle className="w-3.5 h-3.5 text-red-500" />
-                  Perlu Perbaikan ({allArchives.filter(a => a.statusValidasi === 'Perlu Perbaikan').length})
-                </button>
-              </div>
-
-              {/* Render lists validation cards */}
-              {(() => {
-                const results = allArchives.filter(a => {
-                  return adminStatusFilter ? a.statusValidasi === adminStatusFilter : true;
-                });
-
-                if (results.length === 0) {
-                  return <EmptyState title="Antrean Kosong" description="Hebat! Tidak ditemukan antrean berkas sisa verifikasi." />;
-                }
-
-                return (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {results.map(a => (
-                      <ArsipCard
-                        key={a.id}
-                        arsip={a}
-                        onView={openFileViewer}
-                        onEdit={() => {}}
-                        onDelete={() => {}}
-                        isEmployeeView={false}
-                        onValidate={(id) => {
-                          const item = allArchives.find(x => x.id === id);
-                          if (item) {
-                            setVerifyingArsip(item);
-                            setVerificationStatus('Valid');
-                            setVerificationNotes(item.catatanAdmin || '');
-                          }
-                        }}
-                      />
-                    ))}
-                  </div>
-                );
-              })()}
-
-              {/* INLINE VALIDATION MODAL DIALOG */}
-              {verifyingArsip && (
-                <div className="fixed inset-0 bg-slate-900 bg-opacity-65 z-50 flex items-center justify-center p-4">
-                  <div className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-xl animate-scale-up">
-                    <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-1">
-                      Verifikasi & Validasi
-                    </span>
-                    <h4 className="text-sm font-extrabold text-slate-800 truncate mb-1">
-                      {verifyingArsip.jenisDokumen}
-                    </h4>
-                    <p className="text-xs text-slate-500 leading-none mb-4 truncate font-mono">
-                      Pegawai: {verifyingArsip.namaPegawai}
-                    </p>
-
-                    <div className="bg-slate-50 border p-3 rounded-xl mb-4 text-xs font-mono select-all flex justify-between items-center">
-                      <div className="truncate">
-                        <p className="font-bold text-slate-800 truncate">{verifyingArsip.fileName}</p>
-                        <p className="text-[10px] text-slate-400">{(verifyingArsip.fileSize / (1024 * 1024)).toFixed(2)} MB</p>
-                      </div>
-                      <button
-                        onClick={() => openFileViewer(verifyingArsip.id, verifyingArsip.downloadUrl)}
-                        className="bg-blue-50 text-blue-700 p-2 rounded-lg font-bold text-[10px] uppercase ml-2 shrink-0 flex items-center gap-1"
-                      >
-                        <Eye className="w-3.5 h-3.5" />
-                        PREVIEW
-                      </button>
-                    </div>
-
-                    <form onSubmit={handleValidateDocumentSubmit} className="space-y-4">
-                      
-                      {/* Radios for selection validationStatus */}
-                      <div>
-                        <label className="block text-xs font-bold text-slate-700 uppercase mb-2">
-                          Evaluasi Hasil Verifikasi:
-                        </label>
-                        <div className="space-y-2">
-                          
-                          <label className="flex items-center gap-2 px-3 py-2 border rounded-xl cursor-pointer hover:bg-slate-50">
-                            <input
-                              type="radio"
-                              name="valStatus"
-                              value="Valid"
-                              checked={verificationStatus === 'Valid'}
-                              onChange={() => setVerificationStatus('Valid')}
-                              className="text-green-600 focus:ring-0"
-                            />
-                            <div className="text-xs">
-                              <span className="font-bold text-green-700 block">Diterima & Valid</span>
-                              <span className="text-[10px] text-slate-400">Berkas sesuai standar digital.</span>
-                            </div>
-                          </label>
-
-                          <label className="flex items-center gap-2 px-3 py-2 border rounded-xl cursor-pointer hover:bg-slate-50">
-                            <input
-                              type="radio"
-                              name="valStatus"
-                              value="Perlu Perbaikan"
-                              checked={verificationStatus === 'Perlu Perbaikan'}
-                              onChange={() => setVerificationStatus('Perlu Perbaikan')}
-                              className="text-amber-500 focus:ring-0"
-                            />
-                            <div className="text-xs">
-                              <span className="font-bold text-amber-600 block">Kembalikan (Perlu Perbaikan)</span>
-                              <span className="text-[10px] text-slate-400">Kembalikan berkas ke pegawai dengan catatan.</span>
-                            </div>
-                          </label>
-
-                          <label className="flex items-center gap-2 px-3 py-2 border rounded-xl cursor-pointer hover:bg-slate-50">
-                            <input
-                              type="radio"
-                              name="valStatus"
-                              value="Ditolak"
-                              checked={verificationStatus === 'Ditolak'}
-                              onChange={() => setVerificationStatus('Ditolak')}
-                              className="text-red-600 focus:ring-0"
-                            />
-                            <div className="text-xs">
-                              <span className="font-bold text-red-600 block">Ditolak Sekali</span>
-                              <span className="text-[10px] text-slate-400">Berkas tidak sah atau tidak dapat terbaca.</span>
-                            </div>
-                          </label>
-
-                        </div>
-                      </div>
-
-                      {/* verificationNotes */}
-                      <div>
-                        <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
-                          Catatan / Keterangan Admin:
-                        </label>
-                        <textarea
-                          placeholder="Tuliskan catatan perbaikan jika ada..."
-                          value={verificationNotes}
-                          onChange={(e) => setVerificationNotes(e.target.value)}
-                          className="w-full border rounded-xl p-2.5 text-xs min-h-[70px] focus:ring-1"
-                          required={verificationStatus !== 'Valid'} // Required if rejecting!
-                        />
-                      </div>
-
-                      {/* Submit controls */}
-                      <div className="flex gap-2">
-                        <button
-                          type="button"
-                          onClick={() => setVerifyingArsip(null)}
-                          className="flex-1 h-10 border rounded-lg text-xs font-bold"
-                        >
-                          Batal
-                        </button>
-                        <button
-                          type="submit"
-                          disabled={verifyingProcess}
-                          className="flex-1 h-10 bg-[#1d4ed8] text-white rounded-lg text-xs font-bold"
-                        >
-                          {verifyingProcess ? 'Menyimpan...' : 'Simpan Status'}
-                        </button>
-                      </div>
-
-                    </form>
-                  </div>
-                </div>
-              )}
-
-            </div>
-          )}
-
           {/* PAGE D. REKAP KELENGKAPAN PANEL */}
           {adminTab === 'rekap' && (
             <div className="space-y-4 animate-fade-in">
