@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, Fragment } from 'react';
 import {
   Users, FileCheck, Clock, Layers, FileText, Search,
   CheckCircle, AlertTriangle, Download, Phone,
@@ -44,6 +44,7 @@ export default function App() {
 
   // Filtering states (Admin)
   const [adminSearchQuery, setAdminSearchQuery] = useState('');
+  const [expandedPegawai, setExpandedPegawai] = useState<string | null>(null);
 
   // Editing state (Personnel)
   const [editArsip, setEditArsip] = useState<Arsip | null>(null);
@@ -1520,10 +1521,17 @@ export default function App() {
               </div>
 
               {(() => {
-                const filtered = allArchives.filter(a =>
-                  !adminSearchQuery || a.namaPegawai?.toLowerCase().includes(adminSearchQuery.toLowerCase())
-                );
-                if (filtered.length === 0) {
+                // Group archives by pegawai
+                const pegawaiMap = new Map<string, { id: string; nama: string; arsip: typeof allArchives }>();
+                allArchives.forEach(a => {
+                  if (adminSearchQuery && !a.namaPegawai?.toLowerCase().includes(adminSearchQuery.toLowerCase())) return;
+                  const key = a.pegawaiId;
+                  if (!pegawaiMap.has(key)) pegawaiMap.set(key, { id: key, nama: a.namaPegawai || '', arsip: [] });
+                  pegawaiMap.get(key)!.arsip.push(a);
+                });
+                const pegawaiList = Array.from(pegawaiMap.values());
+
+                if (pegawaiList.length === 0) {
                   return <EmptyState title="Tidak ada berkas" description="Tidak ditemukan berkas sesuai pencarian." />;
                 }
                 return (
@@ -1533,47 +1541,92 @@ export default function App() {
                         <thead>
                           <tr className="bg-slate-50 text-slate-500 font-bold border-b border-slate-100">
                             <th className="p-3">Pegawai</th>
-                            <th className="p-3">Jenis Dokumen</th>
-                            <th className="p-3 hidden sm:table-cell">Kategori</th>
-                            <th className="p-3 hidden md:table-cell">Tahun</th>
-                            <th className="p-3">Status</th>
+                            <th className="p-3">Total Berkas</th>
+                            <th className="p-3 hidden sm:table-cell">Valid</th>
                             <th className="p-3 text-right">Aksi</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
-                          {filtered.map(a => (
-                            <tr key={a.id} className="hover:bg-slate-50">
-                              <td className="p-3">
-                                <span className="font-semibold text-slate-800">{a.namaPegawai}</span>
-                              </td>
-                              <td className="p-3">
-                                <span className="text-slate-700">{a.jenisDokumen}</span>
-                                <span className="text-[10px] text-slate-400 block leading-none mt-0.5">{a.namaDokumen}</span>
-                              </td>
-                              <td className="p-3 hidden sm:table-cell">
-                                <span className="text-slate-500">{a.kelompokArsip}</span>
-                              </td>
-                              <td className="p-3 hidden md:table-cell">
-                                <span className="text-slate-500">{a.tahun || '-'}</span>
-                              </td>
-                              <td className="p-3">
-                                <span className={`inline-block text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                                  a.statusValidasi === 'Valid' ? 'bg-green-100 text-green-700' :
-                                  a.statusValidasi === 'Perlu Perbaikan' ? 'bg-amber-100 text-amber-700' :
-                                  a.statusValidasi === 'Menunggu Validasi' ? 'bg-yellow-100 text-yellow-700' :
-                                  'bg-slate-100 text-slate-500'
-                                }`}>{a.statusValidasi}</span>
-                              </td>
-                              <td className="p-3 text-right">
-                                <button
-                                  onClick={() => openFileViewer(a.id, a.downloadUrl)}
-                                  className="text-[10px] font-bold text-blue-600 hover:text-blue-800 uppercase tracking-wider"
+                          {pegawaiList.map(p => {
+                            const isOpen = expandedPegawai === p.id;
+                            const validCount = p.arsip.filter(a => a.statusValidasi === 'Valid').length;
+                            return (
+                              <Fragment key={p.id}>
+                                <tr
+                                  className="hover:bg-slate-50 cursor-pointer"
+                                  onClick={() => setExpandedPegawai(isOpen ? null : p.id)}
                                 >
-                                  Lihat
-                                </button>
-                              </td>
-                            </tr>
-                          ))}
+                                  <td className="p-3">
+                                    <div className="flex items-center gap-2">
+                                      <span className={`text-slate-400 transition-transform ${isOpen ? 'rotate-90' : ''}`}>&#9654;</span>
+                                      <span className="font-semibold text-slate-800">{p.nama}</span>
+                                    </div>
+                                  </td>
+                                  <td className="p-3">
+                                    <span className="font-bold text-slate-700">{p.arsip.length}</span>
+                                  </td>
+                                  <td className="p-3 hidden sm:table-cell">
+                                    <span className="text-green-600 font-bold">{validCount}</span>
+                                    <span className="text-slate-400"> / {p.arsip.length}</span>
+                                  </td>
+                                  <td className="p-3 text-right">
+                                    <span className="text-[10px] text-blue-600 font-bold uppercase tracking-wider">
+                                      {isOpen ? 'Tutup' : 'Detail'}
+                                    </span>
+                                  </td>
+                                </tr>
+                                {isOpen && (
+                                  <tr key={p.id + '_detail'}>
+                                    <td colSpan={4} className="p-0">
+                                      <div className="bg-slate-50 p-4">
+                                        <h4 className="text-[10px] font-bold uppercase text-slate-400 tracking-widest mb-3">
+                                          Daftar Dokumen — {p.nama}
+                                        </h4>
+                                        <div className="space-y-1">
+                                          {jenisDokumenList.map(jd => {
+                                            const match = p.arsip.find(a => a.jenisDokumen === jd.namaDokumen);
+                                            return (
+                                              <div key={jd.id} className="flex items-center justify-between gap-2 py-1.5 px-2 rounded-lg bg-white border border-slate-100">
+                                                <div className="flex items-center gap-2 min-w-0">
+                                                  <span className={`w-1.5 h-1.5 shrink-0 rounded-full ${
+                                                    match?.statusValidasi === 'Valid' ? 'bg-green-500' :
+                                                    match ? 'bg-yellow-400' : 'bg-slate-200'
+                                                  }`} />
+                                                  <span className={`text-xs ${match ? 'text-slate-800 font-medium' : 'text-slate-400'}`}>
+                                                    {jd.namaDokumen}
+                                                  </span>
+                                                  {jd.wajib && <span className="text-[8px] font-bold text-red-500 bg-red-50 px-1.5 py-0.5 rounded">WAJIB</span>}
+                                                </div>
+                                                <div className="flex items-center gap-2 shrink-0">
+                                                  {match ? (
+                                                    <>
+                                                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                                                        match.statusValidasi === 'Valid' ? 'bg-green-100 text-green-700' :
+                                                        match.statusValidasi === 'Perlu Perbaikan' ? 'bg-amber-100 text-amber-700' :
+                                                        'bg-yellow-100 text-yellow-700'
+                                                      }`}>{match.statusValidasi}</span>
+                                                      <button
+                                                        onClick={(e) => { e.stopPropagation(); openFileViewer(match.id, match.downloadUrl); }}
+                                                        className="text-[10px] font-bold text-blue-600 hover:text-blue-800 uppercase"
+                                                      >
+                                                        Lihat
+                                                      </button>
+                                                    </>
+                                                  ) : (
+                                                    <span className="text-[10px] text-slate-300 italic">Belum upload</span>
+                                                  )}
+                                                </div>
+                                              </div>
+                                            );
+                                          })}
+                                        </div>
+                                      </div>
+                                    </td>
+                                  </tr>
+                                )}
+                              </Fragment>
+                            );
+                          })}
                         </tbody>
                       </table>
                     </div>
