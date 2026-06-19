@@ -3,7 +3,7 @@ import bcrypt from 'bcryptjs';
 import {
   listAllPegawai, listAllArsipAdmin, getArsipData, updateArsipData,
   findPegawaiByCredentials, getInstansiData, adminCreatePegawai,
-  getLogsData, listAllInstansi, getSettingValue, updateSettingValue, setPegawaiPassword,
+  getLogsData, listAllInstansi, getSettingValue, updateSettingValue, setPegawaiPassword, updatePegawaiData,
   createKategori, updateKategori, deleteKategori,
   createJenisDokumen, updateJenisDokumen, deleteJenisDokumen,
   getKategoriList, getJenisDokumenList,
@@ -71,6 +71,66 @@ export function createAdminRouter(requireAuth: any, requireRole: any, logAction:
       return res.status(201).json(result);
     } catch {
       return res.status(500).json({ error: 'Gagal membuat data pegawai baru.' });
+    }
+  });
+
+  // BUP (Batas Usia Pensiun) endpoint
+  router.get('/bup', requireAuth, requireRole(['super_admin', 'admin_instansi']), async (req, res) => {
+    try {
+      const pegawais = await listAllPegawai();
+      const now = new Date();
+      const pensionAgeMap: Record<string, number> = {
+        'Kepala Sekolah': 60, 'Guru': 60, 'Guru Kelas': 60,
+      };
+      const results: any[] = [];
+
+      for (const p of pegawais) {
+        if (!p.tanggalLahir || !p.statusAktif) continue;
+        const born = new Date(p.tanggalLahir);
+        if (isNaN(born.getTime())) continue;
+        const pensionAge = pensionAgeMap[p.jabatan] || 58;
+
+        // Mulai Pensiun = first day of the month following the month when pension age is reached
+        const reachedAge = new Date(born.getFullYear() + pensionAge, born.getMonth(), born.getDate());
+        const mulaiPensiun = new Date(reachedAge.getFullYear(), reachedAge.getMonth() + 1, 1);
+
+        if (mulaiPensiun <= now) {
+          // Already past retirement → deactivate
+          await updatePegawaiData(p.id, { statusAktif: false, updatedAt: new Date().toISOString() });
+          continue;
+        }
+
+        // Calculate age now
+        let usia = now.getFullYear() - born.getFullYear();
+        const mDiff = now.getMonth() - born.getMonth();
+        if (mDiff < 0 || (mDiff === 0 && now.getDate() < born.getDate())) usia--;
+
+        const diffMs = mulaiPensiun.getTime() - now.getTime();
+        const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+        const years = Math.floor(diffDays / 365);
+        const months = Math.floor((diffDays % 365) / 30);
+        const days = diffDays % 30;
+
+        results.push({
+          pegawaiId: p.id,
+          namaPegawai: p.namaPegawai,
+          nip: p.nip,
+          tanggalLahir: p.tanggalLahir,
+          usia,
+          usiaPensiun: pensionAge,
+          mulaiPensiun: mulaiPensiun.toISOString().split('T')[0],
+          sisa: `${years} tahun ${months} bulan ${days} hari`,
+          sisaDate: mulaiPensiun.toISOString().split('T')[0],
+        });
+      }
+
+      // Sort by nearest retirement (ascending by sisaDate)
+      results.sort((a, b) => new Date(a.sisaDate).getTime() - new Date(b.sisaDate).getTime());
+
+      return res.json(results);
+    } catch (err: any) {
+      console.error('BUP error:', err?.message || err);
+      return res.status(500).json({ error: 'Gagal memuat data BUP.' });
     }
   });
 

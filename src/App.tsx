@@ -45,6 +45,8 @@ export default function App() {
   // Filtering states (Admin)
   const [adminSearchQuery, setAdminSearchQuery] = useState('');
   const [expandedPegawai, setExpandedPegawai] = useState<string | null>(null);
+  const [bupData, setBupData] = useState<any[]>([]);
+  const [bupLoading, setBupLoading] = useState(false);
 
   // Editing state (Personnel)
   const [editArsip, setEditArsip] = useState<Arsip | null>(null);
@@ -1062,6 +1064,15 @@ export default function App() {
               Data Pegawai
             </button>
             <button
+              onClick={() => { setAdminTab('bup'); if (bupData.length === 0 && !bupLoading) { setBupLoading(true); fetch('/api/admin/bup').then(r => r.json()).then(setBupData).catch(() => {}).finally(() => setBupLoading(false)); } }}
+              className={`flex-1 lg:flex-initial text-left px-3.5 py-3 rounded-xl font-bold flex items-center gap-2.5 transition-colors ${
+                adminTab === 'bup' ? 'bg-[#0f2a44] text-white' : 'text-slate-600 hover:bg-slate-50'
+              }`}
+            >
+              <Clock className="w-4 h-4" />
+              BUP
+            </button>
+            <button
               onClick={() => setAdminTab('rekap')}
               className={`flex-1 lg:flex-initial text-left px-3.5 py-3 rounded-xl font-bold flex items-center gap-2.5 transition-colors ${
                 adminTab === 'rekap' ? 'bg-[#0f2a44] text-white' : 'text-slate-600 hover:bg-slate-50'
@@ -1430,7 +1441,77 @@ export default function App() {
             </div>
           )}
 
-          {/* PAGE C. ARSIP PEGAWAI (VALIDASI) PANEL */}
+          {/* PAGE C. BUP (BATAS USIA PENSIUN) */}
+          {adminTab === 'bup' && (
+            <div className="space-y-4 animate-fade-in">
+              <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-xs flex items-center justify-between">
+                <div>
+                  <h3 className="text-sm font-bold text-slate-800">Batas Usia Pensiun (BUP)</h3>
+                  <p className="text-xs text-slate-400 mt-1">Daftar pegawai berdasarkan urutan pensiun terdekat</p>
+                </div>
+                <button
+                  onClick={() => {
+                    setBupData([]);
+                    setBupLoading(true);
+                    fetch('/api/admin/bup')
+                      .then(r => r.json())
+                      .then(setBupData)
+                      .catch(() => {})
+                      .finally(() => setBupLoading(false));
+                  }}
+                  className="text-xs font-bold text-blue-600 bg-blue-50 px-3 py-1.5 rounded-lg hover:bg-blue-100"
+                >
+                  {bupLoading ? 'Memuat...' : 'Muat Ulang'}
+                </button>
+              </div>
+
+              {bupLoading ? (
+                <Loading />
+              ) : bupData.length === 0 ? (
+                <EmptyState title="Tidak ada data" description="Klik 'Muat Ulang' untuk memuat data BUP." />
+              ) : (
+                <div className="bg-white border border-slate-100 rounded-2xl overflow-hidden shadow-xs">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left border-collapse text-xs">
+                      <thead>
+                        <tr className="bg-slate-50 text-slate-500 font-bold border-b border-slate-100">
+                          <th className="p-3">Nama Pegawai</th>
+                          <th className="p-3">NIP</th>
+                          <th className="p-3">Tgl. Lahir</th>
+                          <th className="p-3">Usia</th>
+                          <th className="p-3">Mulai Pensiun</th>
+                          <th className="p-3">Keterangan</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {bupData.map((item: any) => (
+                          <tr key={item.pegawaiId} className="hover:bg-slate-50">
+                            <td className="p-3 font-semibold text-slate-800">{item.namaPegawai}</td>
+                            <td className="p-3 font-mono text-slate-600">{item.nip}</td>
+                            <td className="p-3 text-slate-600">{item.tanggalLahir ? new Date(item.tanggalLahir).toLocaleDateString('id-ID', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '-'}</td>
+                            <td className="p-3">
+                              <span className="font-bold">{item.usia}</span>
+                              <span className="text-slate-400"> / {item.usiaPensiun} thn</span>
+                            </td>
+                            <td className="p-3 font-mono text-slate-700">{item.mulaiPensiun ? new Date(item.mulaiPensiun).toLocaleDateString('id-ID', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '-'}</td>
+                            <td className="p-3">
+                              <div className="flex items-center gap-2">
+                                <span className={`inline-block w-2 h-2 rounded-full ${
+                                  (() => { const y = parseInt(item.sisa?.split(' ')[0] || '99'); return y < 1 ? 'bg-red-500' : y < 2 ? 'bg-amber-500' : 'bg-green-500'; })()
+                                }`} />
+                                <span className="text-slate-600 text-[11px]">{item.sisa}</span>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* PAGE D. REKAP KELENGKAPAN PANEL */}
           {adminTab === 'rekap' && (
             <div className="space-y-4 animate-fade-in">
