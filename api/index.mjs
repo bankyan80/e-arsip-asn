@@ -2451,7 +2451,18 @@ async function handler(req, res) {
           }
           return res2.json(STATIC_JENIS_DOKUMEN2.filter((doc) => !hidden.includes(doc.namaDokumen) && (doc.berlakuUntuk === "Semua" || doc.berlakuUntuk === status)).map((doc) => {
             const m = uploads.find((u) => u.jenisDokumen === doc.namaDokumen);
-            return { id: doc.id, namaDokumen: doc.namaDokumen, status: m ? m.statusValidasi : "Belum Upload", wajib: doc.wajib };
+            return {
+              id: doc.id,
+              kategoriId: doc.kategoriId,
+              namaKategori: doc.namaKategori,
+              namaDokumen: doc.namaDokumen,
+              status: m ? m.statusValidasi : "Belum Upload",
+              catatanAdmin: m?.catatanAdmin || "",
+              wajib: doc.wajib,
+              arsipId: m ? m.id : null,
+              downloadUrl: m ? m.downloadUrl : null,
+              storagePath: m ? m.storagePath : null
+            };
           }));
         } catch (err) {
           console.error("Rekap error:", err?.message || err);

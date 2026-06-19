@@ -118,7 +118,8 @@ export async function createApp() {
           status: uploadedMatch ? uploadedMatch.statusValidasi : 'Belum Upload',
           catatanAdmin: uploadedMatch?.catatanAdmin || '', wajib: doc.wajib && isPertinent,
           arsipId: uploadedMatch ? uploadedMatch.id : null,
-          downloadUrl: uploadedMatch ? uploadedMatch.downloadUrl : null
+          downloadUrl: uploadedMatch ? uploadedMatch.downloadUrl : null,
+          storagePath: uploadedMatch ? uploadedMatch.storagePath : null
         };
       });
       return res.json(checklist);
