@@ -1812,7 +1812,7 @@ function createAdminRouter(requireAuth2, requireRole2, logAction2) {
       return res.status(500).json({ error: "Gagal mengambil data ASN." });
     }
   });
-  router.get("/pegawai/duplicates", async (req, res) => {
+  router.get("/pegawai/duplicates", requireAuth2, requireRole2(["super_admin", "admin_instansi"]), async (req, res) => {
     try {
       const employees = await listAllPegawai2();
       const grouped = {};

@@ -85,6 +85,10 @@ export default function App() {
   });
   const [addingPegawaiProcess, setAddingPegawaiProcess] = useState(false);
 
+  // Duplicate checker states
+  const [duplicateData, setDuplicateData] = useState<any[] | null>(null);
+  const [duplicateLoading, setDuplicateLoading] = useState(false);
+
   // Edit & Delete pegawai states
   const [showEditPegawai, setShowEditPegawai] = useState(false);
   const [editPegawaiForm, setEditPegawaiForm] = useState<any>({});
@@ -1034,9 +1038,42 @@ export default function App() {
           }`}>
             <span>{toast.message}</span>
           </div>
-        )}
+      )}
 
-        {/* LIGHTBOX FILE VIEWER */}
+      {/* DUPLICATE PEGAWAI MODAL */}
+      {duplicateData !== null && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[80vh] overflow-y-auto shadow-xl">
+            <div className="p-4 border-b border-slate-100 flex items-center justify-between sticky top-0 bg-white">
+              <h3 className="text-sm font-extrabold text-slate-800">Duplikasi Nama Pegawai</h3>
+              <button onClick={() => setDuplicateData(null)} className="text-slate-400 hover:text-slate-600 text-lg">&times;</button>
+            </div>
+            {duplicateData.length === 0 ? (
+              <div className="p-8 text-center text-slate-400 text-sm">Tidak ada duplikasi nama pegawai.</div>
+            ) : (
+              <div className="divide-y divide-slate-100">
+                {duplicateData.map((group: any, i: number) => (
+                  <div key={i} className="p-4">
+                    <p className="text-xs font-bold text-amber-600 mb-2">Nama: {group[0]?.namaPegawai} ({group.length} data)</p>
+                    {group.map((p: any) => (
+                      <div key={p.id} className="flex items-center justify-between py-1 px-2 text-xs text-slate-600 bg-slate-50 rounded mb-1">
+                        <span className="font-mono">{p.nip}</span>
+                        <span>{p.namaInstansi}</span>
+                        <span className="text-[10px] text-slate-400">{p.id}</span>
+                      </div>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            )}
+            <div className="p-3 border-t border-slate-100 text-right">
+              <button onClick={() => setDuplicateData(null)} className="text-xs font-bold text-slate-600 hover:text-slate-800">Tutup</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* LIGHTBOX FILE VIEWER */}
         {activeFileUrl && (
           <div className="fixed inset-0 z-50 bg-black bg-opacity-75 flex flex-col justify-between p-4">
             <div className="flex justify-between items-center text-white mb-2">
@@ -1284,17 +1321,27 @@ export default function App() {
                   <p className="text-xs text-slate-400 mt-1">Mengelola hak profil dan penempatan instansi kerja</p>
                 </div>
 
-                <div className="flex items-center gap-2">
-                  {(session.role === 'admin_instansi' || session.role === 'super_admin') && (
+                  <div className="flex items-center gap-2">
                     <button
-                      onClick={() => setShowAddPegawai(!showAddPegawai)}
-                      className="h-10 px-3 bg-[#1d4ed8] text-white text-xs font-bold rounded-xl flex items-center gap-1.5 hover:bg-opacity-95"
+                      onClick={async () => {
+                        setDuplicateLoading(true);
+                        try { const r = await fetch('/api/admin/pegawai/duplicates'); setDuplicateData(await r.json()); } catch { setDuplicateData([]); }
+                        setDuplicateLoading(false);
+                      }}
+                      className="h-10 px-3 bg-amber-500 text-white text-xs font-bold rounded-xl flex items-center gap-1.5 hover:bg-amber-600"
                     >
-                      <UserPlus className="w-4 h-4" />
-                      Tambah Pegawai
+                      {duplicateLoading ? 'Memeriksa...' : 'Cek Duplikasi'}
                     </button>
-                  )}
-                </div>
+                    {(session.role === 'admin_instansi' || session.role === 'super_admin') && (
+                      <button
+                        onClick={() => setShowAddPegawai(!showAddPegawai)}
+                        className="h-10 px-3 bg-[#1d4ed8] text-white text-xs font-bold rounded-xl flex items-center gap-1.5 hover:bg-opacity-95"
+                      >
+                        <UserPlus className="w-4 h-4" />
+                        Tambah Pegawai
+                      </button>
+                    )}
+                  </div>
               </div>
 
               {/* ADMIN INLINE PEGWAWI REGISTER FORM */}
