@@ -39,22 +39,23 @@ export function createFilesRouter(requireAuth: any) {
       return res.send(result.buffer);
     }
 
-    // Legacy: serve by path
+    // Legacy: serve by path (only arsip-asn paths allowed)
     if (!filePath) return res.status(400).json({ error: 'Parameter path atau arsipId diperlukan.' });
 
-    const session = (req as any).session as SessionData;
     const pathParts = filePath.split('/');
+    if (pathParts[0] !== 'arsip-asn' || pathParts.length < 3) {
+      return res.status(403).json({ error: 'Akses ditolak.' });
+    }
 
-    if (pathParts[0] === 'arsip-asn') {
-      const instansiId = pathParts[1];
-      const pegawaiId = pathParts[2];
+    const session = (req as any).session as SessionData;
+    const instansiId = pathParts[1];
+    const pegawaiId = pathParts[2];
 
-      if (session.role === 'pegawai' && session.pegawaiId !== pegawaiId) {
-        return res.status(403).json({ error: 'Akses ditolak. Anda tidak berhak melihat dokumen pegawai lain.' });
-      }
-      if (session.role === 'admin_instansi' && session.instansiId !== instansiId) {
-        return res.status(403).json({ error: 'Akses ditolak. Anda tidak berhak melihat dokumen di luar instansi Anda.' });
-      }
+    if (session.role === 'pegawai' && session.pegawaiId !== pegawaiId) {
+      return res.status(403).json({ error: 'Akses ditolak. Anda tidak berhak melihat dokumen pegawai lain.' });
+    }
+    if (session.role === 'admin_instansi' && session.instansiId !== instansiId) {
+      return res.status(403).json({ error: 'Akses ditolak. Anda tidak berhak melihat dokumen di luar instansi Anda.' });
     }
 
     const result = getLocalFileBuffer(filePath);

@@ -26,7 +26,7 @@ export function createAuthRouter(requireAuth: any, rateLimit: any) {
     try {
       const p = await findPegawaiByCredentials(identifier, loginType);
       if (!p) {
-        return res.status(401).json({ error: 'NIP/NIK tidak ditemukan.' });
+        return res.status(401).json({ error: 'NIP/NIK atau password salah.' });
       }
       if (!p.statusAktif) {
         return res.status(403).json({ error: 'Akun pegawai tidak aktif. Silakan hubungi admin.' });
@@ -34,7 +34,7 @@ export function createAuthRouter(requireAuth: any, rateLimit: any) {
 
       const pwMatch = await bcrypt.compare(password, p.password || '');
       if (!pwMatch) {
-        return res.status(401).json({ error: 'Password salah.' });
+        return res.status(401).json({ error: 'NIP/NIK atau password salah.' });
       }
 
       await updatePegawaiData(p.id, { loginTerakhir: new Date().toISOString() });

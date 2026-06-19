@@ -90,7 +90,7 @@ export function createAdminRouter(requireAuth: any, requireRole: any, logAction:
     }
   });
 
-  // BUP (Batas Usia Pensiun) endpoint
+  // BUP (Batas Usia Pensiun) endpoint — read only
   router.get('/bup', requireAuth, requireRole(['super_admin', 'admin_instansi']), async (_req, res) => {
     try {
       const pegawais = await listAllPegawai();
@@ -99,6 +99,7 @@ export function createAdminRouter(requireAuth: any, requireRole: any, logAction:
         'Kepala Sekolah': 60, 'Guru': 60, 'Guru Kelas': 60,
       };
       const results: any[] = [];
+      const toDeactivate: { id: string; nama: string }[] = [];
 
       for (const p of pegawais) {
         if (!p.tanggalLahir || !p.statusAktif) continue;
@@ -106,17 +107,14 @@ export function createAdminRouter(requireAuth: any, requireRole: any, logAction:
         if (isNaN(born.getTime())) continue;
         const pensionAge = pensionAgeMap[p.jabatan] || 58;
 
-        // Mulai Pensiun = first day of the month following the month when pension age is reached
         const reachedAge = new Date(born.getFullYear() + pensionAge, born.getMonth(), born.getDate());
         const mulaiPensiun = new Date(reachedAge.getFullYear(), reachedAge.getMonth() + 1, 1);
 
         if (mulaiPensiun <= now) {
-          // Already past retirement → deactivate
-          await updatePegawaiData(p.id, { statusAktif: false, updatedAt: new Date().toISOString() });
+          toDeactivate.push({ id: p.id, nama: p.namaPegawai });
           continue;
         }
 
-        // Calculate age now
         let usia = now.getFullYear() - born.getFullYear();
         const mDiff = now.getMonth() - born.getMonth();
         if (mDiff < 0 || (mDiff === 0 && now.getDate() < born.getDate())) usia--;
@@ -140,13 +138,36 @@ export function createAdminRouter(requireAuth: any, requireRole: any, logAction:
         });
       }
 
-      // Sort by nearest retirement (ascending by sisaDate)
       results.sort((a, b) => new Date(a.sisaDate).getTime() - new Date(b.sisaDate).getTime());
 
-      return res.json(results);
+      return res.json({ active: results, toDeactivate });
     } catch (err: any) {
       console.error('BUP error:', err?.message || err);
       return res.status(500).json({ error: 'Gagal memuat data BUP.' });
+    }
+  });
+
+  // POST /bup/deactivate — performs the deactivation (idempotent, intentional)
+  router.post('/bup/deactivate', requireAuth, requireRole(['admin_instansi', 'super_admin']), async (req, res) => {
+    const session = (req as any).session as SessionData;
+    try {
+      const { pegawaiIds } = req.body || {};
+      const ids: string[] = Array.isArray(pegawaiIds) ? pegawaiIds : [];
+
+      if (ids.length === 0) {
+        return res.status(400).json({ error: 'Daftar pegawaiId wajib dikirim.' });
+      }
+
+      let count = 0;
+      for (const id of ids) {
+        await updatePegawaiData(id, { statusAktif: false });
+        count++;
+      }
+      await logAction(session, 'BUP_DEACTIVATE', `${count} pegawai dinonaktifkan karena BUP.`);
+      return res.json({ message: `${count} pegawai berhasil dinonaktifkan.` });
+    } catch (err: any) {
+      console.error('BUP deactivate error:', err?.message || err);
+      return res.status(500).json({ error: 'Gagal menonaktifkan pegawai.' });
     }
   });
 

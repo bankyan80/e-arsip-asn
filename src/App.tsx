@@ -1,4 +1,4 @@
-import React, { useState, Fragment } from 'react';
+import React, { useState, Fragment, useRef } from 'react';
 import {
   Users, FileCheck, Clock, Layers, FileText, Search,
   CheckCircle, AlertTriangle, Download, Phone,
@@ -21,12 +21,12 @@ function filterJenisDokumenByStatus(list: JenisDokumen[], statusPegawai: string)
   const hidden: string[] = [];
   if (statusPegawai === 'PNS') {
     hidden.push('SK PPPK', 'SK PPPK Paruh Waktu');
-  } else if (statusPegawai === 'PPPK') {
-    hidden.push('SK PPPK Paruh Waktu', 'SK CPNS/PNS');
-  } else if (statusPegawai === 'PPPK Paruh Waktu') {
-    hidden.push('SK Honor', 'SK CPNS/PNS');
+  } else if (statusPegawai === 'PPPK' || statusPegawai === 'CPNS') {
+    hidden.push('SK PPPK Paruh Waktu', 'SK PNS', 'SK PPPK');
+  } else {
+    hidden.push('SK CPNS/PNS', 'SK PNS', 'SK PPPK', 'SK PPPK Paruh Waktu');
   }
-  return list.filter(jd => !hidden.includes(jd.namaDokumen));
+  return list.filter(d => !hidden.includes(d.namaDokumen));
 }
 import { useAdminData } from './hooks/useAdminData';
 
@@ -38,7 +38,7 @@ export default function App() {
   const { allEmployees, allArchives, rekapData, systemLogs, instansiList, adminSettings } = adminData;
 
   // Form states (Login)
-  const [loginType, setLoginType] = useState<'NIP' | 'NIK' | 'BOTH'>('BOTH');
+  const [loginType] = useState<'NIP' | 'NIK' | 'BOTH'>('BOTH');
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [loginLoading, setLoginLoading] = useState(false);
@@ -47,9 +47,10 @@ export default function App() {
   // UI Navigation states
   const [currentTab, setCurrentTab] = useState('beranda'); // pegawai tab
   const [adminTab, setAdminTab] = useState('dashboard'); // admin tab
-  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+	const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+	const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Filtering states (Personnel)
+	// Filtering states (Personnel)
   const [searchQuery, setSearchQuery] = useState('');
   const [filterCategory, setFilterCategory] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
@@ -114,10 +115,14 @@ export default function App() {
   const [activeFileUrl, setActiveFileUrl] = useState<string | null>(null);
   const [activeFileName, setActiveFileName] = useState<string | null>(null);
 
-  const showToast = (message: string, type: 'success' | 'error' = 'success') => {
-    setToast({ message, type });
-    setTimeout(() => setToast(null), 4000);
-  };
+	const showToast = (message: string, type: 'success' | 'error' = 'success') => {
+		if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+		setToast({ message, type });
+		toastTimerRef.current = setTimeout(() => {
+			setToast(null);
+			toastTimerRef.current = null;
+		}, 4000);
+	};
 
   // 1. LOAD DATA ON SESSION CHANGE
   React.useEffect(() => {
@@ -163,20 +168,6 @@ export default function App() {
     showToast('Berhasil keluar sistem.');
   };
 
-  // FILL LOGINS QUICKLY FOR TESTING
-  const fillTestCredentials = (type: 'pegawai' | 'admin' | 'super') => {
-    setLoginType('BOTH');
-    if (type === 'pegawai') {
-      setIdentifier('198705122010012003');
-      setPassword('012003');
-    } else if (type === 'admin') {
-      setIdentifier('198501012008011002');
-      setPassword('011002');
-    } else if (type === 'super') {
-      setIdentifier('198001292025211035');
-      setPassword('admin456');
-    }
-  };
 
   // 3. HANDLERS (PEGAWAI USER UPLOAD & EDIT)
   const handleSaveDocument = async (formData: FormData) => {
@@ -370,6 +361,7 @@ export default function App() {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    URL.revokeObjectURL(url);
     showToast('Rekapitulasi instansi berhasil diexport ke CSV.');
   };
 
@@ -471,34 +463,6 @@ export default function App() {
               </button>
             </form>
 
-            {/* Test accounts quick fills — only in dev */}
-            {import.meta.env.DEV && (
-            <div className="mt-6 border-t border-slate-100 pt-5">
-              <span className="block text-[9px] text-slate-400 font-bold uppercase tracking-wider text-center mb-2.5">
-                Akses Cepat Uji Coba
-              </span>
-              <div className="grid grid-cols-3 gap-2">
-                <button
-                  onClick={() => fillTestCredentials('pegawai')}
-                  className="text-[10px] py-2 bg-slate-50 hover:bg-[#0f2a44]/5 active:scale-95 text-[#0f2a44] font-bold rounded-xl border border-slate-200/60 transition-all"
-                >
-                  Pegawai
-                </button>
-                <button
-                  onClick={() => fillTestCredentials('admin')}
-                  className="text-[10px] py-2 bg-slate-50 hover:bg-[#0f2a44]/5 active:scale-95 text-[#0f2a44] font-bold rounded-xl border border-slate-200/60 transition-all"
-                >
-                  Admin
-                </button>
-                <button
-                  onClick={() => fillTestCredentials('super')}
-                  className="text-[10px] py-2 bg-slate-50 hover:bg-[#0f2a44]/5 active:scale-95 text-[#0f2a44] font-bold rounded-xl border border-slate-200/60 transition-all"
-                >
-                  Super Admin
-                </button>
-              </div>
-            </div>
-            )}
 
           </div>
 
@@ -547,8 +511,7 @@ export default function App() {
         <main id="employee-content-area" className="flex-1 flex flex-col min-h-0">
           <PullToRefresh onRefresh={async () => {
             if (session) {
-              loadAllPegawaiData();
-              await new Promise(resolve => setTimeout(resolve, 800));
+              await loadAllPegawaiData();
             }
           }}>
             <div className="p-4 space-y-4">
@@ -1261,8 +1224,7 @@ export default function App() {
         <main id="admin-mainframe-core" className="lg:col-span-4 min-w-0 flex flex-col">
           <PullToRefresh onRefresh={async () => {
             if (session) {
-              adminData.fetchAdminData(session.role);
-              await new Promise(resolve => setTimeout(resolve, 800));
+              await adminData.fetchAdminData(session.role);
             }
           }}>
             <div className="flex flex-col gap-4">
