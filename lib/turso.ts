@@ -385,6 +385,16 @@ export async function remapArsipJenisDokumen() {
   return true;
 }
 
+export async function dedupArsip() {
+  // Keep oldest record per pegawai+jenis, delete newer duplicates
+  const r = await query(
+    `DELETE FROM arsip WHERE id NOT IN (
+      SELECT MIN(id) FROM arsip WHERE deleted = 0 GROUP BY pegawai_id, jenis_dokumen
+    ) AND deleted = 0`
+  );
+  return r !== null;
+}
+
 export async function ensureSuperAdmin() {
   const existing = await query("SELECT id FROM pegawai WHERE id = ?", ['PGW004']);
   if (existing && existing.rows.length > 0) return;

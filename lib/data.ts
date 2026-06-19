@@ -166,6 +166,10 @@ export const remapArsipJenisDokumen = isTursoConfigured
   ? async () => turso.remapArsipJenisDokumen()
   : async () => { console.warn('remapArsipJenisDokumen not available (Firestore fallback)'); return false; };
 
+export const dedupArsip = isTursoConfigured
+  ? async () => turso.dedupArsip()
+  : async () => { console.warn('dedupArsip not available (Firestore fallback)'); return false; };
+
 export const setPegawaiPassword = isTursoConfigured
   ? async (id: string, hashed: string) => turso.setPegawaiPassword(id, hashed)
   : async (id: string, _hashed: string) => { console.warn('setPegawaiPassword not available (Firestore fallback)'); };
