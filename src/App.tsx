@@ -395,8 +395,8 @@ export default function App() {
             <div className="absolute top-4 right-4 bg-white/8 backdrop-blur-sm text-[9px] font-bold tracking-widest px-2.5 py-1 rounded-full text-white/80 border border-white/8">
               V1.2
             </div>
-            <div className="bg-white/10 backdrop-blur-sm w-14 h-14 rounded-2xl flex items-center justify-center text-white mx-auto mb-4 border border-white/10 shadow-inner">
-              <FileCheck className="w-8 h-8 stroke-[1.8]" />
+            <div className="bg-white/10 backdrop-blur-sm w-14 h-14 rounded-2xl flex items-center justify-center text-white mx-auto mb-4 border border-white/10 shadow-inner p-2">
+              <img src="/logokab.png" alt="Logo" className="w-full h-full object-contain" />
             </div>
             <h2 className="text-xl font-display font-bold tracking-tight uppercase">Arsip Digital ASN</h2>
             <p className="text-[10px] text-white/60 font-medium tracking-wide mt-1">

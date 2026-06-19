@@ -1,5 +1,5 @@
 import React from 'react';
-import { LogOut, Archive } from 'lucide-react';
+import { LogOut } from 'lucide-react';
 
 interface HeaderProps {
   userName?: string;
@@ -13,8 +13,8 @@ export const Header: React.FC<HeaderProps> = ({ userName, agencyName, role, onLo
     <header id="app-main-header" className="sticky top-0 z-30 bg-[#0f2a44] text-white shadow-lg px-6 pt-5 pb-5 rounded-b-[28px] border-b border-[#1e3a5f]/30">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="bg-white/10 p-2 rounded-xl text-white backdrop-blur-md border border-white/10">
-            <Archive className="w-5 h-5 stroke-[2]" />
+          <div className="bg-white/10 p-1.5 rounded-xl text-white backdrop-blur-md border border-white/10">
+            <img src="/logokab.png" alt="Logo" className="w-7 h-7 object-contain" />
           </div>
           <div>
             <h1 className="text-base font-display font-bold tracking-tight">Arsip Digital ASN</h1>
