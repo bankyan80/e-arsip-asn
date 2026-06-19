@@ -89,6 +89,10 @@ export default function App() {
   const [duplicateData, setDuplicateData] = useState<any[] | null>(null);
   const [duplicateLoading, setDuplicateLoading] = useState(false);
 
+  // Pagination states
+  const [pegawaiPage, setPegawaiPage] = useState(1);
+  const perPage = 20;
+
   // Edit & Delete pegawai states
   const [showEditPegawai, setShowEditPegawai] = useState(false);
   const [editPegawaiForm, setEditPegawaiForm] = useState<any>({});
@@ -1497,7 +1501,7 @@ export default function App() {
                     <input
                       type="text"
                       value={adminSearchQuery}
-                      onChange={(e) => setAdminSearchQuery(e.target.value)}
+                      onChange={(e) => { setAdminSearchQuery(e.target.value); setPegawaiPage(1); }}
                       placeholder="Cari NIP, nama pegawai..."
                       className="w-full h-10 border border-slate-100 rounded-xl pl-9 pr-4 text-xs font-medium focus:ring-0"
                     />
@@ -1513,51 +1517,109 @@ export default function App() {
                     return matchQuery;
                   });
 
+                  const totalPages = Math.max(1, Math.ceil(filtered.length / perPage));
+                  const safePage = Math.min(pegawaiPage, totalPages);
+                  const start = (safePage - 1) * perPage;
+                  const paged = filtered.slice(start, start + perPage);
+
                   if (filtered.length === 0) {
                     return <EmptyState title="Pegawai Tidak Ditemukan" description="Silakan periksa kembali kata kunci pencarian Anda." />;
                   }
 
                   return (
-                    <div className="divide-y divide-slate-100 text-xs">
-                      {filtered.map(p => (
-                        <div key={p.id} className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-slate-50">
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <span className="font-extrabold text-slate-800 text-sm leading-snug">{p.namaPegawai}</span>
-                              <span className="inline-block text-[8px] font-black tracking-wider uppercase bg-blue-50 text-[#1d4ed8] px-1.5 py-0.5 rounded">
-                                {p.statusPegawai}
-                              </span>
-                            </div>
-                            <p className="text-[11px] text-slate-400 mt-1 font-mono">
-                              NIP: <span className="text-slate-600 font-semibold">{p.nip}</span>
-                            </p>
-                            <p className="text-[11px] text-slate-500 mt-0.5">{p.namaInstansi}</p>
-                          </div>
-
-                          <div className="text-right sm:text-right flex items-center justify-between sm:justify-end gap-3 self-stretch sm:self-auto pt-2 sm:pt-0 border-t border-slate-50 sm:border-0">
+                    <>
+                      <div className="divide-y divide-slate-100 text-xs">
+                        {paged.map(p => (
+                          <div key={p.id} className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-slate-50">
                             <div>
-                              <p className="text-slate-700 font-semibold">{p.jabatan}</p>
-                              <p className="text-[10px] text-slate-400 mt-0.5">Gol: {p.pangkatGolongan}</p>
+                              <div className="flex items-center gap-2">
+                                <span className="font-extrabold text-slate-800 text-sm leading-snug">{p.namaPegawai}</span>
+                                <span className="inline-block text-[8px] font-black tracking-wider uppercase bg-blue-50 text-[#1d4ed8] px-1.5 py-0.5 rounded">
+                                  {p.statusPegawai}
+                                </span>
+                              </div>
+                              <p className="text-[11px] text-slate-400 mt-1 font-mono">
+                                NIP: <span className="text-slate-600 font-semibold">{p.nip}</span>
+                              </p>
+                              <p className="text-[11px] text-slate-500 mt-0.5">{p.namaInstansi}</p>
                             </div>
-                            <div className="flex items-center gap-1">
-                              <button
-                                onClick={() => handleEditPegawai(p)}
-                                className="text-[10px] font-bold text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 px-2 py-1 rounded-lg"
-                              >
-                                Edit
-                              </button>
-                              <button
-                                onClick={() => { setDeletePegawaiId(p.id); setShowDeleteConfirm(true); }}
-                                className="text-[10px] font-bold text-red-600 hover:text-red-800 bg-red-50 hover:bg-red-100 px-2 py-1 rounded-lg"
-                              >
-                                Hapus
-                              </button>
-                              <span className={`w-2.5 h-2.5 rounded-full ${p.statusAktif ? 'bg-green-500' : 'bg-red-500'}`} title={p.statusAktif ? 'Pegawai Aktif' : 'Pegawai Tidak Aktif'}></span>
+
+                            <div className="text-right sm:text-right flex items-center justify-between sm:justify-end gap-3 self-stretch sm:self-auto pt-2 sm:pt-0 border-t border-slate-50 sm:border-0">
+                              <div>
+                                <p className="text-slate-700 font-semibold">{p.jabatan}</p>
+                                <p className="text-[10px] text-slate-400 mt-0.5">Gol: {p.pangkatGolongan}</p>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <button
+                                  onClick={() => handleEditPegawai(p)}
+                                  className="text-[10px] font-bold text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 px-2 py-1 rounded-lg"
+                                >
+                                  Edit
+                                </button>
+                                <button
+                                  onClick={() => { setDeletePegawaiId(p.id); setShowDeleteConfirm(true); }}
+                                  className="text-[10px] font-bold text-red-600 hover:text-red-800 bg-red-50 hover:bg-red-100 px-2 py-1 rounded-lg"
+                                >
+                                  Hapus
+                                </button>
+                                <span className={`w-2.5 h-2.5 rounded-full ${p.statusAktif ? 'bg-green-500' : 'bg-red-500'}`} title={p.statusAktif ? 'Pegawai Aktif' : 'Pegawai Tidak Aktif'}></span>
+                              </div>
                             </div>
                           </div>
+                        ))}
+                      </div>
+                      <div className="flex items-center justify-between px-4 py-3 border-t border-slate-100 text-xs">
+                        <span className="text-slate-400">{filtered.length} pegawai</span>
+                        <div className="flex items-center gap-1">
+                          <button
+                            disabled={safePage <= 1}
+                            onClick={() => setPegawaiPage(safePage - 1)}
+                            className="px-2 py-1 rounded border border-slate-200 disabled:opacity-30 hover:bg-slate-50 font-bold"
+                          >
+                            &laquo;
+                          </button>
+                          {(() => {
+                            const pages: (number | string)[] = [];
+                            const maxVisible = 7;
+                            if (totalPages <= maxVisible + 2) {
+                              for (let i = 1; i <= totalPages; i++) pages.push(i);
+                            } else {
+                              pages.push(1);
+                              let startPage = Math.max(2, safePage - 2);
+                              let endPage = Math.min(totalPages - 1, safePage + 2);
+                              if (safePage <= 3) { startPage = 2; endPage = Math.min(maxVisible - 1, totalPages - 1); }
+                              if (safePage >= totalPages - 2) { startPage = Math.max(2, totalPages - maxVisible + 2); endPage = totalPages - 1; }
+                              if (startPage > 2) pages.push('...');
+                              for (let i = startPage; i <= endPage; i++) pages.push(i);
+                              if (endPage < totalPages - 1) pages.push('...');
+                              pages.push(totalPages);
+                            }
+                            return pages.map((page, idx) =>
+                              page === '...' ? (
+                                <span key={'ellipsis-' + idx} className="px-1 text-slate-300">...</span>
+                              ) : (
+                                <button
+                                  key={page}
+                                  onClick={() => setPegawaiPage(page as number)}
+                                  className={`px-2.5 py-1 rounded font-bold ${
+                                    page === safePage ? 'bg-[#1d4ed8] text-white' : 'border border-slate-200 hover:bg-slate-50'
+                                  }`}
+                                >
+                                  {page}
+                                </button>
+                              )
+                            );
+                          })()}
+                          <button
+                            disabled={safePage >= totalPages}
+                            onClick={() => setPegawaiPage(safePage + 1)}
+                            className="px-2 py-1 rounded border border-slate-200 disabled:opacity-30 hover:bg-slate-50 font-bold"
+                          >
+                            &raquo;
+                          </button>
                         </div>
-                      ))}
-                    </div>
+                      </div>
+                    </>
                   );
                 })()}
 
