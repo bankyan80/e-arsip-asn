@@ -29,7 +29,7 @@ export function createAdminRouter(requireAuth: any, requireRole: any, logAction:
     }
   });
 
-  router.get('/pegawai/duplicates', requireAuth, requireRole(['super_admin', 'admin_instansi']), async (req, res) => {
+  router.get('/pegawai/duplicates', requireAuth, requireRole(['super_admin', 'admin_instansi']), async (_req, res) => {
     try {
       const employees = await listAllPegawai();
       const grouped: Record<string, any[]> = {};
@@ -91,7 +91,7 @@ export function createAdminRouter(requireAuth: any, requireRole: any, logAction:
   });
 
   // BUP (Batas Usia Pensiun) endpoint
-  router.get('/bup', requireAuth, requireRole(['super_admin', 'admin_instansi']), async (req, res) => {
+  router.get('/bup', requireAuth, requireRole(['super_admin', 'admin_instansi']), async (_req, res) => {
     try {
       const pegawais = await listAllPegawai();
       const now = new Date();
@@ -215,7 +215,7 @@ export function createAdminRouter(requireAuth: any, requireRole: any, logAction:
     }
   });
 
-  router.post('/arsip/remap-jenis', requireAuth, requireRole(['super_admin']), async (req, res) => {
+  router.post('/arsip/remap-jenis', requireAuth, requireRole(['super_admin']), async (_req, res) => {
     try {
       const success = await remapArsipJenisDokumen();
       if (!success) return res.status(500).json({ error: 'Gagal melakukan remap.' });
@@ -225,7 +225,7 @@ export function createAdminRouter(requireAuth: any, requireRole: any, logAction:
     }
   });
 
-  router.post('/arsip/dedup', requireAuth, requireRole(['super_admin']), async (req, res) => {
+  router.post('/arsip/dedup', requireAuth, requireRole(['super_admin']), async (_req, res) => {
     try {
       const success = await dedupArsip();
       if (!success) return res.status(500).json({ error: 'Gagal melakukan dedup.' });
@@ -500,7 +500,7 @@ export function createAdminRouter(requireAuth: any, requireRole: any, logAction:
           tanggalDokumen: a.tahun ? `${a.tahun}-01-01` : '', tahun: a.tahun || '',
           fileName: a.file_name || '', fileType: '', fileSize: fileData.length,
           storagePath, downloadUrl: '',
-          statusValidasi: 'Valid', deleted: false,
+          statusValidasi: 'Valid' as const, deleted: false,
           uploadedAt: a.created_at || new Date().toISOString(),
           updatedAt: new Date().toISOString(),
           uploadedBy: 'migration@tim-kerja', updatedBy: 'migration@tim-kerja',

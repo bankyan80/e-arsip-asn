@@ -444,7 +444,7 @@ async function seedKategoriDanJenis() {
   for (const k of STATIC_KATEGORI) {
     await query(
       "INSERT INTO kategori_arsip (id, nama_kategori, urutan, deskripsi) VALUES (?, ?, ?, ?)",
-      [k.id, k.namaKategori, k.urutan, k.deskripsi || ""]
+      [k.id, k.namaKategori, k.urutan, ""]
     );
   }
   for (const jd of STATIC_JENIS_DOKUMEN) {
@@ -588,8 +588,33 @@ var init_firebaseAdmin = __esm({
 });
 
 // lib/firestore.ts
+var firestore_exports = {};
+__export(firestore_exports, {
+  adminCreatePegawai: () => adminCreatePegawai,
+  createArsipData: () => createArsipData,
+  createLogEntry: () => createLogEntry,
+  findPegawaiByCredentials: () => findPegawaiByCredentials,
+  getArsipData: () => getArsipData,
+  getInstansiData: () => getInstansiData,
+  getJenisDokumenList: () => getJenisDokumenList,
+  getKategoriList: () => getKategoriList,
+  getLogsData: () => getLogsData,
+  getPegawaiData: () => getPegawaiData,
+  getSettingValue: () => getSettingValue,
+  listAllArsipAdmin: () => listAllArsipAdmin,
+  listAllInstansi: () => listAllInstansi,
+  listAllPegawai: () => listAllPegawai,
+  listArsipByPegawai: () => listArsipByPegawai2,
+  readLocalDb: () => readLocalDb,
+  seedInitialDb: () => seedInitialDb,
+  updateArsipData: () => updateArsipData,
+  updatePegawaiData: () => updatePegawaiData,
+  updateSettingValue: () => updateSettingValue,
+  writeLocalDb: () => writeLocalDb
+});
 import * as fs from "fs";
 import * as path from "path";
+import bcrypt2 from "bcryptjs";
 function readLocalDb() {
   if (!fs.existsSync(LOCAL_DB_PATH)) {
     const projectPath = path.join(process.cwd(), "local-db.json");
@@ -734,7 +759,10 @@ async function seedInitialDb() {
           await db.collection("instansi").doc(i.id).set(i);
         }
         for (const p of defaultPegawai) {
-          await db.collection("pegawai").doc(p.id).set(p);
+          const pass = p.nip.slice(-6);
+          const hashed = await bcrypt2.hash(pass, 10);
+          const pegawaiWithPass = { ...p, password: hashed };
+          await db.collection("pegawai").doc(p.id).set(pegawaiWithPass);
           await db.collection("users").doc(p.id).set({
             id: p.id,
             pegawaiId: p.id,
@@ -766,8 +794,13 @@ async function seedInitialDb() {
   const local = readLocalDb();
   if (local.instansi.length === 0) {
     console.log("Seeding local storage fallback DB...");
+    const pegawaiWithPass = await Promise.all(defaultPegawai.map(async (p) => {
+      const pass = p.nip.slice(-6);
+      const hashed = await bcrypt2.hash(pass, 10);
+      return { ...p, password: hashed };
+    }));
     local.instansi = defaultInstansi;
-    local.pegawai = defaultPegawai;
+    local.pegawai = pegawaiWithPass;
     local.kategoriArsip = STATIC_KATEGORI;
     local.jenisDokumen = STATIC_JENIS_DOKUMEN;
     local.settings = defaultSettings;
@@ -810,28 +843,27 @@ async function getPegawaiData(id) {
   const local = readLocalDb();
   return local.pegawai.find((item) => item.id === id) || null;
 }
-async function findPegawaiByCredentials(identifier, type, tanggalLahir) {
+async function findPegawaiByCredentials(identifier, type) {
   if (isFirebaseConfigured && db) {
     if (type === "NIP" || type === "BOTH") {
-      const qs = await db.collection("pegawai").where("nip", "==", identifier).where("tanggalLahir", "==", tanggalLahir).get();
+      const qs = await db.collection("pegawai").where("nip", "==", identifier).get();
       if (!qs.empty) return qs.docs[0].data();
     }
     if (type === "NIK" || type === "BOTH") {
-      const qs = await db.collection("pegawai").where("nik", "==", identifier).where("tanggalLahir", "==", tanggalLahir).get();
+      const qs = await db.collection("pegawai").where("nik", "==", identifier).get();
       if (!qs.empty) return qs.docs[0].data();
     }
     return null;
   }
   const local = readLocalDb();
   const found = local.pegawai.find((p) => {
-    let fieldMatch = false;
     if (type === "NIP" || type === "BOTH") {
-      fieldMatch = fieldMatch || p.nip === identifier;
+      if (p.nip === identifier) return true;
     }
     if (type === "NIK" || type === "BOTH") {
-      fieldMatch = fieldMatch || p.nik === identifier;
+      if (p.nik === identifier) return true;
     }
-    return fieldMatch && p.tanggalLahir === tanggalLahir;
+    return false;
   });
   return found || null;
 }
@@ -1036,46 +1068,16 @@ var init_firestore = __esm({
   }
 });
 
+// server.ts
+import express from "express";
+import path5 from "path";
+import multer from "multer";
+import rateLimit from "express-rate-limit";
+
 // lib/data.ts
-var data_exports = {};
-__export(data_exports, {
-  adminCreatePegawai: () => adminCreatePegawai2,
-  bulkDeleteArsipByUploader: () => bulkDeleteArsipByUploader2,
-  bulkImportPegawai: () => bulkImportPegawai,
-  bulkValidasiArsip: () => bulkValidasiArsip2,
-  clearPegawai: () => clearPegawai,
-  createArsipData: () => createArsipData2,
-  createJenisDokumen: () => createJenisDokumen2,
-  createKategori: () => createKategori2,
-  createLogEntry: () => createLogEntry2,
-  dedupArsip: () => dedupArsip2,
-  deleteJenisDokumen: () => deleteJenisDokumen2,
-  deleteKategori: () => deleteKategori2,
-  deletePegawaiData: () => deletePegawaiData,
-  findPegawaiByCredentials: () => findPegawaiByCredentials2,
-  getArsipData: () => getArsipData2,
-  getInstansiData: () => getInstansiData2,
-  getJenisDokumenList: () => getJenisDokumenList2,
-  getKategoriList: () => getKategoriList2,
-  getLogsData: () => getLogsData2,
-  getPegawaiData: () => getPegawaiData2,
-  getSettingValue: () => getSettingValue2,
-  listAllArsipAdmin: () => listAllArsipAdmin2,
-  listAllInstansi: () => listAllInstansi2,
-  listAllPegawai: () => listAllPegawai2,
-  listArsipByPegawai: () => listArsipByPegawai3,
-  readLocalDb: () => readLocalDb2,
-  remapArsipJenisDokumen: () => remapArsipJenisDokumen2,
-  seedInitialDb: () => seedInitialDb2,
-  setPegawaiPassword: () => setPegawaiPassword2,
-  updateAllInstansiName: () => updateAllInstansiName2,
-  updateArsipData: () => updateArsipData2,
-  updateJenisDokumen: () => updateJenisDokumen2,
-  updateKategori: () => updateKategori2,
-  updatePegawaiData: () => updatePegawaiData2,
-  updateSettingValue: () => updateSettingValue2,
-  writeLocalDb: () => writeLocalDb2
-});
+init_turso();
+init_turso();
+init_firestore();
 async function seedTurso() {
   await initSchema();
   console.log("Seeding Turso database...");
@@ -1124,116 +1126,98 @@ async function seedInitialDb2() {
   }
   return seedInitialDb();
 }
-var getInstansiData2, listAllInstansi2, getPegawaiData2, findPegawaiByCredentials2, updatePegawaiData2, deletePegawaiData, listAllPegawai2, adminCreatePegawai2, bulkImportPegawai, clearPegawai, updateAllInstansiName2, bulkDeleteArsipByUploader2, listArsipByPegawai3, getArsipData2, createArsipData2, updateArsipData2, listAllArsipAdmin2, createLogEntry2, getLogsData2, getSettingValue2, updateSettingValue2, getKategoriList2, createKategori2, updateKategori2, deleteKategori2, getJenisDokumenList2, createJenisDokumen2, updateJenisDokumen2, deleteJenisDokumen2, bulkValidasiArsip2, remapArsipJenisDokumen2, dedupArsip2, setPegawaiPassword2, readLocalDb2, writeLocalDb2;
-var init_data = __esm({
-  "lib/data.ts"() {
-    "use strict";
-    init_turso();
-    init_turso();
-    init_firestore();
-    getInstansiData2 = isConfigured ? async (id) => {
-      const d = await getInstansi(id);
-      return d;
-    } : getInstansiData;
-    listAllInstansi2 = isConfigured ? () => listInstansi() : listAllInstansi;
-    getPegawaiData2 = isConfigured ? async (id) => {
-      const d = await getPegawai(id);
-      return d;
-    } : getPegawaiData;
-    findPegawaiByCredentials2 = isConfigured ? async (identifier, type, _tanggalLahir) => {
-      if (type === "NIP" || type === "BOTH") {
-        const d = await findPegawaiByNipNikWithPassword(identifier, "NIP");
-        if (d) return d;
-      }
-      if (type === "NIK" || type === "BOTH") {
-        const d = await findPegawaiByNipNikWithPassword(identifier, "NIK");
-        if (d) return d;
-      }
-      return null;
-    } : findPegawaiByCredentials;
-    updatePegawaiData2 = isConfigured ? async (id, updates) => {
-      await updatePegawai(id, updates);
-      return getPegawai(id);
-    } : updatePegawaiData;
-    deletePegawaiData = isConfigured ? async (id) => deletePegawai(id) : async (_id) => {
-    };
-    listAllPegawai2 = isConfigured ? async (instansiId) => listPegawai(instansiId) : listAllPegawai;
-    adminCreatePegawai2 = isConfigured ? async (data) => createPegawai(data) : adminCreatePegawai;
-    bulkImportPegawai = isConfigured ? async (list) => bulkCreatePegawai(list) : async (_list) => {
-      console.warn("bulkImportPegawai not available (Firestore fallback)");
-    };
-    clearPegawai = isConfigured ? async () => clearPegawaiExceptSuperAdmin() : async () => {
-      console.warn("clearPegawai not available (Firestore fallback)");
-    };
-    updateAllInstansiName2 = isConfigured ? async (namaInstansi) => updateAllInstansiName(namaInstansi) : async (_namaInstansi) => {
-      console.warn("updateAllInstansiName not available (Firestore fallback)");
-    };
-    bulkDeleteArsipByUploader2 = isConfigured ? async (uploadedBy) => bulkDeleteArsipByUploader(uploadedBy) : async (_uploadedBy) => {
-      console.warn("bulkDeleteArsipByUploader not available (Firestore fallback)");
-    };
-    listArsipByPegawai3 = isConfigured ? async (pegawaiId) => listArsipByPegawai(pegawaiId) : listArsipByPegawai2;
-    getArsipData2 = isConfigured ? async (id) => getArsip(id) : getArsipData;
-    createArsipData2 = isConfigured ? async (data) => createArsip(data) : createArsipData;
-    updateArsipData2 = isConfigured ? async (id, updates) => {
-      await updateArsip(id, updates);
-      return getArsip(id);
-    } : updateArsipData;
-    listAllArsipAdmin2 = isConfigured ? async (instansiId) => listArsipAdmin(instansiId) : listAllArsipAdmin;
-    createLogEntry2 = isConfigured ? async (data) => createLog(data) : createLogEntry;
-    getLogsData2 = isConfigured ? async () => listLogs() : getLogsData;
-    getSettingValue2 = isConfigured ? async (key, defaultValue) => {
-      const v = await getSetting(key);
-      return v !== null ? v : defaultValue || "";
-    } : getSettingValue;
-    updateSettingValue2 = isConfigured ? async (key, value) => setSetting(key, value) : updateSettingValue;
-    getKategoriList2 = isConfigured ? async () => listKategori() : getKategoriList;
-    createKategori2 = isConfigured ? async (data) => createKategori(data) : async (data) => {
-      console.warn("createKategori not available (Firestore fallback)");
-      return data;
-    };
-    updateKategori2 = isConfigured ? async (id, data) => updateKategori(id, data) : async (id, _data) => {
-      console.warn("updateKategori not available (Firestore fallback)");
-    };
-    deleteKategori2 = isConfigured ? async (id) => deleteKategori(id) : async (id) => {
-      console.warn("deleteKategori not available (Firestore fallback)");
-    };
-    getJenisDokumenList2 = isConfigured ? async () => listJenisDokumen() : getJenisDokumenList;
-    createJenisDokumen2 = isConfigured ? async (data) => createJenisDokumen(data) : async (data) => {
-      console.warn("createJenisDokumen not available (Firestore fallback)");
-      return data;
-    };
-    updateJenisDokumen2 = isConfigured ? async (id, data) => updateJenisDokumen(id, data) : async (id, _data) => {
-      console.warn("updateJenisDokumen not available (Firestore fallback)");
-    };
-    deleteJenisDokumen2 = isConfigured ? async (id) => deleteJenisDokumen(id) : async (id) => {
-      console.warn("deleteJenisDokumen not available (Firestore fallback)");
-    };
-    bulkValidasiArsip2 = isConfigured ? async (instansiId, statusValidasi = "Valid", updatedBy = "system") => bulkValidasiArsip(instansiId, statusValidasi, updatedBy) : async (_instansiId, _statusValidasi, _updatedBy) => {
-      console.warn("bulkValidasiArsip not available (Firestore fallback)");
-      return false;
-    };
-    remapArsipJenisDokumen2 = isConfigured ? async () => remapArsipJenisDokumen() : async () => {
-      console.warn("remapArsipJenisDokumen not available (Firestore fallback)");
-      return false;
-    };
-    dedupArsip2 = isConfigured ? async () => dedupArsip() : async () => {
-      console.warn("dedupArsip not available (Firestore fallback)");
-      return false;
-    };
-    setPegawaiPassword2 = isConfigured ? async (id, hashed) => setPegawaiPassword(id, hashed) : async (id, _hashed) => {
-      console.warn("setPegawaiPassword not available (Firestore fallback)");
-    };
-    readLocalDb2 = readLocalDb;
-    writeLocalDb2 = writeLocalDb;
+var getInstansiData2 = isConfigured ? async (id) => {
+  const d = await getInstansi(id);
+  return d;
+} : getInstansiData;
+var listAllInstansi2 = isConfigured ? () => listInstansi() : listAllInstansi;
+var getPegawaiData2 = isConfigured ? async (id) => {
+  const d = await getPegawai(id);
+  return d;
+} : getPegawaiData;
+var findPegawaiByCredentials2 = isConfigured ? async (identifier, type) => {
+  if (type === "NIP" || type === "BOTH") {
+    const d = await findPegawaiByNipNikWithPassword(identifier, "NIP");
+    if (d) return d;
   }
-});
-
-// api-build/handler.ts
-import express from "express";
-import path5 from "path";
-import multer from "multer";
-import cookieParser from "cookie-parser";
-import rateLimit from "express-rate-limit";
+  if (type === "NIK" || type === "BOTH") {
+    const d = await findPegawaiByNipNikWithPassword(identifier, "NIK");
+    if (d) return d;
+  }
+  return null;
+} : findPegawaiByCredentials;
+var updatePegawaiData2 = isConfigured ? async (id, updates) => {
+  await updatePegawai(id, updates);
+  return getPegawai(id);
+} : updatePegawaiData;
+var deletePegawaiData = isConfigured ? async (id) => deletePegawai(id) : async (_id) => {
+};
+var listAllPegawai2 = isConfigured ? async (instansiId) => listPegawai(instansiId) : listAllPegawai;
+var adminCreatePegawai2 = isConfigured ? async (data) => createPegawai(data) : adminCreatePegawai;
+var bulkImportPegawai = isConfigured ? async (list) => bulkCreatePegawai(list) : async (_list) => {
+  console.warn("bulkImportPegawai not available (Firestore fallback)");
+};
+var clearPegawai = isConfigured ? async () => clearPegawaiExceptSuperAdmin() : async () => {
+  console.warn("clearPegawai not available (Firestore fallback)");
+};
+var updateAllInstansiName2 = isConfigured ? async (namaInstansi) => updateAllInstansiName(namaInstansi) : async (_namaInstansi) => {
+  console.warn("updateAllInstansiName not available (Firestore fallback)");
+};
+var bulkDeleteArsipByUploader2 = isConfigured ? async (uploadedBy) => bulkDeleteArsipByUploader(uploadedBy) : async (_uploadedBy) => {
+  console.warn("bulkDeleteArsipByUploader not available (Firestore fallback)");
+};
+var listArsipByPegawai3 = isConfigured ? async (pegawaiId) => listArsipByPegawai(pegawaiId) : listArsipByPegawai2;
+var getArsipData2 = isConfigured ? async (id) => getArsip(id) : getArsipData;
+var createArsipData2 = isConfigured ? async (data) => createArsip(data) : createArsipData;
+var updateArsipData2 = isConfigured ? async (id, updates) => {
+  await updateArsip(id, updates);
+  return getArsip(id);
+} : updateArsipData;
+var listAllArsipAdmin2 = isConfigured ? async (instansiId) => listArsipAdmin(instansiId) : listAllArsipAdmin;
+var createLogEntry2 = isConfigured ? async (data) => createLog(data) : createLogEntry;
+var getLogsData2 = isConfigured ? async () => listLogs() : getLogsData;
+var getSettingValue2 = isConfigured ? async (key, defaultValue) => {
+  const v = await getSetting(key);
+  return v !== null ? v : defaultValue || "";
+} : getSettingValue;
+var updateSettingValue2 = isConfigured ? async (key, value) => setSetting(key, value) : updateSettingValue;
+var getKategoriList2 = isConfigured ? async () => listKategori() : getKategoriList;
+var createKategori2 = isConfigured ? async (data) => createKategori(data) : async (data) => {
+  console.warn("createKategori not available (Firestore fallback)");
+  return data;
+};
+var updateKategori2 = isConfigured ? async (id, data) => updateKategori(id, data) : async (_id, _data) => {
+  console.warn("updateKategori not available (Firestore fallback)");
+};
+var deleteKategori2 = isConfigured ? async (id) => deleteKategori(id) : async (_id) => {
+  console.warn("deleteKategori not available (Firestore fallback)");
+};
+var getJenisDokumenList2 = isConfigured ? async () => listJenisDokumen() : getJenisDokumenList;
+var createJenisDokumen2 = isConfigured ? async (data) => createJenisDokumen(data) : async (data) => {
+  console.warn("createJenisDokumen not available (Firestore fallback)");
+  return data;
+};
+var updateJenisDokumen2 = isConfigured ? async (id, data) => updateJenisDokumen(id, data) : async (_id, _data) => {
+  console.warn("updateJenisDokumen not available (Firestore fallback)");
+};
+var deleteJenisDokumen2 = isConfigured ? async (id) => deleteJenisDokumen(id) : async (_id) => {
+  console.warn("deleteJenisDokumen not available (Firestore fallback)");
+};
+var bulkValidasiArsip2 = isConfigured ? async (instansiId, statusValidasi = "Valid", updatedBy = "system") => bulkValidasiArsip(instansiId, statusValidasi, updatedBy) : async (_instansiId, _statusValidasi, _updatedBy) => {
+  console.warn("bulkValidasiArsip not available (Firestore fallback)");
+  return false;
+};
+var remapArsipJenisDokumen2 = isConfigured ? async () => remapArsipJenisDokumen() : async () => {
+  console.warn("remapArsipJenisDokumen not available (Firestore fallback)");
+  return false;
+};
+var dedupArsip2 = isConfigured ? async () => dedupArsip() : async () => {
+  console.warn("dedupArsip not available (Firestore fallback)");
+  return false;
+};
+var setPegawaiPassword2 = isConfigured ? async (id, hashed) => setPegawaiPassword(id, hashed) : async (_id, _hashed) => {
+  console.warn("setPegawaiPassword not available (Firestore fallback)");
+};
 
 // lib/session.ts
 import jwt from "jsonwebtoken";
@@ -1270,13 +1254,9 @@ function verifySession(token) {
   return null;
 }
 
-// api-build/handler.ts
-init_data();
-
 // routes/auth.ts
-init_data();
 import { Router } from "express";
-import bcrypt2 from "bcryptjs";
+import bcrypt3 from "bcryptjs";
 
 // lib/validation.ts
 import { z } from "zod";
@@ -1331,7 +1311,7 @@ var settingSchema = z.object({
 });
 
 // routes/auth.ts
-function createAuthRouter(requireAuth2, rateLimit2) {
+function createAuthRouter(requireAuth, rateLimit2) {
   const router = Router();
   const loginLimiter = rateLimit2({
     windowMs: 15 * 60 * 1e3,
@@ -1354,7 +1334,7 @@ function createAuthRouter(requireAuth2, rateLimit2) {
       if (!p.statusAktif) {
         return res.status(403).json({ error: "Akun pegawai tidak aktif. Silakan hubungi admin." });
       }
-      const pwMatch = await bcrypt2.compare(password, p.password || "");
+      const pwMatch = await bcrypt3.compare(password, p.password || "");
       if (!pwMatch) {
         return res.status(401).json({ error: "Password salah." });
       }
@@ -1390,7 +1370,7 @@ function createAuthRouter(requireAuth2, rateLimit2) {
       return res.status(500).json({ error: "Terjadi kesalahan pada server saat login." });
     }
   });
-  router.post("/logout", requireAuth2, async (req, res) => {
+  router.post("/logout", requireAuth, async (req, res) => {
     const session = req.session;
     const log = {
       id: "LOG_" + Date.now() + "_" + Math.floor(Math.random() * 1e3),
@@ -1418,11 +1398,10 @@ function createAuthRouter(requireAuth2, rateLimit2) {
 }
 
 // routes/pegawai.ts
-init_data();
 import { Router as Router2 } from "express";
-function createPegawaiRouter(requireAuth2, logAction2) {
+function createPegawaiRouter(requireAuth, logAction) {
   const router = Router2();
-  router.get("/me", requireAuth2, async (req, res) => {
+  router.get("/me", requireAuth, async (req, res) => {
     const session = req.session;
     try {
       const p = await getPegawaiData2(session.pegawaiId);
@@ -1432,7 +1411,7 @@ function createPegawaiRouter(requireAuth2, logAction2) {
       return res.status(500).json({ error: "Gagal mengambil data profil." });
     }
   });
-  router.patch("/me", requireAuth2, async (req, res) => {
+  router.patch("/me", requireAuth, async (req, res) => {
     const session = req.session;
     const parsed = profileUpdateSchema.safeParse(req.body);
     if (!parsed.success) {
@@ -1453,7 +1432,7 @@ function createPegawaiRouter(requireAuth2, logAction2) {
       }
       const p = await updatePegawaiData2(session.pegawaiId, updates);
       const changedKeys = Object.keys(updates).join(", ");
-      await logAction2(session, "EDIT_PROFIL", `Pegawai memperbaharui profil: ${changedKeys}.`);
+      await logAction(session, "EDIT_PROFIL", `Pegawai memperbaharui profil: ${changedKeys}.`);
       return res.json({ message: "Profil berhasil diperbarui.", data: p });
     } catch {
       return res.status(500).json({ error: "Gagal memperbarui data profil." });
@@ -1461,9 +1440,9 @@ function createPegawaiRouter(requireAuth2, logAction2) {
   });
   return router;
 }
-function createMetadataRouter(requireAuth2) {
+function createMetadataRouter(requireAuth) {
   const router = Router2();
-  router.get("/kategori", requireAuth2, async (_req, res) => {
+  router.get("/kategori", requireAuth, async (_req, res) => {
     try {
       const list = await getKategoriList2();
       return res.json(list);
@@ -1471,7 +1450,7 @@ function createMetadataRouter(requireAuth2) {
       return res.status(500).json({ error: "Gagal mengambil kategori arsip." });
     }
   });
-  router.get("/jenis-dokumen", requireAuth2, async (_req, res) => {
+  router.get("/jenis-dokumen", requireAuth, async (_req, res) => {
     try {
       const list = await getJenisDokumenList2();
       return res.json(list);
@@ -1483,7 +1462,6 @@ function createMetadataRouter(requireAuth2) {
 }
 
 // routes/arsip.ts
-init_data();
 import { Router as Router3 } from "express";
 import path3 from "path";
 
@@ -1615,9 +1593,9 @@ function validateFile(reqFile) {
   }
   return null;
 }
-function createArsipRouter(requireAuth2, upload, logAction2) {
+function createArsipRouter(requireAuth, upload, logAction) {
   const router = Router3();
-  router.get("/me", requireAuth2, async (req, res) => {
+  router.get("/me", requireAuth, async (req, res) => {
     const session = req.session;
     try {
       const list = await listArsipByPegawai3(session.pegawaiId);
@@ -1626,7 +1604,7 @@ function createArsipRouter(requireAuth2, upload, logAction2) {
       return res.status(500).json({ error: "Gagal mengambil dokumen arsip Anda." });
     }
   });
-  router.post("/upload", requireAuth2, upload.single("file"), async (req, res) => {
+  router.post("/upload", requireAuth, upload.single("file"), async (req, res) => {
     const session = req.session;
     if (!req.file) return res.status(400).json({ error: "Berkas dokumen wajib diupload." });
     if (req.file.size > 10 * 1024 * 1024) return res.status(400).json({ error: "Ukuran file melebihi batas 10 MB." });
@@ -1685,14 +1663,14 @@ function createArsipRouter(requireAuth2, upload, logAction2) {
         }]
       };
       const result = await createArsipData2(newArsip);
-      await logAction2(session, "UPLOAD_ARSIP", `Berhasil mengunggah dokumen baru: ${jenisDokumen} (${namaDokumen})`, result.id, namaDokumen);
+      await logAction(session, "UPLOAD_ARSIP", `Berhasil mengunggah dokumen baru: ${jenisDokumen} (${namaDokumen})`, result.id, namaDokumen);
       return res.status(201).json({ message: "Arsip berhasil disimpan.", arsip: result });
     } catch (err) {
       console.error("Upload error:", err);
       return res.status(500).json({ error: "Gagal menyimpan unggahan arsip." });
     }
   });
-  router.patch("/:id", requireAuth2, upload.single("file"), async (req, res) => {
+  router.patch("/:id", requireAuth, upload.single("file"), async (req, res) => {
     const session = req.session;
     const { id } = req.params;
     const { kelompokArsip, jenisDokumen, namaDokumen, nomorDokumen, tanggalDokumen, tahun } = req.body;
@@ -1762,13 +1740,13 @@ function createArsipRouter(requireAuth2, upload, logAction2) {
       };
       updates.versionHistory = [...history, nextVersion];
       const result = await updateArsipData2(id, updates);
-      await logAction2(session, "EDIT_ARSIP", `Memperbarui detail arsip: ${existingArsip.jenisDokumen}`, id, namaDokumen || existingArsip.namaDokumen);
+      await logAction(session, "EDIT_ARSIP", `Memperbarui detail arsip: ${existingArsip.jenisDokumen}`, id, namaDokumen || existingArsip.namaDokumen);
       return res.json({ message: "Arsip berhasil disunting.", arsip: result });
     } catch {
       return res.status(500).json({ error: "Gagal mengubah dokumen." });
     }
   });
-  router.delete("/:id", requireAuth2, async (req, res) => {
+  router.delete("/:id", requireAuth, async (req, res) => {
     const session = req.session;
     const { id } = req.params;
     try {
@@ -1785,7 +1763,7 @@ function createArsipRouter(requireAuth2, upload, logAction2) {
       }
       await updateArsipData2(id, { deleted: true, statusValidasi: "Ditolak" });
       if (existingArsip.storagePath) await deleteFile(existingArsip.storagePath);
-      await logAction2(session, "HAPUS_ARSIP", `Pegawai menghapus arsip: ${existingArsip.jenisDokumen}`, id, existingArsip.namaDokumen);
+      await logAction(session, "HAPUS_ARSIP", `Pegawai menghapus arsip: ${existingArsip.jenisDokumen}`, id, existingArsip.namaDokumen);
       return res.json({ message: "Arsip berhasil dihapus." });
     } catch {
       return res.status(500).json({ error: "Gagal melakukan penghapusan." });
@@ -1795,13 +1773,12 @@ function createArsipRouter(requireAuth2, upload, logAction2) {
 }
 
 // routes/admin.ts
-init_data();
 import { Router as Router4 } from "express";
-import bcrypt3 from "bcryptjs";
+import bcrypt4 from "bcryptjs";
 init_constants();
-function createAdminRouter(requireAuth2, requireRole2, logAction2) {
+function createAdminRouter(requireAuth, requireRole, logAction) {
   const router = Router4();
-  router.get("/pegawai", requireAuth2, requireRole2(["admin_instansi", "super_admin"]), async (req, res) => {
+  router.get("/pegawai", requireAuth, requireRole(["admin_instansi", "super_admin"]), async (req, res) => {
     const session = req.session;
     const filterInstansi = req.query.instansiId;
     try {
@@ -1812,7 +1789,7 @@ function createAdminRouter(requireAuth2, requireRole2, logAction2) {
       return res.status(500).json({ error: "Gagal mengambil data ASN." });
     }
   });
-  router.get("/pegawai/duplicates", requireAuth2, requireRole2(["super_admin", "admin_instansi"]), async (req, res) => {
+  router.get("/pegawai/duplicates", requireAuth, requireRole(["super_admin", "admin_instansi"]), async (_req, res) => {
     try {
       const employees = await listAllPegawai2();
       const grouped = {};
@@ -1827,7 +1804,7 @@ function createAdminRouter(requireAuth2, requireRole2, logAction2) {
       return res.status(500).json({ error: "Gagal memeriksa duplikasi." });
     }
   });
-  router.post("/pegawai", requireAuth2, requireRole2(["super_admin", "admin_instansi"]), async (req, res) => {
+  router.post("/pegawai", requireAuth, requireRole(["super_admin", "admin_instansi"]), async (req, res) => {
     const session = req.session;
     const parsed = createPegawaiSchema.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ error: "Mohon isi seluruh data pegawai wajib." });
@@ -1842,7 +1819,7 @@ function createAdminRouter(requireAuth2, requireRole2, logAction2) {
         const ins = await getInstansiData2(instansiId);
         if (ins) instansiName = ins.namaInstansi;
       }
-      const defaultPass = await bcrypt3.hash(body.nip.slice(-6), 10);
+      const defaultPass = await bcrypt4.hash(body.nip.slice(-6), 10);
       const p = {
         id: "PGW_" + Date.now(),
         instansiId,
@@ -1866,13 +1843,13 @@ function createAdminRouter(requireAuth2, requireRole2, logAction2) {
         updatedAt: (/* @__PURE__ */ new Date()).toISOString()
       };
       const result = await adminCreatePegawai2(p);
-      await logAction2(session, "CREATE_PEGAWAI", `Administrator (${session.nama}) mendaftarkan pegawai baru: ${body.namaPegawai} (${body.nip})`);
+      await logAction(session, "CREATE_PEGAWAI", `Administrator (${session.nama}) mendaftarkan pegawai baru: ${body.namaPegawai} (${body.nip})`);
       return res.status(201).json(result);
     } catch {
       return res.status(500).json({ error: "Gagal membuat data pegawai baru." });
     }
   });
-  router.get("/bup", requireAuth2, requireRole2(["super_admin", "admin_instansi"]), async (req, res) => {
+  router.get("/bup", requireAuth, requireRole(["super_admin", "admin_instansi"]), async (_req, res) => {
     try {
       const pegawais = await listAllPegawai2();
       const now = /* @__PURE__ */ new Date();
@@ -1920,7 +1897,7 @@ function createAdminRouter(requireAuth2, requireRole2, logAction2) {
       return res.status(500).json({ error: "Gagal memuat data BUP." });
     }
   });
-  router.get("/arsip", requireAuth2, requireRole2(["admin_instansi", "super_admin"]), async (req, res) => {
+  router.get("/arsip", requireAuth, requireRole(["admin_instansi", "super_admin"]), async (req, res) => {
     const session = req.session;
     const filterInstansi = req.query.instansiId;
     try {
@@ -1931,7 +1908,7 @@ function createAdminRouter(requireAuth2, requireRole2, logAction2) {
       return res.status(500).json({ error: "Gagal mengambil arsip." });
     }
   });
-  router.patch("/arsip/:id/validasi", requireAuth2, requireRole2(["admin_instansi", "super_admin"]), async (req, res) => {
+  router.patch("/arsip/:id/validasi", requireAuth, requireRole(["admin_instansi", "super_admin"]), async (req, res) => {
     const session = req.session;
     const { id } = req.params;
     const parsed = validasiSchema.safeParse(req.body);
@@ -1976,25 +1953,25 @@ function createAdminRouter(requireAuth2, requireRole2, logAction2) {
       };
       const updates = { statusValidasi, catatanAdmin: catatanAdmin || "", updatedAt: (/* @__PURE__ */ new Date()).toISOString(), updatedBy: session.id, versionHistory: [...history, nextVersion] };
       const result = await updateArsipData2(id, updates);
-      await logAction2(session, "VALIDASI_ARSIP", `Mengevaluasi arsip pegawai (${arc.namaPegawai} - ${arc.jenisDokumen}): Status BARU=${statusValidasi}. Catatan: ${catatanAdmin || "tidak ada."}`, id, arc.namaDokumen);
+      await logAction(session, "VALIDASI_ARSIP", `Mengevaluasi arsip pegawai (${arc.namaPegawai} - ${arc.jenisDokumen}): Status BARU=${statusValidasi}. Catatan: ${catatanAdmin || "tidak ada."}`, id, arc.namaDokumen);
       return res.json({ message: "Status validasi berhasil diperbarui.", arsip: result });
     } catch {
       return res.status(500).json({ error: "Gagal memproses validasi." });
     }
   });
-  router.post("/arsip/bulk-validasi", requireAuth2, requireRole2(["super_admin"]), async (req, res) => {
+  router.post("/arsip/bulk-validasi", requireAuth, requireRole(["super_admin"]), async (req, res) => {
     const session = req.session;
     const { statusValidasi, instansiId } = req.body || {};
     try {
       const success = await bulkValidasiArsip2(instansiId || void 0, statusValidasi || "Valid", session.id);
       if (!success) return res.status(500).json({ error: "Gagal melakukan update massal." });
-      await logAction2(session, "BULK_VALIDASI_ARSIP", `Validasi massal semua arsip${instansiId ? ` (instansi: ${instansiId})` : ""} ke status: ${statusValidasi || "Valid"}`);
+      await logAction(session, "BULK_VALIDASI_ARSIP", `Validasi massal semua arsip${instansiId ? ` (instansi: ${instansiId})` : ""} ke status: ${statusValidasi || "Valid"}`);
       return res.json({ message: "Semua arsip berhasil divalidasi." });
     } catch {
       return res.status(500).json({ error: "Gagal memproses validasi massal." });
     }
   });
-  router.post("/arsip/remap-jenis", requireAuth2, requireRole2(["super_admin"]), async (req, res) => {
+  router.post("/arsip/remap-jenis", requireAuth, requireRole(["super_admin"]), async (_req, res) => {
     try {
       const success = await remapArsipJenisDokumen2();
       if (!success) return res.status(500).json({ error: "Gagal melakukan remap." });
@@ -2003,7 +1980,7 @@ function createAdminRouter(requireAuth2, requireRole2, logAction2) {
       return res.status(500).json({ error: "Gagal memproses remap." });
     }
   });
-  router.post("/arsip/dedup", requireAuth2, requireRole2(["super_admin"]), async (req, res) => {
+  router.post("/arsip/dedup", requireAuth, requireRole(["super_admin"]), async (_req, res) => {
     try {
       const success = await dedupArsip2();
       if (!success) return res.status(500).json({ error: "Gagal melakukan dedup." });
@@ -2012,7 +1989,7 @@ function createAdminRouter(requireAuth2, requireRole2, logAction2) {
       return res.status(500).json({ error: "Gagal memproses dedup." });
     }
   });
-  router.get("/rekap", requireAuth2, requireRole2(["admin_instansi", "super_admin"]), async (req, res) => {
+  router.get("/rekap", requireAuth, requireRole(["admin_instansi", "super_admin"]), async (req, res) => {
     const session = req.session;
     const filterInstansi = req.query.instansiId;
     try {
@@ -2050,7 +2027,7 @@ function createAdminRouter(requireAuth2, requireRole2, logAction2) {
       return res.status(500).json({ error: "Gagal mengambil data rekap kelengkapan." });
     }
   });
-  router.get("/logs", requireAuth2, requireRole2(["admin_instansi", "super_admin"]), async (req, res) => {
+  router.get("/logs", requireAuth, requireRole(["admin_instansi", "super_admin"]), async (req, res) => {
     const session = req.session;
     try {
       const list = await getLogsData2();
@@ -2064,7 +2041,7 @@ function createAdminRouter(requireAuth2, requireRole2, logAction2) {
       return res.status(500).json({ error: "Gagal mengambil riwayat sistem (logs)." });
     }
   });
-  router.get("/instansi", requireAuth2, requireRole2(["super_admin", "admin_instansi"]), async (_req, res) => {
+  router.get("/instansi", requireAuth, requireRole(["super_admin", "admin_instansi"]), async (_req, res) => {
     try {
       const list = await listAllInstansi2();
       return res.json(list);
@@ -2072,7 +2049,7 @@ function createAdminRouter(requireAuth2, requireRole2, logAction2) {
       return res.status(500).json({ error: "Gagal memuat daftar instansi." });
     }
   });
-  router.get("/settings", requireAuth2, requireRole2(["super_admin", "admin_instansi"]), async (_req, res) => {
+  router.get("/settings", requireAuth, requireRole(["super_admin", "admin_instansi"]), async (_req, res) => {
     try {
       const allowDeleteValue = await getSettingValue2("allowDeleteValid", "false");
       const limitSizeMBValue = await getSettingValue2("limitSizeMB", "10");
@@ -2084,7 +2061,7 @@ function createAdminRouter(requireAuth2, requireRole2, logAction2) {
       return res.status(500).json({ error: "Gagal memanggil pengaturan." });
     }
   });
-  router.patch("/settings", requireAuth2, requireRole2(["super_admin", "admin_instansi"]), async (req, res) => {
+  router.patch("/settings", requireAuth, requireRole(["super_admin", "admin_instansi"]), async (req, res) => {
     const parsed = settingSchema.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ error: "Konfigurasi kunci dan nilai wajib dilampirkan." });
     const { key, value } = parsed.data;
@@ -2095,21 +2072,21 @@ function createAdminRouter(requireAuth2, requireRole2, logAction2) {
       return res.status(500).json({ error: "Gagal menyimpan konfigurasi." });
     }
   });
-  router.patch("/pegawai/:id/reset-password", requireAuth2, requireRole2(["super_admin", "admin_instansi"]), async (req, res) => {
+  router.patch("/pegawai/:id/reset-password", requireAuth, requireRole(["super_admin", "admin_instansi"]), async (req, res) => {
     const { id } = req.params;
     const { newPassword } = req.body;
     if (!newPassword || newPassword.length < 6) {
       return res.status(400).json({ error: "Password baru minimal 6 karakter." });
     }
     try {
-      const hashed = await bcrypt3.hash(newPassword, 10);
+      const hashed = await bcrypt4.hash(newPassword, 10);
       await setPegawaiPassword2(id, hashed);
       return res.json({ message: "Password berhasil direset." });
     } catch {
       return res.status(500).json({ error: "Gagal mereset password." });
     }
   });
-  router.patch("/pegawai/:id", requireAuth2, requireRole2(["admin_instansi", "super_admin"]), async (req, res) => {
+  router.patch("/pegawai/:id", requireAuth, requireRole(["admin_instansi", "super_admin"]), async (req, res) => {
     const { id } = req.params;
     const allowed = ["namaPegawai", "nip", "nik", "tanggalLahir", "jenisKelamin", "jabatan", "statusPegawai", "pangkatGolongan", "pendidikanTerakhir", "nomorHp", "email", "alamat", "statusAktif"];
     const updates = {};
@@ -2120,7 +2097,7 @@ function createAdminRouter(requireAuth2, requireRole2, logAction2) {
     try {
       await updatePegawaiData2(id, updates);
       if (req.body.password) {
-        const hashed = await bcrypt3.hash(req.body.password, 10);
+        const hashed = await bcrypt4.hash(req.body.password, 10);
         await setPegawaiPassword2(id, hashed);
       }
       return res.json({ message: "Data pegawai berhasil diperbarui." });
@@ -2128,7 +2105,7 @@ function createAdminRouter(requireAuth2, requireRole2, logAction2) {
       return res.status(500).json({ error: "Gagal memperbarui data pegawai." });
     }
   });
-  router.delete("/pegawai/:id", requireAuth2, requireRole2(["super_admin", "admin_instansi"]), async (req, res) => {
+  router.delete("/pegawai/:id", requireAuth, requireRole(["super_admin", "admin_instansi"]), async (req, res) => {
     const { id } = req.params;
     try {
       await deletePegawaiData(id);
@@ -2137,7 +2114,7 @@ function createAdminRouter(requireAuth2, requireRole2, logAction2) {
       return res.status(500).json({ error: "Gagal menghapus pegawai." });
     }
   });
-  router.post("/kategori", requireAuth2, requireRole2(["super_admin"]), async (req, res) => {
+  router.post("/kategori", requireAuth, requireRole(["super_admin"]), async (req, res) => {
     const { namaKategori, urutan } = req.body;
     if (!namaKategori) return res.status(400).json({ error: "Nama kategori wajib diisi." });
     try {
@@ -2148,7 +2125,7 @@ function createAdminRouter(requireAuth2, requireRole2, logAction2) {
       return res.status(500).json({ error: "Gagal membuat kategori." });
     }
   });
-  router.patch("/kategori/:id", requireAuth2, requireRole2(["super_admin"]), async (req, res) => {
+  router.patch("/kategori/:id", requireAuth, requireRole(["super_admin"]), async (req, res) => {
     const { id } = req.params;
     const { namaKategori, urutan } = req.body;
     try {
@@ -2158,7 +2135,7 @@ function createAdminRouter(requireAuth2, requireRole2, logAction2) {
       return res.status(500).json({ error: "Gagal memperbarui kategori." });
     }
   });
-  router.delete("/kategori/:id", requireAuth2, requireRole2(["super_admin"]), async (req, res) => {
+  router.delete("/kategori/:id", requireAuth, requireRole(["super_admin"]), async (req, res) => {
     const { id } = req.params;
     try {
       await deleteKategori2(id);
@@ -2167,7 +2144,7 @@ function createAdminRouter(requireAuth2, requireRole2, logAction2) {
       return res.status(500).json({ error: "Gagal menghapus kategori." });
     }
   });
-  router.post("/jenis-dokumen", requireAuth2, requireRole2(["super_admin"]), async (req, res) => {
+  router.post("/jenis-dokumen", requireAuth, requireRole(["super_admin"]), async (req, res) => {
     const { kategoriId, namaKategori, namaDokumen, berlakuUntuk, wajib } = req.body;
     if (!kategoriId || !namaDokumen) return res.status(400).json({ error: "Kategori dan nama dokumen wajib diisi." });
     try {
@@ -2178,7 +2155,7 @@ function createAdminRouter(requireAuth2, requireRole2, logAction2) {
       return res.status(500).json({ error: "Gagal membuat jenis dokumen." });
     }
   });
-  router.patch("/jenis-dokumen/:id", requireAuth2, requireRole2(["super_admin"]), async (req, res) => {
+  router.patch("/jenis-dokumen/:id", requireAuth, requireRole(["super_admin"]), async (req, res) => {
     const { id } = req.params;
     const { namaDokumen, berlakuUntuk, wajib, urutan } = req.body;
     try {
@@ -2188,7 +2165,7 @@ function createAdminRouter(requireAuth2, requireRole2, logAction2) {
       return res.status(500).json({ error: "Gagal memperbarui jenis dokumen." });
     }
   });
-  router.delete("/jenis-dokumen/:id", requireAuth2, requireRole2(["super_admin"]), async (req, res) => {
+  router.delete("/jenis-dokumen/:id", requireAuth, requireRole(["super_admin"]), async (req, res) => {
     const { id } = req.params;
     try {
       await deleteJenisDokumen2(id);
@@ -2197,21 +2174,21 @@ function createAdminRouter(requireAuth2, requireRole2, logAction2) {
       return res.status(500).json({ error: "Gagal menghapus jenis dokumen." });
     }
   });
-  router.get("/kategori-list", requireAuth2, requireRole2(["super_admin", "admin_instansi"]), async (_req, res) => {
+  router.get("/kategori-list", requireAuth, requireRole(["super_admin", "admin_instansi"]), async (_req, res) => {
     try {
       return res.json(await getKategoriList2());
     } catch {
       return res.status(500).json({ error: "Gagal mengambil kategori." });
     }
   });
-  router.get("/jenis-dokumen-list", requireAuth2, requireRole2(["super_admin", "admin_instansi"]), async (_req, res) => {
+  router.get("/jenis-dokumen-list", requireAuth, requireRole(["super_admin", "admin_instansi"]), async (_req, res) => {
     try {
       return res.json(await getJenisDokumenList2());
     } catch {
       return res.status(500).json({ error: "Gagal mengambil jenis dokumen." });
     }
   });
-  router.post("/import-pegawai", requireAuth2, requireRole2(["super_admin"]), async (req, res) => {
+  router.post("/import-pegawai", requireAuth, requireRole(["super_admin"]), async (req, res) => {
     const { instansi, pegawai } = req.body;
     if (!Array.isArray(pegawai) || pegawai.length === 0) {
       return res.status(400).json({ error: "Data pegawai wajib dikirim sebagai array." });
@@ -2234,7 +2211,7 @@ function createAdminRouter(requireAuth2, requireRole2, logAction2) {
       return res.status(500).json({ error: "Gagal import pegawai: " + (err?.message || "unknown") });
     }
   });
-  router.patch("/pegawai/update-instansi", requireAuth2, requireRole2(["super_admin"]), async (req, res) => {
+  router.patch("/pegawai/update-instansi", requireAuth, requireRole(["super_admin"]), async (req, res) => {
     const { namaInstansi } = req.body;
     if (!namaInstansi) return res.status(400).json({ error: "namaInstansi wajib diisi." });
     try {
@@ -2244,7 +2221,7 @@ function createAdminRouter(requireAuth2, requireRole2, logAction2) {
       return res.status(500).json({ error: "Gagal update instansi: " + (err?.message || "unknown") });
     }
   });
-  router.post("/migrate-arsip", requireAuth2, requireRole2(["super_admin"]), async (req, res) => {
+  router.post("/migrate-arsip", requireAuth, requireRole(["super_admin"]), async (req, res) => {
     const { arsip: arsipList, clear } = req.body;
     if (!Array.isArray(arsipList) || arsipList.length === 0) return res.status(400).json({ error: "Data arsip wajib dikirim." });
     try {
@@ -2308,10 +2285,9 @@ function createAdminRouter(requireAuth2, requireRole2, logAction2) {
 // routes/files.ts
 import { Router as Router5 } from "express";
 import path4 from "path";
-init_data();
-function createFilesRouter(requireAuth2) {
+function createFilesRouter(requireAuth) {
   const router = Router5();
-  router.get("/download", requireAuth2, async (req, res) => {
+  router.get("/download", requireAuth, async (req, res) => {
     const arsipId = req.query.arsipId;
     const filePath = req.query.path;
     if (arsipId) {
@@ -2361,130 +2337,137 @@ function createFilesRouter(requireAuth2) {
   return router;
 }
 
-// api-build/handler.ts
-function requireAuth(req, res, next) {
-  const token = req.cookies?.session;
-  if (!token) return res.status(401).json({ error: "Akses ditolak. Silakan login terlebih dahulu." });
-  const session = verifySession(token);
-  if (!session) {
-    res.setHeader("Set-Cookie", "session=; HttpOnly; Path=/; Max-Age=0; SameSite=Strict; Secure");
-    return res.status(401).json({ error: "Sesi Anda telah berakhir. Silakan login kembali." });
-  }
-  req.session = session;
-  next();
-}
-function requireRole(roles) {
-  return (req, res, next) => {
-    const session = req.session;
-    if (!session || !roles.includes(session.role)) return res.status(403).json({ error: "Akses ditolak." });
+// server.ts
+seedInitialDb2().then(() => console.log("Sistem: Seeding data selesai.")).catch((err) => console.error("Sistem: Gagal memproses seeding:", err));
+var PORT = 3e3;
+async function createApp() {
+  const app3 = express();
+  app3.use(express.json({ limit: "50mb" }));
+  app3.use(express.urlencoded({ extended: true, limit: "50mb" }));
+  app3.use((req, _res, next) => {
+    const cookiesHeader = req.headers.cookie || "";
+    const cookies = {};
+    cookiesHeader.split(";").forEach((c) => {
+      const parts = c.trim().split("=");
+      if (parts.length === 2) {
+        cookies[parts[0]] = parts[1];
+      }
+    });
+    req.cookies = cookies;
     next();
-  };
+  });
+  const upload = multer({ limits: { fileSize: 10 * 1024 * 1024 } });
+  function requireAuth(req, res, next) {
+    const token = req.cookies?.session;
+    if (!token) {
+      return res.status(401).json({ error: "Akses ditolak. Silakan login terlebih dahulu." });
+    }
+    const session = verifySession(token);
+    if (!session) {
+      const isSecure = process.env.NODE_ENV === "production";
+      res.setHeader("Set-Cookie", `session=; HttpOnly; Path=/; Max-Age=0; SameSite=Strict${isSecure ? "; Secure" : ""}`);
+      return res.status(401).json({ error: "Sesi Anda telah berakhir. Silakan login kembali." });
+    }
+    req.session = session;
+    next();
+  }
+  function requireRole(roles) {
+    return (req, res, next) => {
+      const session = req.session;
+      if (!session || !roles.includes(session.role)) {
+        return res.status(403).json({ error: "Akses ditolak. Anda tidak memiliki wewenang untuk halaman ini." });
+      }
+      next();
+    };
+  }
+  async function logAction(session, aksi, detail, arsipId, namaDokumen) {
+    const log = {
+      id: "LOG_" + Date.now() + "_" + Math.floor(Math.random() * 1e3),
+      tanggal: (/* @__PURE__ */ new Date()).toISOString(),
+      userId: session.id,
+      pegawaiId: session.pegawaiId,
+      nip: session.nip,
+      namaPegawai: session.nama,
+      role: session.role,
+      aksi,
+      detail,
+      arsipId,
+      namaDokumen
+    };
+    await createLogEntry2(log);
+  }
+  app3.use("/api/auth", createAuthRouter(requireAuth, rateLimit));
+  app3.use("/api", createMetadataRouter(requireAuth));
+  app3.use("/api/pegawai", createPegawaiRouter(requireAuth, logAction));
+  app3.use("/api/arsip", createArsipRouter(requireAuth, upload, logAction));
+  app3.use("/api/admin", createAdminRouter(requireAuth, requireRole, logAction));
+  app3.use("/api/files", createFilesRouter(requireAuth));
+  app3.get("/api/kelengkapan/me", requireAuth, async (req, res) => {
+    const session = req.session;
+    try {
+      const { getPegawaiData: getPegawaiData3, listArsipByPegawai: listArsipByPegawai4 } = await Promise.resolve().then(() => (init_firestore(), firestore_exports));
+      const { STATIC_JENIS_DOKUMEN: STATIC_JENIS_DOKUMEN2 } = await Promise.resolve().then(() => (init_constants(), constants_exports));
+      const userPegawai = await getPegawaiData3(session.pegawaiId);
+      if (!userPegawai) return res.status(404).json({ error: "Data kepegawaian tidak ditemukan." });
+      const uploads = await listArsipByPegawai4(session.pegawaiId);
+      const checklist = STATIC_JENIS_DOKUMEN2.map((doc) => {
+        const uploadedMatch = uploads.find((u) => u.jenisDokumen === doc.namaDokumen);
+        const isPertinent = doc.berlakuUntuk === "Semua" || doc.berlakuUntuk === userPegawai.statusPegawai;
+        return {
+          id: doc.id,
+          kategoriId: doc.kategoriId,
+          namaKategori: doc.namaKategori,
+          namaDokumen: doc.namaDokumen,
+          status: uploadedMatch ? uploadedMatch.statusValidasi : "Belum Upload",
+          catatanAdmin: uploadedMatch?.catatanAdmin || "",
+          wajib: doc.wajib && isPertinent,
+          arsipId: uploadedMatch ? uploadedMatch.id : null,
+          downloadUrl: uploadedMatch ? uploadedMatch.downloadUrl : null,
+          storagePath: uploadedMatch ? uploadedMatch.storagePath : null
+        };
+      });
+      return res.json(checklist);
+    } catch {
+      return res.status(500).json({ error: "Gagal memuat rekap kelengkapan." });
+    }
+  });
+  if (process.env.NODE_ENV !== "production") {
+    const { createServer: createViteServer } = await import("vite");
+    const vite = await createViteServer({
+      server: { middlewareMode: true },
+      appType: "spa"
+    });
+    app3.use(vite.middlewares);
+  } else {
+    const distPath = path5.join(process.cwd(), "dist");
+    app3.use(express.static(distPath));
+    app3.get("*", (_req, res) => {
+      res.sendFile(path5.join(distPath, "index.html"));
+    });
+  }
+  return app3;
 }
-async function logAction(session, aksi, detail, arsipId, namaDokumen) {
-  await createLogEntry2({
-    id: "LOG_" + Date.now() + "_" + Math.floor(Math.random() * 1e3),
-    tanggal: (/* @__PURE__ */ new Date()).toISOString(),
-    userId: session.id,
-    pegawaiId: session.pegawaiId,
-    nip: session.nip,
-    namaPegawai: session.nama,
-    role: session.role,
-    aksi,
-    detail,
-    arsipId,
-    namaDokumen
+async function startServer() {
+  const app3 = await createApp();
+  app3.listen(PORT, "0.0.0.0", () => {
+    console.log(`[Arsip Digital ASN] Server ready and serving on http://localhost:${PORT}`);
   });
 }
-var appInstance = null;
-var seedingPromise = null;
+if (process.env.VERCEL !== "1") {
+  startServer();
+}
+
+// api-build/handler.ts
+var app2 = null;
 async function handler(req, res) {
-  if (!seedingPromise) {
-    seedingPromise = seedInitialDb2().catch((err) => console.error("Seed initial DB error:", err));
+  if (!app2) {
+    app2 = await createApp();
   }
-  await seedingPromise;
-  try {
-    if (!appInstance) {
-      const app2 = express();
-      app2.set("trust proxy", 1);
-      app2.use(express.json({ limit: "50mb" }));
-      app2.use(express.urlencoded({ extended: true, limit: "50mb" }));
-      app2.use(cookieParser());
-      const upload = multer({ limits: { fileSize: 10 * 1024 * 1024 } });
-      const generalLimiter = rateLimit({
-        windowMs: 15 * 60 * 1e3,
-        max: 100,
-        standardHeaders: true,
-        legacyHeaders: false,
-        message: { error: "Terlalu banyak permintaan. Coba lagi dalam 15 menit." }
-      });
-      const strictLimiter = rateLimit({
-        windowMs: 60 * 1e3,
-        max: 20,
-        standardHeaders: true,
-        legacyHeaders: false,
-        message: { error: "Terlalu banyak permintaan. Coba lagi dalam 1 menit." }
-      });
-      app2.use("/api/", generalLimiter);
-      app2.use("/api/auth/login", strictLimiter);
-      app2.use("/api/auth", createAuthRouter(requireAuth, rateLimit));
-      app2.use("/api", createMetadataRouter(requireAuth));
-      app2.use("/api/pegawai", createPegawaiRouter(requireAuth, logAction));
-      app2.use("/api/arsip", createArsipRouter(requireAuth, upload, logAction));
-      app2.use("/api/admin", createAdminRouter(requireAuth, requireRole, logAction));
-      app2.use("/api/files", createFilesRouter(requireAuth));
-      app2.get("/api/kelengkapan/me", requireAuth, async (req2, res2) => {
-        const session = req2.session;
-        try {
-          const { getPegawaiData: getPegawaiData3, listArsipByPegawai: listArsipByPegawai4 } = await Promise.resolve().then(() => (init_data(), data_exports));
-          const { STATIC_JENIS_DOKUMEN: STATIC_JENIS_DOKUMEN2 } = await Promise.resolve().then(() => (init_constants(), constants_exports));
-          const userPegawai = await getPegawaiData3(session.pegawaiId);
-          if (!userPegawai) return res2.status(404).json({ error: "Data tidak ditemukan." });
-          const uploads = await listArsipByPegawai4(session.pegawaiId);
-          const status = userPegawai.statusPegawai || "";
-          const hidden = [];
-          if (status === "PNS") {
-            hidden.push("SK PPPK", "SK PPPK Paruh Waktu");
-          } else if (status === "PPPK") {
-            hidden.push("SK PPPK Paruh Waktu", "SK CPNS/PNS");
-          } else if (status === "PPPK Paruh Waktu") {
-            hidden.push("SK Honor", "SK CPNS/PNS");
-          }
-          return res2.json(STATIC_JENIS_DOKUMEN2.filter((doc) => !hidden.includes(doc.namaDokumen) && (doc.berlakuUntuk === "Semua" || doc.berlakuUntuk === status)).map((doc) => {
-            const m = uploads.find((u) => u.jenisDokumen === doc.namaDokumen);
-            return {
-              id: doc.id,
-              kategoriId: doc.kategoriId,
-              namaKategori: doc.namaKategori,
-              namaDokumen: doc.namaDokumen,
-              status: m ? m.statusValidasi : "Belum Upload",
-              catatanAdmin: m?.catatanAdmin || "",
-              wajib: doc.wajib,
-              arsipId: m ? m.id : null,
-              downloadUrl: m ? m.downloadUrl : null,
-              storagePath: m ? m.storagePath : null
-            };
-          }));
-        } catch (err) {
-          console.error("Rekap error:", err?.message || err);
-          return res2.status(500).json({ error: "Gagal memuat rekap." });
-        }
-      });
-      const distPath = path5.join(process.cwd(), "dist");
-      app2.use(express.static(distPath));
-      app2.get("*", (_req, res2) => res2.sendFile(path5.join(distPath, "index.html")));
-      appInstance = app2;
-    }
-    return new Promise((resolve2, reject) => {
-      res.on("finish", resolve2);
-      res.on("error", reject);
-      appInstance(req, res);
-    });
-  } catch (err) {
-    console.error("Handler error:", err?.stack || err?.message);
-    res.statusCode = 500;
-    res.setHeader("Content-Type", "application/json");
-    res.end(JSON.stringify({ error: "Terjadi kesalahan server.", detail: err?.message || "unknown" }));
-  }
+  return new Promise((resolve2, reject) => {
+    res.on("finish", resolve2);
+    res.on("error", reject);
+    app2(req, res);
+  });
 }
 export {
   handler as default

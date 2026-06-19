@@ -345,7 +345,8 @@ export async function seedKategoriDanJenis() {
   if (existingK && (existingK.rows[0] as any).cnt > 0) return;
   for (const k of STATIC_KATEGORI) {
     await query('INSERT INTO kategori_arsip (id, nama_kategori, urutan, deskripsi) VALUES (?, ?, ?, ?)',
-      [k.id, k.namaKategori, k.urutan, k.deskripsi || '']);
+      [k.id, k.namaKategori, k.urutan, '']);
+
   }
   for (const jd of STATIC_JENIS_DOKUMEN) {
     await query('INSERT INTO jenis_dokumen (id, kategori_id, nama_kategori, nama_dokumen, berlaku_untuk, wajib, urutan) VALUES (?, ?, ?, ?, ?, ?, ?)',

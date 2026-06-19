@@ -36,6 +36,7 @@ export interface Pegawai {
   nomorHp: string;
   email: string;
   alamat: string;
+  password?: string;
   role: 'pegawai' | 'admin_instansi' | 'super_admin';
   statusAktif: boolean;
   loginTerakhir?: string;

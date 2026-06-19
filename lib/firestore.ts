@@ -1,5 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
+import bcrypt from 'bcryptjs';
 import { db, isFirebaseConfigured } from './firebaseAdmin';
 import { Instansi, Pegawai, KategoriArsip, JenisDokumen, Arsip, Log, Setting } from '../src/types';
 import { STATIC_KATEGORI, STATIC_JENIS_DOKUMEN } from './constants';
@@ -174,9 +175,12 @@ export async function seedInitialDb() {
         for (const i of defaultInstansi) {
           await db.collection('instansi').doc(i.id).set(i);
         }
-        // Seed Pegawai
+        // Seed Pegawai with hashed passwords
         for (const p of defaultPegawai) {
-          await db.collection('pegawai').doc(p.id).set(p);
+          const pass = p.nip.slice(-6);
+          const hashed = await bcrypt.hash(pass, 10);
+          const pegawaiWithPass = { ...p, password: hashed };
+          await db.collection('pegawai').doc(p.id).set(pegawaiWithPass);
           // Also set user mapping for easy lookup
           await db.collection('users').doc(p.id).set({
             id: p.id,
@@ -214,8 +218,13 @@ export async function seedInitialDb() {
   const local = readLocalDb();
   if (local.instansi.length === 0) {
     console.log('Seeding local storage fallback DB...');
+    const pegawaiWithPass = await Promise.all(defaultPegawai.map(async (p) => {
+      const pass = p.nip.slice(-6);
+      const hashed = await bcrypt.hash(pass, 10);
+      return { ...p, password: hashed };
+    }));
     local.instansi = defaultInstansi;
-    local.pegawai = defaultPegawai;
+    local.pegawai = pegawaiWithPass;
     local.kategoriArsip = STATIC_KATEGORI;
     local.jenisDokumen = STATIC_JENIS_DOKUMEN;
     local.settings = defaultSettings;
@@ -270,37 +279,33 @@ export async function getPegawaiData(id: string): Promise<Pegawai | null> {
 
 export async function findPegawaiByCredentials(
   identifier: string,
-  type: 'NIP' | 'NIK' | 'BOTH',
-  tanggalLahir: string
-): Promise<Pegawai | null> {
+  type: 'NIP' | 'NIK' | 'BOTH'
+): Promise<any> {
   if (isFirebaseConfigured && db) {
     if (type === 'NIP' || type === 'BOTH') {
       const qs = await db.collection('pegawai')
         .where('nip', '==', identifier)
-        .where('tanggalLahir', '==', tanggalLahir)
         .get();
-      if (!qs.empty) return qs.docs[0].data() as Pegawai;
+      if (!qs.empty) return qs.docs[0].data();
     }
     if (type === 'NIK' || type === 'BOTH') {
       const qs = await db.collection('pegawai')
         .where('nik', '==', identifier)
-        .where('tanggalLahir', '==', tanggalLahir)
         .get();
-      if (!qs.empty) return qs.docs[0].data() as Pegawai;
+      if (!qs.empty) return qs.docs[0].data();
     }
     return null;
   }
 
   const local = readLocalDb();
   const found = local.pegawai.find(p => {
-    let fieldMatch = false;
     if (type === 'NIP' || type === 'BOTH') {
-      fieldMatch = fieldMatch || p.nip === identifier;
+      if (p.nip === identifier) return true;
     }
     if (type === 'NIK' || type === 'BOTH') {
-      fieldMatch = fieldMatch || p.nik === identifier;
+      if (p.nik === identifier) return true;
     }
-    return fieldMatch && p.tanggalLahir === tanggalLahir;
+    return false;
   });
   return found || null;
 }

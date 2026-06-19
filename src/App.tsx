@@ -692,7 +692,6 @@ export default function App() {
               <UploadForm
                 kategoriList={kategoriList}
                 jenisDokumenList={filterJenisDokumenByStatus(jenisDokumenList, profile?.statusPegawai || '')}
-                statusPegawai={profile?.statusPegawai || ''}
                 isSubmitting={false}
                 onSubmit={handleSaveDocument}
                 editArsip={editArsip}

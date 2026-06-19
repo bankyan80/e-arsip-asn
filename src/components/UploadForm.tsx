@@ -155,6 +155,7 @@ export const UploadForm: React.FC<UploadFormProps> = ({
     payload.append('kelompokArsip', kelompok);
     payload.append('jenisDokumen', jenisDoc);
     payload.append('namaDokumen', namaDoc);
+    payload.append('nomorDokumen', nomorDoc);
     payload.append('tanggalDokumen', tanggalDoc);
     payload.append('tahun', tahun);
     payload.append('keterangan', keterangan);
@@ -230,6 +231,21 @@ export const UploadForm: React.FC<UploadFormProps> = ({
           required
         />
         <p className="text-[10px] text-slate-400 mt-1">Nama deskriptif untuk membedakan dokumen arsip Anda.</p>
+      </div>
+
+      {/* Nomor Dokumen */}
+      <div>
+        <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-1.5">
+          Nomor Dokumen <span className="text-red-500">*</span>
+        </label>
+        <input
+          type="text"
+          value={nomorDoc}
+          onChange={(e) => setNomorDoc(e.target.value)}
+          placeholder="Contoh: 800/1234/Kepeg.2024"
+          className="w-full h-11 border border-slate-200 rounded-xl px-3 text-sm font-medium focus:outline-none focus:border-[#0f2a44] transition-all"
+          required
+        />
       </div>
 
       {/* Grid: Tanggal & Tahun */}
