@@ -1527,17 +1527,56 @@ export default function App() {
                   return <EmptyState title="Tidak ada berkas" description="Tidak ditemukan berkas sesuai pencarian." />;
                 }
                 return (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {filtered.map(a => (
-                      <ArsipCard
-                        key={a.id}
-                        arsip={a}
-                        onView={(id) => openFileViewer(id, a.downloadUrl)}
-                        onEdit={() => {}}
-                        onDelete={() => {}}
-                        isEmployeeView={false}
-                      />
-                    ))}
+                  <div className="bg-white border border-slate-100 rounded-2xl overflow-hidden shadow-xs">
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left border-collapse text-xs">
+                        <thead>
+                          <tr className="bg-slate-50 text-slate-500 font-bold border-b border-slate-100">
+                            <th className="p-3">Pegawai</th>
+                            <th className="p-3">Jenis Dokumen</th>
+                            <th className="p-3 hidden sm:table-cell">Kategori</th>
+                            <th className="p-3 hidden md:table-cell">Tahun</th>
+                            <th className="p-3">Status</th>
+                            <th className="p-3 text-right">Aksi</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                          {filtered.map(a => (
+                            <tr key={a.id} className="hover:bg-slate-50">
+                              <td className="p-3">
+                                <span className="font-semibold text-slate-800">{a.namaPegawai}</span>
+                              </td>
+                              <td className="p-3">
+                                <span className="text-slate-700">{a.jenisDokumen}</span>
+                                <span className="text-[10px] text-slate-400 block leading-none mt-0.5">{a.namaDokumen}</span>
+                              </td>
+                              <td className="p-3 hidden sm:table-cell">
+                                <span className="text-slate-500">{a.kelompokArsip}</span>
+                              </td>
+                              <td className="p-3 hidden md:table-cell">
+                                <span className="text-slate-500">{a.tahun || '-'}</span>
+                              </td>
+                              <td className="p-3">
+                                <span className={`inline-block text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                                  a.statusValidasi === 'Valid' ? 'bg-green-100 text-green-700' :
+                                  a.statusValidasi === 'Perlu Perbaikan' ? 'bg-amber-100 text-amber-700' :
+                                  a.statusValidasi === 'Menunggu Validasi' ? 'bg-yellow-100 text-yellow-700' :
+                                  'bg-slate-100 text-slate-500'
+                                }`}>{a.statusValidasi}</span>
+                              </td>
+                              <td className="p-3 text-right">
+                                <button
+                                  onClick={() => openFileViewer(a.id, a.downloadUrl)}
+                                  className="text-[10px] font-bold text-blue-600 hover:text-blue-800 uppercase tracking-wider"
+                                >
+                                  Lihat
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
                 );
               })()}
