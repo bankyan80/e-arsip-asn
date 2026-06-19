@@ -3,7 +3,7 @@ import bcrypt from 'bcryptjs';
 import {
   listAllPegawai, listAllArsipAdmin, getArsipData, updateArsipData,
   findPegawaiByCredentials, getInstansiData, adminCreatePegawai,
-  getLogsData, listAllInstansi, getSettingValue, updateSettingValue, setPegawaiPassword, updatePegawaiData,
+  getLogsData, listAllInstansi, getSettingValue, updateSettingValue, setPegawaiPassword, updatePegawaiData, deletePegawaiData,
   createKategori, updateKategori, deleteKategori,
   createJenisDokumen, updateJenisDokumen, deleteJenisDokumen,
   getKategoriList, getJenisDokumenList,
@@ -311,6 +311,37 @@ export function createAdminRouter(requireAuth: any, requireRole: any, logAction:
       return res.json({ message: 'Password berhasil direset.' });
     } catch {
       return res.status(500).json({ error: 'Gagal mereset password.' });
+    }
+  });
+
+
+  router.patch('/pegawai/:id', requireAuth, requireRole(['admin_instansi', 'super_admin']), async (req, res) => {
+    const { id } = req.params;
+    const allowed = ['namaPegawai', 'nip', 'nik', 'tanggalLahir', 'jenisKelamin', 'jabatan', 'statusPegawai', 'pangkatGolongan', 'pendidikanTerakhir', 'nomorHp', 'email', 'alamat', 'statusAktif'];
+    const updates: Record<string, unknown> = {};
+    for (const key of allowed) {
+      if (req.body[key] !== undefined) updates[key] = req.body[key];
+    }
+    if (Object.keys(updates).length === 0) return res.status(400).json({ error: 'Tidak ada data yang diubah.' });
+    try {
+      await updatePegawaiData(id, updates);
+      if (req.body.password) {
+        const hashed = await bcrypt.hash(req.body.password, 10);
+        await setPegawaiPassword(id, hashed);
+      }
+      return res.json({ message: 'Data pegawai berhasil diperbarui.' });
+    } catch {
+      return res.status(500).json({ error: 'Gagal memperbarui data pegawai.' });
+    }
+  });
+
+  router.delete('/pegawai/:id', requireAuth, requireRole(['super_admin', 'admin_instansi']), async (req, res) => {
+    const { id } = req.params;
+    try {
+      await deletePegawaiData(id);
+      return res.json({ message: 'Pegawai berhasil dihapus.' });
+    } catch {
+      return res.status(500).json({ error: 'Gagal menghapus pegawai.' });
     }
   });
 

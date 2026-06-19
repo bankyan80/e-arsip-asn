@@ -34,6 +34,8 @@ var init_constants = __esm({
       { id: "JD1_5", kategoriId: "KAT1", namaKategori: "Riwayat Karier", namaDokumen: "SK Mutasi", wajib: false, berlakuUntuk: "Semua", statusAktif: true },
       { id: "JD1_6", kategoriId: "KAT1", namaKategori: "Riwayat Karier", namaDokumen: "SK Penempatan", wajib: true, berlakuUntuk: "Semua", statusAktif: true },
       { id: "JD1_7", kategoriId: "KAT1", namaKategori: "Riwayat Karier", namaDokumen: "SK Pembagian Tugas", wajib: false, berlakuUntuk: "Semua", statusAktif: true },
+      { id: "JD1_8", kategoriId: "KAT1", namaKategori: "Riwayat Karier", namaDokumen: "Dokumen GTK", wajib: false, berlakuUntuk: "Semua", statusAktif: true },
+      { id: "JD1_9", kategoriId: "KAT1", namaKategori: "Riwayat Karier", namaDokumen: "Lainnya", wajib: false, berlakuUntuk: "Semua", statusAktif: true },
       // Pendidikan
       { id: "JD2_1", kategoriId: "KAT2", namaKategori: "Pendidikan", namaDokumen: "Ijazah", wajib: true, berlakuUntuk: "Semua", statusAktif: true },
       { id: "JD2_2", kategoriId: "KAT2", namaKategori: "Pendidikan", namaDokumen: "Transkrip Nilai", wajib: true, berlakuUntuk: "Semua", statusAktif: true },
@@ -57,6 +59,7 @@ var init_constants = __esm({
       { id: "JD4_9", kategoriId: "KAT4", namaKategori: "Data Pribadi", namaDokumen: "Karpeg", wajib: false, berlakuUntuk: "PNS", statusAktif: true },
       { id: "JD4_10", kategoriId: "KAT4", namaKategori: "Data Pribadi", namaDokumen: "Taspen", wajib: false, berlakuUntuk: "PNS", statusAktif: true },
       { id: "JD4_11", kategoriId: "KAT4", namaKategori: "Data Pribadi", namaDokumen: "KARIS/KARSU", wajib: false, berlakuUntuk: "PNS", statusAktif: true },
+      { id: "JD4_12", kategoriId: "KAT4", namaKategori: "Data Pribadi", namaDokumen: "Pass Foto", wajib: false, berlakuUntuk: "Semua", statusAktif: true },
       // Kesehatan dan Disiplin
       { id: "JD5_1", kategoriId: "KAT5", namaKategori: "Kesehatan dan Disiplin", namaDokumen: "Surat Cuti", wajib: false, berlakuUntuk: "Semua", statusAktif: true },
       { id: "JD5_2", kategoriId: "KAT5", namaKategori: "Kesehatan dan Disiplin", namaDokumen: "Riwayat Kesehatan", wajib: false, berlakuUntuk: "Semua", statusAktif: true },
@@ -73,6 +76,7 @@ var turso_exports = {};
 __export(turso_exports, {
   bulkCreatePegawai: () => bulkCreatePegawai,
   bulkDeleteArsipByUploader: () => bulkDeleteArsipByUploader,
+  bulkValidasiArsip: () => bulkValidasiArsip,
   clearPegawaiExceptSuperAdmin: () => clearPegawaiExceptSuperAdmin,
   createArsip: () => createArsip,
   createInstansi: () => createInstansi,
@@ -80,8 +84,10 @@ __export(turso_exports, {
   createKategori: () => createKategori,
   createLog: () => createLog,
   createPegawai: () => createPegawai,
+  dedupArsip: () => dedupArsip,
   deleteJenisDokumen: () => deleteJenisDokumen,
   deleteKategori: () => deleteKategori,
+  deletePegawai: () => deletePegawai,
   ensureSuperAdmin: () => ensureSuperAdmin,
   findPegawaiByNipNik: () => findPegawaiByNipNik,
   findPegawaiByNipNikWithPassword: () => findPegawaiByNipNikWithPassword,
@@ -98,6 +104,7 @@ __export(turso_exports, {
   listKategori: () => listKategori,
   listLogs: () => listLogs,
   listPegawai: () => listPegawai,
+  remapArsipJenisDokumen: () => remapArsipJenisDokumen,
   seedDefaultPasswords: () => seedDefaultPasswords,
   seedKategoriDanJenis: () => seedKategoriDanJenis,
   setPegawaiPassword: () => setPegawaiPassword,
@@ -172,6 +179,14 @@ async function initSchema() {
   ]);
   try {
     await c.execute("ALTER TABLE pegawai ADD COLUMN password TEXT NOT NULL DEFAULT ''");
+  } catch {
+  }
+  try {
+    await c.execute("CREATE INDEX IF NOT EXISTS idx_arsip_deleted_updated ON arsip(deleted, updated_at)");
+  } catch {
+  }
+  try {
+    await c.execute("CREATE INDEX IF NOT EXISTS idx_arsip_pegawai_id ON arsip(pegawai_id)");
   } catch {
   }
 }
@@ -259,8 +274,13 @@ async function updatePegawai(id, updates) {
   args.push(id);
   await query(`UPDATE pegawai SET ${setClauses.join(", ")}, updated_at = datetime('now') WHERE id = ?`, args);
 }
+async function deletePegawai(id) {
+  await query("UPDATE arsip SET deleted = 1 WHERE pegawai_id = ?", [id]);
+  await query("DELETE FROM logs WHERE pegawai_id = ?", [id]);
+  await query("DELETE FROM pegawai WHERE id = ?", [id]);
+}
 async function listArsipByPegawai(pegawaiId) {
-  const r = await query("SELECT * FROM arsip WHERE pegawai_id = ? AND deleted = 0 ORDER BY updated_at DESC", [pegawaiId]);
+  const r = await query(`SELECT id, pegawai_id, nip, nik, nama_pegawai, instansi_id, nama_instansi, kelompok_arsip, jenis_dokumen, nama_dokumen, nomor_dokumen, tanggal_dokumen, tahun, file_name, file_type, file_size, download_url, status_validasi, catatan_admin, deleted, uploaded_at, updated_at, uploaded_by, updated_by, version_history FROM arsip WHERE pegawai_id = ? AND deleted = 0 ORDER BY updated_at DESC`, [pegawaiId]);
   if (!r) return [];
   return r.rows.map(mapArsipRow);
 }
@@ -296,7 +316,7 @@ async function updateArsip(id, updates) {
   await query(`UPDATE arsip SET ${setClauses.join(", ")}, updated_at = datetime('now') WHERE id = ?`, args);
 }
 async function listArsipAdmin(instansiId) {
-  let sql = "SELECT * FROM arsip WHERE deleted = 0";
+  let sql = `SELECT id, pegawai_id, nip, nik, nama_pegawai, instansi_id, nama_instansi, kelompok_arsip, jenis_dokumen, nama_dokumen, nomor_dokumen, tanggal_dokumen, tahun, file_name, file_type, file_size, download_url, status_validasi, catatan_admin, deleted, uploaded_at, updated_at, uploaded_by, updated_by, version_history FROM arsip WHERE deleted = 0`;
   const args = [];
   if (instansiId) {
     sql += " AND instansi_id = ?";
@@ -433,6 +453,53 @@ async function seedKategoriDanJenis() {
       [jd.id, jd.kategoriId, jd.namaKategori, jd.namaDokumen, jd.berlakuUntuk, jd.wajib ? 1 : 0, 0]
     );
   }
+}
+async function bulkValidasiArsip(instansiId, statusValidasi = "Valid", updatedBy = "system") {
+  let sql = `UPDATE arsip SET status_validasi = ?, updated_at = datetime('now'), updated_by = ? WHERE deleted = 0`;
+  const args = [statusValidasi, updatedBy];
+  if (instansiId) {
+    sql += " AND instansi_id = ?";
+    args.push(instansiId);
+  }
+  const r = await query(sql, args);
+  return r !== null;
+}
+async function remapArsipJenisDokumen() {
+  const mapping = [
+    { oldKelompok: "Dokumen Kepegawaian", oldJenis: "Dokumen GTK", newKelompok: "Riwayat Karier", newJenis: "Dokumen GTK" },
+    { oldKelompok: "Dokumen Kepegawaian", oldJenis: "Lainnya", newKelompok: "Riwayat Karier", newJenis: "Lainnya" },
+    { oldKelompok: "Dokumen Pendukung", oldJenis: "SK Penugasan", newKelompok: "Riwayat Karier", newJenis: "SK Penempatan" },
+    { oldKelompok: "Dokumen Pendukung", oldJenis: "SK PPPK PW", newKelompok: "Riwayat Karier", newJenis: "SK PPPK" },
+    { oldKelompok: "Dokumen Pendukung", oldJenis: "Ijazah", newKelompok: "Pendidikan", newJenis: "Ijazah" },
+    { oldKelompok: "Dokumen Pendukung", oldJenis: "Kartu Keluarga", newKelompok: "Data Pribadi", newJenis: "Kartu Keluarga" },
+    { oldKelompok: "Dokumen Pendukung", oldJenis: "KTP", newKelompok: "Data Pribadi", newJenis: "KTP" },
+    { oldKelompok: "Dokumen Pendukung", oldJenis: "Pass Foto", newKelompok: "Data Pribadi", newJenis: "Pass Foto" },
+    { oldKelompok: "Dokumen Pendukung", oldJenis: "Sertifikat Pendidik", newKelompok: "Pendidikan", newJenis: "Sertifikat Pendidik" },
+    { oldKelompok: "Dokumen Pendukung", oldJenis: "NPWP", newKelompok: "Data Pribadi", newJenis: "NPWP" },
+    { oldKelompok: "Dokumen Pendukung", oldJenis: "BPJS Kesehatan", newKelompok: "Data Pribadi", newJenis: "BPJS" },
+    { oldKelompok: "Dokumen Pendukung", oldJenis: "SK CPNS", newKelompok: "Riwayat Karier", newJenis: "SK CPNS/PNS" },
+    { oldKelompok: "Dokumen Pendukung", oldJenis: "SK PNS", newKelompok: "Riwayat Karier", newJenis: "SK CPNS/PNS" },
+    { oldKelompok: "Dokumen Pendukung", oldJenis: "SK Pangkat", newKelompok: "Riwayat Karier", newJenis: "SK Kenaikan Pangkat" },
+    { oldKelompok: "Dokumen Pendukung", oldJenis: "SK Jafung", newKelompok: "Riwayat Karier", newJenis: "SK Jabatan" },
+    { oldKelompok: "Dokumen Pendukung", oldJenis: "Kartu Pegawai", newKelompok: "Data Pribadi", newJenis: "Karpeg" },
+    { oldKelompok: "Dokumen Pendukung", oldJenis: "Akta", newKelompok: "Data Pribadi", newJenis: "Akta Anak" },
+    { oldKelompok: "Dokumen Pendukung", oldJenis: "SK Konversi", newKelompok: "Riwayat Karier", newJenis: "SK Mutasi" }
+  ];
+  for (const m of mapping) {
+    await query(
+      `UPDATE arsip SET kelompok_arsip = ?, jenis_dokumen = ?, updated_at = datetime('now') WHERE kelompok_arsip = ? AND jenis_dokumen = ? AND deleted = 0`,
+      [m.newKelompok, m.newJenis, m.oldKelompok, m.oldJenis]
+    );
+  }
+  return true;
+}
+async function dedupArsip() {
+  const r = await query(
+    `DELETE FROM arsip WHERE id NOT IN (
+      SELECT MIN(id) FROM arsip WHERE deleted = 0 GROUP BY pegawai_id, jenis_dokumen
+    ) AND deleted = 0`
+  );
+  return r !== null;
 }
 async function ensureSuperAdmin() {
   const existing = await query("SELECT id FROM pegawai WHERE id = ?", ["PGW004"]);
@@ -975,13 +1042,16 @@ __export(data_exports, {
   adminCreatePegawai: () => adminCreatePegawai2,
   bulkDeleteArsipByUploader: () => bulkDeleteArsipByUploader2,
   bulkImportPegawai: () => bulkImportPegawai,
+  bulkValidasiArsip: () => bulkValidasiArsip2,
   clearPegawai: () => clearPegawai,
   createArsipData: () => createArsipData2,
   createJenisDokumen: () => createJenisDokumen2,
   createKategori: () => createKategori2,
   createLogEntry: () => createLogEntry2,
+  dedupArsip: () => dedupArsip2,
   deleteJenisDokumen: () => deleteJenisDokumen2,
   deleteKategori: () => deleteKategori2,
+  deletePegawaiData: () => deletePegawaiData,
   findPegawaiByCredentials: () => findPegawaiByCredentials2,
   getArsipData: () => getArsipData2,
   getInstansiData: () => getInstansiData2,
@@ -995,6 +1065,7 @@ __export(data_exports, {
   listAllPegawai: () => listAllPegawai2,
   listArsipByPegawai: () => listArsipByPegawai3,
   readLocalDb: () => readLocalDb2,
+  remapArsipJenisDokumen: () => remapArsipJenisDokumen2,
   seedInitialDb: () => seedInitialDb2,
   setPegawaiPassword: () => setPegawaiPassword2,
   updateAllInstansiName: () => updateAllInstansiName2,
@@ -1053,7 +1124,7 @@ async function seedInitialDb2() {
   }
   return seedInitialDb();
 }
-var getInstansiData2, listAllInstansi2, getPegawaiData2, findPegawaiByCredentials2, updatePegawaiData2, listAllPegawai2, adminCreatePegawai2, bulkImportPegawai, clearPegawai, updateAllInstansiName2, bulkDeleteArsipByUploader2, listArsipByPegawai3, getArsipData2, createArsipData2, updateArsipData2, listAllArsipAdmin2, createLogEntry2, getLogsData2, getSettingValue2, updateSettingValue2, getKategoriList2, createKategori2, updateKategori2, deleteKategori2, getJenisDokumenList2, createJenisDokumen2, updateJenisDokumen2, deleteJenisDokumen2, setPegawaiPassword2, readLocalDb2, writeLocalDb2;
+var getInstansiData2, listAllInstansi2, getPegawaiData2, findPegawaiByCredentials2, updatePegawaiData2, deletePegawaiData, listAllPegawai2, adminCreatePegawai2, bulkImportPegawai, clearPegawai, updateAllInstansiName2, bulkDeleteArsipByUploader2, listArsipByPegawai3, getArsipData2, createArsipData2, updateArsipData2, listAllArsipAdmin2, createLogEntry2, getLogsData2, getSettingValue2, updateSettingValue2, getKategoriList2, createKategori2, updateKategori2, deleteKategori2, getJenisDokumenList2, createJenisDokumen2, updateJenisDokumen2, deleteJenisDokumen2, bulkValidasiArsip2, remapArsipJenisDokumen2, dedupArsip2, setPegawaiPassword2, readLocalDb2, writeLocalDb2;
 var init_data = __esm({
   "lib/data.ts"() {
     "use strict";
@@ -1084,6 +1155,8 @@ var init_data = __esm({
       await updatePegawai(id, updates);
       return getPegawai(id);
     } : updatePegawaiData;
+    deletePegawaiData = isConfigured ? async (id) => deletePegawai(id) : async (_id) => {
+    };
     listAllPegawai2 = isConfigured ? async (instansiId) => listPegawai(instansiId) : listAllPegawai;
     adminCreatePegawai2 = isConfigured ? async (data) => createPegawai(data) : adminCreatePegawai;
     bulkImportPegawai = isConfigured ? async (list) => bulkCreatePegawai(list) : async (_list) => {
@@ -1134,6 +1207,18 @@ var init_data = __esm({
     };
     deleteJenisDokumen2 = isConfigured ? async (id) => deleteJenisDokumen(id) : async (id) => {
       console.warn("deleteJenisDokumen not available (Firestore fallback)");
+    };
+    bulkValidasiArsip2 = isConfigured ? async (instansiId, statusValidasi = "Valid", updatedBy = "system") => bulkValidasiArsip(instansiId, statusValidasi, updatedBy) : async (_instansiId, _statusValidasi, _updatedBy) => {
+      console.warn("bulkValidasiArsip not available (Firestore fallback)");
+      return false;
+    };
+    remapArsipJenisDokumen2 = isConfigured ? async () => remapArsipJenisDokumen() : async () => {
+      console.warn("remapArsipJenisDokumen not available (Firestore fallback)");
+      return false;
+    };
+    dedupArsip2 = isConfigured ? async () => dedupArsip() : async () => {
+      console.warn("dedupArsip not available (Firestore fallback)");
+      return false;
     };
     setPegawaiPassword2 = isConfigured ? async (id, hashed) => setPegawaiPassword(id, hashed) : async (id, _hashed) => {
       console.warn("setPegawaiPassword not available (Firestore fallback)");
@@ -1772,6 +1857,54 @@ function createAdminRouter(requireAuth2, requireRole2, logAction2) {
       return res.status(500).json({ error: "Gagal membuat data pegawai baru." });
     }
   });
+  router.get("/bup", requireAuth2, requireRole2(["super_admin", "admin_instansi"]), async (req, res) => {
+    try {
+      const pegawais = await listAllPegawai2();
+      const now = /* @__PURE__ */ new Date();
+      const pensionAgeMap = {
+        "Kepala Sekolah": 60,
+        "Guru": 60,
+        "Guru Kelas": 60
+      };
+      const results = [];
+      for (const p of pegawais) {
+        if (!p.tanggalLahir || !p.statusAktif) continue;
+        const born = new Date(p.tanggalLahir);
+        if (isNaN(born.getTime())) continue;
+        const pensionAge = pensionAgeMap[p.jabatan] || 58;
+        const reachedAge = new Date(born.getFullYear() + pensionAge, born.getMonth(), born.getDate());
+        const mulaiPensiun = new Date(reachedAge.getFullYear(), reachedAge.getMonth() + 1, 1);
+        if (mulaiPensiun <= now) {
+          await updatePegawaiData2(p.id, { statusAktif: false, updatedAt: (/* @__PURE__ */ new Date()).toISOString() });
+          continue;
+        }
+        let usia = now.getFullYear() - born.getFullYear();
+        const mDiff = now.getMonth() - born.getMonth();
+        if (mDiff < 0 || mDiff === 0 && now.getDate() < born.getDate()) usia--;
+        const diffMs = mulaiPensiun.getTime() - now.getTime();
+        const diffDays = Math.floor(diffMs / (1e3 * 60 * 60 * 24));
+        const years = Math.floor(diffDays / 365);
+        const months = Math.floor(diffDays % 365 / 30);
+        const days = diffDays % 30;
+        results.push({
+          pegawaiId: p.id,
+          namaPegawai: p.namaPegawai,
+          nip: p.nip,
+          tanggalLahir: p.tanggalLahir,
+          usia,
+          usiaPensiun: pensionAge,
+          mulaiPensiun: mulaiPensiun.toISOString().split("T")[0],
+          sisa: `${years} tahun ${months} bulan ${days} hari`,
+          sisaDate: mulaiPensiun.toISOString().split("T")[0]
+        });
+      }
+      results.sort((a, b) => new Date(a.sisaDate).getTime() - new Date(b.sisaDate).getTime());
+      return res.json(results);
+    } catch (err) {
+      console.error("BUP error:", err?.message || err);
+      return res.status(500).json({ error: "Gagal memuat data BUP." });
+    }
+  });
   router.get("/arsip", requireAuth2, requireRole2(["admin_instansi", "super_admin"]), async (req, res) => {
     const session = req.session;
     const filterInstansi = req.query.instansiId;
@@ -1832,6 +1965,36 @@ function createAdminRouter(requireAuth2, requireRole2, logAction2) {
       return res.json({ message: "Status validasi berhasil diperbarui.", arsip: result });
     } catch {
       return res.status(500).json({ error: "Gagal memproses validasi." });
+    }
+  });
+  router.post("/arsip/bulk-validasi", requireAuth2, requireRole2(["super_admin"]), async (req, res) => {
+    const session = req.session;
+    const { statusValidasi, instansiId } = req.body || {};
+    try {
+      const success = await bulkValidasiArsip2(instansiId || void 0, statusValidasi || "Valid", session.id);
+      if (!success) return res.status(500).json({ error: "Gagal melakukan update massal." });
+      await logAction2(session, "BULK_VALIDASI_ARSIP", `Validasi massal semua arsip${instansiId ? ` (instansi: ${instansiId})` : ""} ke status: ${statusValidasi || "Valid"}`);
+      return res.json({ message: "Semua arsip berhasil divalidasi." });
+    } catch {
+      return res.status(500).json({ error: "Gagal memproses validasi massal." });
+    }
+  });
+  router.post("/arsip/remap-jenis", requireAuth2, requireRole2(["super_admin"]), async (req, res) => {
+    try {
+      const success = await remapArsipJenisDokumen2();
+      if (!success) return res.status(500).json({ error: "Gagal melakukan remap." });
+      return res.json({ message: "Nama dokumen dan kategori arsip berhasil disesuaikan." });
+    } catch {
+      return res.status(500).json({ error: "Gagal memproses remap." });
+    }
+  });
+  router.post("/arsip/dedup", requireAuth2, requireRole2(["super_admin"]), async (req, res) => {
+    try {
+      const success = await dedupArsip2();
+      if (!success) return res.status(500).json({ error: "Gagal melakukan dedup." });
+      return res.json({ message: "Duplikat arsip berhasil dihapus." });
+    } catch {
+      return res.status(500).json({ error: "Gagal memproses dedup." });
     }
   });
   router.get("/rekap", requireAuth2, requireRole2(["admin_instansi", "super_admin"]), async (req, res) => {
@@ -1929,6 +2092,34 @@ function createAdminRouter(requireAuth2, requireRole2, logAction2) {
       return res.json({ message: "Password berhasil direset." });
     } catch {
       return res.status(500).json({ error: "Gagal mereset password." });
+    }
+  });
+  router.patch("/pegawai/:id", requireAuth2, requireRole2(["admin_instansi", "super_admin"]), async (req, res) => {
+    const { id } = req.params;
+    const allowed = ["namaPegawai", "nip", "nik", "tanggalLahir", "jenisKelamin", "jabatan", "statusPegawai", "pangkatGolongan", "pendidikanTerakhir", "nomorHp", "email", "alamat", "statusAktif"];
+    const updates = {};
+    for (const key of allowed) {
+      if (req.body[key] !== void 0) updates[key] = req.body[key];
+    }
+    if (Object.keys(updates).length === 0) return res.status(400).json({ error: "Tidak ada data yang diubah." });
+    try {
+      await updatePegawaiData2(id, updates);
+      if (req.body.password) {
+        const hashed = await bcrypt3.hash(req.body.password, 10);
+        await setPegawaiPassword2(id, hashed);
+      }
+      return res.json({ message: "Data pegawai berhasil diperbarui." });
+    } catch {
+      return res.status(500).json({ error: "Gagal memperbarui data pegawai." });
+    }
+  });
+  router.delete("/pegawai/:id", requireAuth2, requireRole2(["super_admin", "admin_instansi"]), async (req, res) => {
+    const { id } = req.params;
+    try {
+      await deletePegawaiData(id);
+      return res.json({ message: "Pegawai berhasil dihapus." });
+    } catch {
+      return res.status(500).json({ error: "Gagal menghapus pegawai." });
     }
   });
   router.post("/kategori", requireAuth2, requireRole2(["super_admin"]), async (req, res) => {
@@ -2234,10 +2425,18 @@ async function handler(req, res) {
           const userPegawai = await getPegawaiData3(session.pegawaiId);
           if (!userPegawai) return res2.status(404).json({ error: "Data tidak ditemukan." });
           const uploads = await listArsipByPegawai4(session.pegawaiId);
-          return res2.json(STATIC_JENIS_DOKUMEN2.map((doc) => {
+          const status = userPegawai.statusPegawai || "";
+          const hidden = [];
+          if (status === "PNS") {
+            hidden.push("SK PPPK", "SK PPPK Paruh Waktu");
+          } else if (status === "PPPK") {
+            hidden.push("SK PPPK Paruh Waktu", "SK CPNS/PNS");
+          } else if (status === "PPPK Paruh Waktu") {
+            hidden.push("SK Honor", "SK CPNS/PNS");
+          }
+          return res2.json(STATIC_JENIS_DOKUMEN2.filter((doc) => !hidden.includes(doc.namaDokumen) && (doc.berlakuUntuk === "Semua" || doc.berlakuUntuk === status)).map((doc) => {
             const m = uploads.find((u) => u.jenisDokumen === doc.namaDokumen);
-            const p = doc.berlakuUntuk === "Semua" || doc.berlakuUntuk === userPegawai.statusPegawai;
-            return { id: doc.id, namaDokumen: doc.namaDokumen, status: m ? m.statusValidasi : "Belum Upload", wajib: doc.wajib && p };
+            return { id: doc.id, namaDokumen: doc.namaDokumen, status: m ? m.statusValidasi : "Belum Upload", wajib: doc.wajib };
           }));
         } catch (err) {
           console.error("Rekap error:", err?.message || err);

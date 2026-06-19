@@ -88,10 +88,20 @@ export default async function handler(req: any, res: any) {
           const userPegawai = await getPegawaiData(session.pegawaiId);
           if (!userPegawai) return res.status(404).json({ error: 'Data tidak ditemukan.' });
           const uploads = await listArsipByPegawai(session.pegawaiId);
-          return res.json(STATIC_JENIS_DOKUMEN.map((doc: any) => {
+          const status = userPegawai.statusPegawai || '';
+          const hidden: string[] = [];
+          if (status === 'PNS') {
+            hidden.push('SK PPPK', 'SK PPPK Paruh Waktu');
+          } else if (status === 'PPPK') {
+            hidden.push('SK PPPK Paruh Waktu', 'SK CPNS/PNS');
+          } else if (status === 'PPPK Paruh Waktu') {
+            hidden.push('SK Honor', 'SK CPNS/PNS');
+          }
+          return res.json(STATIC_JENIS_DOKUMEN
+            .filter((doc: any) => !hidden.includes(doc.namaDokumen) && (doc.berlakuUntuk === 'Semua' || doc.berlakuUntuk === status))
+            .map((doc: any) => {
             const m = uploads.find((u: any) => u.jenisDokumen === doc.namaDokumen);
-            const p = doc.berlakuUntuk === 'Semua' || doc.berlakuUntuk === userPegawai.statusPegawai;
-            return { id: doc.id, namaDokumen: doc.namaDokumen, status: m ? m.statusValidasi : 'Belum Upload', wajib: doc.wajib && p };
+            return { id: doc.id, namaDokumen: doc.namaDokumen, status: m ? m.statusValidasi : 'Belum Upload', wajib: doc.wajib };
           }));
         } catch (err: any) { console.error('Rekap error:', err?.message || err); return res.status(500).json({ error: 'Gagal memuat rekap.' }); }
       });

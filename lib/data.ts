@@ -66,6 +66,10 @@ export const updatePegawaiData: typeof firestore.updatePegawaiData = isTursoConf
   ? async (id, updates) => { await turso.updatePegawai(id, updates); return turso.getPegawai(id) as any; }
   : firestore.updatePegawaiData;
 
+export const deletePegawaiData = isTursoConfigured
+  ? async (id: string) => turso.deletePegawai(id)
+  : async (_id: string) => {};
+
 export const listAllPegawai: typeof firestore.listAllPegawai = isTursoConfigured
   ? async (instansiId?: string) => turso.listPegawai(instansiId) as any
   : firestore.listAllPegawai;

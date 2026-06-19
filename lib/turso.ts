@@ -177,6 +177,12 @@ export async function updatePegawai(id: string, updates: Record<string, unknown>
   await query(`UPDATE pegawai SET ${setClauses.join(', ')}, updated_at = datetime('now') WHERE id = ?`, args);
 }
 
+export async function deletePegawai(id: string) {
+  await query('UPDATE arsip SET deleted = 1 WHERE pegawai_id = ?', [id]);
+  await query('DELETE FROM logs WHERE pegawai_id = ?', [id]);
+  await query('DELETE FROM pegawai WHERE id = ?', [id]);
+}
+
 // ARSIP
 export async function listArsipByPegawai(pegawaiId: string) {
   const r = await query(`SELECT id, pegawai_id, nip, nik, nama_pegawai, instansi_id, nama_instansi, kelompok_arsip, jenis_dokumen, nama_dokumen, nomor_dokumen, tanggal_dokumen, tahun, file_name, file_type, file_size, download_url, status_validasi, catatan_admin, deleted, uploaded_at, updated_at, uploaded_by, updated_by, version_history FROM arsip WHERE pegawai_id = ? AND deleted = 0 ORDER BY updated_at DESC`, [pegawaiId]);

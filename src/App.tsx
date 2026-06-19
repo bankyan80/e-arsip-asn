@@ -13,9 +13,21 @@ import { StatCard } from './components/StatCard';
 import { ArsipCard } from './components/ArsipCard';
 import { UploadForm } from './components/UploadForm';
 import { PullToRefresh } from './components/PullToRefresh';
-import { Arsip } from './types';
+import { Arsip, JenisDokumen } from './types';
 import { useSession } from './hooks/useSession';
 import { usePegawaiData } from './hooks/usePegawaiData';
+
+function filterJenisDokumenByStatus(list: JenisDokumen[], statusPegawai: string): JenisDokumen[] {
+  const hidden: string[] = [];
+  if (statusPegawai === 'PNS') {
+    hidden.push('SK PPPK', 'SK PPPK Paruh Waktu');
+  } else if (statusPegawai === 'PPPK') {
+    hidden.push('SK PPPK Paruh Waktu', 'SK CPNS/PNS');
+  } else if (statusPegawai === 'PPPK Paruh Waktu') {
+    hidden.push('SK Honor', 'SK CPNS/PNS');
+  }
+  return list.filter(jd => !hidden.includes(jd.namaDokumen));
+}
 import { useAdminData } from './hooks/useAdminData';
 
 export default function App() {
@@ -72,6 +84,12 @@ export default function App() {
     instansiId: 'INST001'
   });
   const [addingPegawaiProcess, setAddingPegawaiProcess] = useState(false);
+
+  // Edit & Delete pegawai states
+  const [showEditPegawai, setShowEditPegawai] = useState(false);
+  const [editPegawaiForm, setEditPegawaiForm] = useState<any>({});
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deletePegawaiId, setDeletePegawaiId] = useState<string | null>(null);
 
   // Kategori & Jenis Dokumen CRUD states
   const [showKategoriModal, setShowKategoriModal] = useState(false);
@@ -254,6 +272,51 @@ export default function App() {
       showToast(err.message, 'error');
     } finally {
       setAddingPegawaiProcess(false);
+    }
+  };
+
+  const handleEditPegawai = (p: any) => {
+    setEditPegawaiForm({
+      id: p.id, namaPegawai: p.namaPegawai, nip: p.nip, nik: p.nik,
+      tanggalLahir: p.tanggalLahir || '', jenisKelamin: p.jenisKelamin || 'Laki-laki',
+      jabatan: p.jabatan || '', statusPegawai: p.statusPegawai || 'PNS',
+      pangkatGolongan: p.pangkatGolongan || '', pendidikanTerakhir: p.pendidikanTerakhir || '',
+      nomorHp: p.nomorHp || '', email: p.email || '', alamat: p.alamat || '',
+      instansiId: p.instansiId || '', password: ''
+    });
+    setShowEditPegawai(true);
+  };
+
+  const handleUpdatePegawai = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const { id, password, ...data } = editPegawaiForm;
+    if (password) (data as any).password = password;
+    try {
+      const res = await fetch('/api/admin/pegawai/' + id, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      if (!res.ok) { const d = await res.json(); throw new Error(d.error || 'Gagal memperbarui data.'); }
+      showToast('Data pegawai berhasil diperbarui.');
+      setShowEditPegawai(false);
+      if (session) adminData.fetchAdminData(session.role);
+    } catch (err: any) {
+      showToast(err.message, 'error');
+    }
+  };
+
+  const handleDeletePegawai = async () => {
+    if (!deletePegawaiId) return;
+    try {
+      const res = await fetch('/api/admin/pegawai/' + deletePegawaiId, { method: 'DELETE' });
+      if (!res.ok) { const d = await res.json(); throw new Error(d.error || 'Gagal menghapus pegawai.'); }
+      showToast('Pegawai berhasil dihapus.');
+      setShowDeleteConfirm(false);
+      setDeletePegawaiId(null);
+      if (session) adminData.fetchAdminData(session.role);
+    } catch (err: any) {
+      showToast(err.message, 'error');
     }
   };
 
@@ -620,7 +683,8 @@ export default function App() {
 
               <UploadForm
                 kategoriList={kategoriList}
-                jenisDokumenList={jenisDokumenList}
+                jenisDokumenList={filterJenisDokumenByStatus(jenisDokumenList, profile?.statusPegawai || '')}
+                statusPegawai={profile?.statusPegawai || ''}
                 isSubmitting={false}
                 onSubmit={handleSaveDocument}
                 editArsip={editArsip}
@@ -1428,7 +1492,21 @@ export default function App() {
                               <p className="text-slate-700 font-semibold">{p.jabatan}</p>
                               <p className="text-[10px] text-slate-400 mt-0.5">Gol: {p.pangkatGolongan}</p>
                             </div>
-                            <span className={`w-2.5 h-2.5 rounded-full ${p.statusAktif ? 'bg-green-500' : 'bg-red-500'}`} title={p.statusAktif ? 'Pegawai Aktif' : 'Pegawai Tidak Aktif'}></span>
+                            <div className="flex items-center gap-1">
+                              <button
+                                onClick={() => handleEditPegawai(p)}
+                                className="text-[10px] font-bold text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 px-2 py-1 rounded-lg"
+                              >
+                                Edit
+                              </button>
+                              <button
+                                onClick={() => { setDeletePegawaiId(p.id); setShowDeleteConfirm(true); }}
+                                className="text-[10px] font-bold text-red-600 hover:text-red-800 bg-red-50 hover:bg-red-100 px-2 py-1 rounded-lg"
+                              >
+                                Hapus
+                              </button>
+                              <span className={`w-2.5 h-2.5 rounded-full ${p.statusAktif ? 'bg-green-500' : 'bg-red-500'}`} title={p.statusAktif ? 'Pegawai Aktif' : 'Pegawai Tidak Aktif'}></span>
+                            </div>
                           </div>
                         </div>
                       ))}
@@ -1438,6 +1516,93 @@ export default function App() {
 
               </div>
 
+            </div>
+          )}
+
+          {/* EDIT PEGAWAI MODAL */}
+          {showEditPegawai && (
+            <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+              <div className="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-xl">
+                <div className="p-5 border-b border-slate-100 flex items-center justify-between">
+                  <h3 className="text-sm font-extrabold text-slate-800">Edit Data Pegawai</h3>
+                  <button onClick={() => setShowEditPegawai(false)} className="text-slate-400 hover:text-slate-600">&times;</button>
+                </div>
+                <form onSubmit={handleUpdatePegawai} className="p-5 space-y-3 text-xs">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-600 mb-1">NAMA LENGKAP</label>
+                      <input type="text" required value={editPegawaiForm.namaPegawai || ''} onChange={(e) => setEditPegawaiForm({...editPegawaiForm, namaPegawai: e.target.value})} className="w-full h-10 border rounded-lg px-2" />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-600 mb-1">TANGGAL LAHIR</label>
+                      <input type="date" value={editPegawaiForm.tanggalLahir || ''} onChange={(e) => setEditPegawaiForm({...editPegawaiForm, tanggalLahir: e.target.value})} className="w-full h-10 border rounded-lg px-2" />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-600 mb-1">NIP</label>
+                      <input type="text" required value={editPegawaiForm.nip || ''} onChange={(e) => setEditPegawaiForm({...editPegawaiForm, nip: e.target.value.replace(/\D/g, '')})} maxLength={18} className="w-full h-10 border rounded-lg px-2 font-mono" />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-600 mb-1">NIK KTP</label>
+                      <input type="text" required value={editPegawaiForm.nik || ''} onChange={(e) => setEditPegawaiForm({...editPegawaiForm, nik: e.target.value.replace(/\D/g, '')})} maxLength={16} className="w-full h-10 border rounded-lg px-2 font-mono" />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-600 mb-1">JENIS KELAMIN</label>
+                      <select value={editPegawaiForm.jenisKelamin || 'Laki-laki'} onChange={(e) => setEditPegawaiForm({...editPegawaiForm, jenisKelamin: e.target.value})} className="w-full h-10 border rounded-lg px-2 bg-white">
+                        <option value="Laki-laki">Laki-laki</option>
+                        <option value="Perempuan">Perempuan</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-600 mb-1">STATUS ASN</label>
+                      <select value={editPegawaiForm.statusPegawai || 'PNS'} onChange={(e) => setEditPegawaiForm({...editPegawaiForm, statusPegawai: e.target.value})} className="w-full h-10 border rounded-lg px-2 bg-white">
+                        <option value="PNS">PNS</option>
+                        <option value="PPPK">PPPK</option>
+                        <option value="PPPK Paruh Waktu">PPPK Paruh Waktu</option>
+                        <option value="CPNS">CPNS</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-600 mb-1">JABATAN</label>
+                      <input type="text" value={editPegawaiForm.jabatan || ''} onChange={(e) => setEditPegawaiForm({...editPegawaiForm, jabatan: e.target.value})} className="w-full h-10 border rounded-lg px-2" />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-600 mb-1">PANGKAT GOLONGAN</label>
+                      <input type="text" value={editPegawaiForm.pangkatGolongan || ''} onChange={(e) => setEditPegawaiForm({...editPegawaiForm, pangkatGolongan: e.target.value})} className="w-full h-10 border rounded-lg px-2" />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-600 mb-1">PASSWORD BARU (kosongkan jika tidak diubah)</label>
+                    <input type="text" value={editPegawaiForm.password || ''} onChange={(e) => setEditPegawaiForm({...editPegawaiForm, password: e.target.value})} className="w-full h-10 border rounded-lg px-2" />
+                  </div>
+                  <div className="flex gap-2.5 pt-3">
+                    <button type="button" onClick={() => setShowEditPegawai(false)} className="flex-1 h-11 border rounded-xl font-bold">Batal</button>
+                    <button type="submit" className="flex-1 h-11 bg-[#1d4ed8] text-white rounded-xl font-bold">Simpan Perubahan</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {/* DELETE CONFIRMATION MODAL */}
+          {showDeleteConfirm && (
+            <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+              <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-xl text-center">
+                <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-red-100 flex items-center justify-center">
+                  <span className="text-red-600 text-xl font-bold">!</span>
+                </div>
+                <h3 className="text-sm font-extrabold text-slate-800 mb-2">Hapus Pegawai</h3>
+                <p className="text-xs text-slate-500 mb-6">Apakah Anda yakin ingin menghapus pegawai ini? Semua arsip terkait juga akan dihapus.</p>
+                <div className="flex gap-3">
+                  <button onClick={() => { setShowDeleteConfirm(false); setDeletePegawaiId(null); }} className="flex-1 h-11 border rounded-xl font-bold text-xs">Batal</button>
+                  <button onClick={handleDeletePegawai} className="flex-1 h-11 bg-red-600 text-white rounded-xl font-bold text-xs">Hapus</button>
+                </div>
+              </div>
             </div>
           )}
 
@@ -1603,11 +1768,13 @@ export default function App() {
 
               {(() => {
                 // Group archives by pegawai
-                const pegawaiMap = new Map<string, { id: string; nama: string; arsip: typeof allArchives }>();
+                const pegawaiStatusMap = new Map<string, string>();
+                allEmployees.forEach(e => pegawaiStatusMap.set(e.id, e.statusPegawai || ''));
+                const pegawaiMap = new Map<string, { id: string; nama: string; statusPegawai: string; arsip: typeof allArchives }>();
                 allArchives.forEach(a => {
                   if (adminSearchQuery && !a.namaPegawai?.toLowerCase().includes(adminSearchQuery.toLowerCase())) return;
                   const key = a.pegawaiId;
-                  if (!pegawaiMap.has(key)) pegawaiMap.set(key, { id: key, nama: a.namaPegawai || '', arsip: [] });
+                  if (!pegawaiMap.has(key)) pegawaiMap.set(key, { id: key, nama: a.namaPegawai || '', statusPegawai: pegawaiStatusMap.get(key) || '', arsip: [] });
                   pegawaiMap.get(key)!.arsip.push(a);
                 });
                 const pegawaiList = Array.from(pegawaiMap.values());
@@ -1664,7 +1831,7 @@ export default function App() {
                                           Daftar Dokumen — {p.nama}
                                         </h4>
                                         <div className="space-y-1">
-                                          {jenisDokumenList.map(jd => {
+                                          {filterJenisDokumenByStatus(jenisDokumenList, p.statusPegawai).map(jd => {
                                             const match = p.arsip.find(a => a.jenisDokumen === jd.namaDokumen);
                                             return (
                                               <div key={jd.id} className="flex items-center justify-between gap-2 py-1.5 px-2 rounded-lg bg-white border border-slate-100">
