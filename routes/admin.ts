@@ -8,7 +8,7 @@ import {
   createJenisDokumen, updateJenisDokumen, deleteJenisDokumen,
   getKategoriList, getJenisDokumenList,
   bulkImportPegawai, clearPegawai, updateAllInstansiName,
-  createArsipData, bulkDeleteArsipByUploader, bulkValidasiArsip
+  createArsipData, bulkDeleteArsipByUploader, bulkValidasiArsip, remapArsipJenisDokumen
 } from '../lib/data';
 import { validasiSchema, createPegawaiSchema, settingSchema } from '../lib/validation';
 import { STATIC_JENIS_DOKUMEN } from '../lib/constants';
@@ -136,6 +136,16 @@ export function createAdminRouter(requireAuth: any, requireRole: any, logAction:
       return res.json({ message: 'Semua arsip berhasil divalidasi.' });
     } catch {
       return res.status(500).json({ error: 'Gagal memproses validasi massal.' });
+    }
+  });
+
+  router.post('/arsip/remap-jenis', requireAuth, requireRole(['super_admin']), async (req, res) => {
+    try {
+      const success = await remapArsipJenisDokumen();
+      if (!success) return res.status(500).json({ error: 'Gagal melakukan remap.' });
+      return res.json({ message: 'Nama dokumen dan kategori arsip berhasil disesuaikan.' });
+    } catch {
+      return res.status(500).json({ error: 'Gagal memproses remap.' });
     }
   });
 

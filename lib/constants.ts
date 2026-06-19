@@ -17,6 +17,8 @@ export const STATIC_JENIS_DOKUMEN: JenisDokumen[] = [
   { id: 'JD1_5', kategoriId: 'KAT1', namaKategori: 'Riwayat Karier', namaDokumen: 'SK Mutasi', wajib: false, berlakuUntuk: 'Semua', statusAktif: true },
   { id: 'JD1_6', kategoriId: 'KAT1', namaKategori: 'Riwayat Karier', namaDokumen: 'SK Penempatan', wajib: true, berlakuUntuk: 'Semua', statusAktif: true },
   { id: 'JD1_7', kategoriId: 'KAT1', namaKategori: 'Riwayat Karier', namaDokumen: 'SK Pembagian Tugas', wajib: false, berlakuUntuk: 'Semua', statusAktif: true },
+  { id: 'JD1_8', kategoriId: 'KAT1', namaKategori: 'Riwayat Karier', namaDokumen: 'Dokumen GTK', wajib: false, berlakuUntuk: 'Semua', statusAktif: true },
+  { id: 'JD1_9', kategoriId: 'KAT1', namaKategori: 'Riwayat Karier', namaDokumen: 'Lainnya', wajib: false, berlakuUntuk: 'Semua', statusAktif: true },
 
   // Pendidikan
   { id: 'JD2_1', kategoriId: 'KAT2', namaKategori: 'Pendidikan', namaDokumen: 'Ijazah', wajib: true, berlakuUntuk: 'Semua', statusAktif: true },
@@ -43,6 +45,7 @@ export const STATIC_JENIS_DOKUMEN: JenisDokumen[] = [
   { id: 'JD4_9', kategoriId: 'KAT4', namaKategori: 'Data Pribadi', namaDokumen: 'Karpeg', wajib: false, berlakuUntuk: 'PNS', statusAktif: true },
   { id: 'JD4_10', kategoriId: 'KAT4', namaKategori: 'Data Pribadi', namaDokumen: 'Taspen', wajib: false, berlakuUntuk: 'PNS', statusAktif: true },
   { id: 'JD4_11', kategoriId: 'KAT4', namaKategori: 'Data Pribadi', namaDokumen: 'KARIS/KARSU', wajib: false, berlakuUntuk: 'PNS', statusAktif: true },
+  { id: 'JD4_12', kategoriId: 'KAT4', namaKategori: 'Data Pribadi', namaDokumen: 'Pass Foto', wajib: false, berlakuUntuk: 'Semua', statusAktif: true },
 
   // Kesehatan dan Disiplin
   { id: 'JD5_1', kategoriId: 'KAT5', namaKategori: 'Kesehatan dan Disiplin', namaDokumen: 'Surat Cuti', wajib: false, berlakuUntuk: 'Semua', statusAktif: true },

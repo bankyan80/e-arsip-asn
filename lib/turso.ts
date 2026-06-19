@@ -355,6 +355,36 @@ export async function bulkValidasiArsip(instansiId?: string, statusValidasi: str
   return r !== null;
 }
 
+export async function remapArsipJenisDokumen() {
+  const mapping: { oldKelompok: string; oldJenis: string; newKelompok: string; newJenis: string }[] = [
+    { oldKelompok: 'Dokumen Kepegawaian', oldJenis: 'Dokumen GTK', newKelompok: 'Riwayat Karier', newJenis: 'Dokumen GTK' },
+    { oldKelompok: 'Dokumen Kepegawaian', oldJenis: 'Lainnya', newKelompok: 'Riwayat Karier', newJenis: 'Lainnya' },
+    { oldKelompok: 'Dokumen Pendukung', oldJenis: 'SK Penugasan', newKelompok: 'Riwayat Karier', newJenis: 'SK Penempatan' },
+    { oldKelompok: 'Dokumen Pendukung', oldJenis: 'SK PPPK PW', newKelompok: 'Riwayat Karier', newJenis: 'SK PPPK' },
+    { oldKelompok: 'Dokumen Pendukung', oldJenis: 'Ijazah', newKelompok: 'Pendidikan', newJenis: 'Ijazah' },
+    { oldKelompok: 'Dokumen Pendukung', oldJenis: 'Kartu Keluarga', newKelompok: 'Data Pribadi', newJenis: 'Kartu Keluarga' },
+    { oldKelompok: 'Dokumen Pendukung', oldJenis: 'KTP', newKelompok: 'Data Pribadi', newJenis: 'KTP' },
+    { oldKelompok: 'Dokumen Pendukung', oldJenis: 'Pass Foto', newKelompok: 'Data Pribadi', newJenis: 'Pass Foto' },
+    { oldKelompok: 'Dokumen Pendukung', oldJenis: 'Sertifikat Pendidik', newKelompok: 'Pendidikan', newJenis: 'Sertifikat Pendidik' },
+    { oldKelompok: 'Dokumen Pendukung', oldJenis: 'NPWP', newKelompok: 'Data Pribadi', newJenis: 'NPWP' },
+    { oldKelompok: 'Dokumen Pendukung', oldJenis: 'BPJS Kesehatan', newKelompok: 'Data Pribadi', newJenis: 'BPJS' },
+    { oldKelompok: 'Dokumen Pendukung', oldJenis: 'SK CPNS', newKelompok: 'Riwayat Karier', newJenis: 'SK CPNS/PNS' },
+    { oldKelompok: 'Dokumen Pendukung', oldJenis: 'SK PNS', newKelompok: 'Riwayat Karier', newJenis: 'SK CPNS/PNS' },
+    { oldKelompok: 'Dokumen Pendukung', oldJenis: 'SK Pangkat', newKelompok: 'Riwayat Karier', newJenis: 'SK Kenaikan Pangkat' },
+    { oldKelompok: 'Dokumen Pendukung', oldJenis: 'SK Jafung', newKelompok: 'Riwayat Karier', newJenis: 'SK Jabatan' },
+    { oldKelompok: 'Dokumen Pendukung', oldJenis: 'Kartu Pegawai', newKelompok: 'Data Pribadi', newJenis: 'Karpeg' },
+    { oldKelompok: 'Dokumen Pendukung', oldJenis: 'Akta', newKelompok: 'Data Pribadi', newJenis: 'Akta Anak' },
+    { oldKelompok: 'Dokumen Pendukung', oldJenis: 'SK Konversi', newKelompok: 'Riwayat Karier', newJenis: 'SK Mutasi' },
+  ];
+  for (const m of mapping) {
+    await query(
+      `UPDATE arsip SET kelompok_arsip = ?, jenis_dokumen = ?, updated_at = datetime('now') WHERE kelompok_arsip = ? AND jenis_dokumen = ? AND deleted = 0`,
+      [m.newKelompok, m.newJenis, m.oldKelompok, m.oldJenis]
+    );
+  }
+  return true;
+}
+
 export async function ensureSuperAdmin() {
   const existing = await query("SELECT id FROM pegawai WHERE id = ?", ['PGW004']);
   if (existing && existing.rows.length > 0) return;
