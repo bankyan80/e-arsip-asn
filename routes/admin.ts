@@ -29,7 +29,7 @@ export function createAdminRouter(requireAuth: any, requireRole: any, logAction:
     }
   });
 
-  router.get('/pegawai/duplicates', requireAuth, requireRole(['super_admin', 'admin_instansi']), async (req, res) => {
+  router.get('/pegawai/duplicates', async (req, res) => {
     try {
       const employees = await listAllPegawai();
       const grouped: Record<string, any[]> = {};
