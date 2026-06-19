@@ -1812,6 +1812,21 @@ function createAdminRouter(requireAuth2, requireRole2, logAction2) {
       return res.status(500).json({ error: "Gagal mengambil data ASN." });
     }
   });
+  router.get("/pegawai/duplicates", requireAuth2, requireRole2(["super_admin", "admin_instansi"]), async (req, res) => {
+    try {
+      const employees = await listAllPegawai2();
+      const grouped = {};
+      for (const p of employees) {
+        const key = p.namaPegawai?.toLowerCase().trim() || "";
+        if (!grouped[key]) grouped[key] = [];
+        grouped[key].push({ id: p.id, namaPegawai: p.namaPegawai, nip: p.nip, nik: p.nik, instansiId: p.instansiId, namaInstansi: p.namaInstansi });
+      }
+      const duplicates = Object.values(grouped).filter((g) => g.length > 1);
+      return res.json(duplicates);
+    } catch {
+      return res.status(500).json({ error: "Gagal memeriksa duplikasi." });
+    }
+  });
   router.post("/pegawai", requireAuth2, requireRole2(["super_admin", "admin_instansi"]), async (req, res) => {
     const session = req.session;
     const parsed = createPegawaiSchema.safeParse(req.body);

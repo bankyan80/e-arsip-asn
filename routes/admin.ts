@@ -29,6 +29,22 @@ export function createAdminRouter(requireAuth: any, requireRole: any, logAction:
     }
   });
 
+  router.get('/pegawai/duplicates', requireAuth, requireRole(['super_admin', 'admin_instansi']), async (req, res) => {
+    try {
+      const employees = await listAllPegawai();
+      const grouped: Record<string, any[]> = {};
+      for (const p of employees) {
+        const key = p.namaPegawai?.toLowerCase().trim() || '';
+        if (!grouped[key]) grouped[key] = [];
+        grouped[key].push({ id: p.id, namaPegawai: p.namaPegawai, nip: p.nip, nik: p.nik, instansiId: p.instansiId, namaInstansi: p.namaInstansi });
+      }
+      const duplicates = Object.values(grouped).filter(g => g.length > 1);
+      return res.json(duplicates);
+    } catch {
+      return res.status(500).json({ error: 'Gagal memeriksa duplikasi.' });
+    }
+  });
+
   router.post('/pegawai', requireAuth, requireRole(['super_admin', 'admin_instansi']), async (req, res) => {
     const session = (req as any).session as SessionData;
     const parsed = createPegawaiSchema.safeParse(req.body);
