@@ -77,7 +77,7 @@ export function createAdminRouter(requireAuth: any, requireRole: any, logAction:
         pendidikanTerakhir: body.pendidikanTerakhir || 'S1',
         nomorHp: body.nomorHp || '', email: body.email || '', alamat: body.alamat || '',
         password: defaultPass,
-        role: body.role === 'admin_instansi' || body.role === 'super_admin' ? body.role : 'pegawai',
+        role: session.role === 'super_admin' && (body.role === 'admin_instansi' || body.role === 'super_admin') ? body.role : 'pegawai',
         statusAktif: body.statusAktif !== undefined ? body.statusAktif : true,
         createdAt: new Date().toISOString(), updatedAt: new Date().toISOString()
       };
@@ -91,9 +91,11 @@ export function createAdminRouter(requireAuth: any, requireRole: any, logAction:
   });
 
   // BUP (Batas Usia Pensiun) endpoint — read only
-  router.get('/bup', requireAuth, requireRole(['super_admin', 'admin_instansi']), async (_req, res) => {
+  router.get('/bup', requireAuth, requireRole(['super_admin', 'admin_instansi']), async (req, res) => {
+    const session = (req as any).session as SessionData;
     try {
-      const pegawais = await listAllPegawai();
+      const targetInstansi = session.role === 'admin_instansi' ? session.instansiId : undefined;
+      const pegawais = await listAllPegawai(targetInstansi);
       const now = new Date();
       const pensionAgeMap: Record<string, number> = {
         'Kepala Sekolah': 60, 'Guru': 60, 'Guru Kelas': 60,
@@ -209,7 +211,7 @@ export function createAdminRouter(requireAuth: any, requireRole: any, logAction:
       const nextVersion: DocumentVersion = {
         versionId: `V${history.length + 1}`, fileName: arc.fileName, fileSize: arc.fileSize,
         downloadUrl: arc.downloadUrl, updatedAt: new Date().toISOString(),
-        updatedByNama: `${session.nama} (Admin)`, statusValidasi: statusValidasi as any,
+        updatedByNama: `${session.nama} (Admin)`, statusValidasi,
         nomorDokumen: arc.nomorDokumen, tanggalDokumen: arc.tanggalDokumen, tahun: arc.tahun,
         catatanAdmin: catatanAdmin || '', changeSummary: `Verifikasi & Evaluasi: ${statusValidasi}`
       };

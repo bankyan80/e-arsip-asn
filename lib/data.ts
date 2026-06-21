@@ -1,6 +1,6 @@
 import { isTursoConfigured, initSchema } from './turso';
 import * as turso from './turso';
-import * as firestore from './firestore';
+import * as localdb from './localdb';
 
 async function seedTurso() {
   await initSchema();
@@ -39,20 +39,20 @@ export async function seedInitialDb() {
     await seedTurso();
     return;
   }
-  return firestore.seedInitialDb();
+  return localdb.seedInitialDb();
 }
 
-export const getInstansiData: typeof firestore.getInstansiData = isTursoConfigured
+export const getInstansiData: typeof localdb.getInstansiData = isTursoConfigured
   ? async (id: string) => { const d = await turso.getInstansi(id); return d as any; }
-  : firestore.getInstansiData;
+  : localdb.getInstansiData;
 
 export const listAllInstansi = isTursoConfigured
   ? () => turso.listInstansi()
-  : firestore.listAllInstansi;
+  : localdb.listAllInstansi;
 
-export const getPegawaiData: typeof firestore.getPegawaiData = isTursoConfigured
+export const getPegawaiData: typeof localdb.getPegawaiData = isTursoConfigured
   ? async (id: string) => { const d = await turso.getPegawai(id); return d as any; }
-  : firestore.getPegawaiData;
+  : localdb.getPegawaiData;
 
 export const findPegawaiByCredentials = isTursoConfigured
   ? async (identifier: string, type: 'NIP' | 'NIK' | 'BOTH') => {
@@ -60,23 +60,23 @@ export const findPegawaiByCredentials = isTursoConfigured
       if (type === 'NIK' || type === 'BOTH') { const d = await turso.findPegawaiByNipNikWithPassword(identifier, 'NIK'); if (d) return d as any; }
       return null;
     }
-  : firestore.findPegawaiByCredentials;
+  : localdb.findPegawaiByCredentials;
 
-export const updatePegawaiData: typeof firestore.updatePegawaiData = isTursoConfigured
+export const updatePegawaiData: typeof localdb.updatePegawaiData = isTursoConfigured
   ? async (id, updates) => { await turso.updatePegawai(id, updates); return turso.getPegawai(id) as any; }
-  : firestore.updatePegawaiData;
+  : localdb.updatePegawaiData;
 
 export const deletePegawaiData = isTursoConfigured
   ? async (id: string) => turso.deletePegawai(id)
-  : async (_id: string) => {};
+  : async (id: string) => { await localdb.updatePegawaiData(id, { statusAktif: false } as any); };
 
-export const listAllPegawai: typeof firestore.listAllPegawai = isTursoConfigured
+export const listAllPegawai: typeof localdb.listAllPegawai = isTursoConfigured
   ? async (instansiId?: string) => turso.listPegawai(instansiId) as any
-  : firestore.listAllPegawai;
+  : localdb.listAllPegawai;
 
-export const adminCreatePegawai: typeof firestore.adminCreatePegawai = isTursoConfigured
+export const adminCreatePegawai: typeof localdb.adminCreatePegawai = isTursoConfigured
   ? async (data: any) => turso.createPegawai(data) as any
-  : firestore.adminCreatePegawai;
+  : localdb.adminCreatePegawai;
 
 export const bulkImportPegawai = isTursoConfigured
   ? async (list: any[]) => turso.bulkCreatePegawai(list)
@@ -94,45 +94,45 @@ export const bulkDeleteArsipByUploader = isTursoConfigured
   ? async (uploadedBy: string) => turso.bulkDeleteArsipByUploader(uploadedBy)
   : async (_uploadedBy: string) => { console.warn('bulkDeleteArsipByUploader not available (Firestore fallback)'); };
 
-export const listArsipByPegawai: typeof firestore.listArsipByPegawai = isTursoConfigured
+export const listArsipByPegawai: typeof localdb.listArsipByPegawai = isTursoConfigured
   ? async (pegawaiId: string) => turso.listArsipByPegawai(pegawaiId) as any
-  : firestore.listArsipByPegawai;
+  : localdb.listArsipByPegawai;
 
-export const getArsipData: typeof firestore.getArsipData = isTursoConfigured
+export const getArsipData: typeof localdb.getArsipData = isTursoConfigured
   ? async (id: string) => turso.getArsip(id) as any
-  : firestore.getArsipData;
+  : localdb.getArsipData;
 
-export const createArsipData: typeof firestore.createArsipData = isTursoConfigured
+export const createArsipData: typeof localdb.createArsipData = isTursoConfigured
   ? async (data: any) => turso.createArsip(data) as any
-  : firestore.createArsipData;
+  : localdb.createArsipData;
 
-export const updateArsipData: typeof firestore.updateArsipData = isTursoConfigured
+export const updateArsipData: typeof localdb.updateArsipData = isTursoConfigured
   ? async (id: string, updates: any) => { await turso.updateArsip(id, updates); return turso.getArsip(id) as any; }
-  : firestore.updateArsipData;
+  : localdb.updateArsipData;
 
-export const listAllArsipAdmin: typeof firestore.listAllArsipAdmin = isTursoConfigured
+export const listAllArsipAdmin: typeof localdb.listAllArsipAdmin = isTursoConfigured
   ? async (instansiId?: string) => turso.listArsipAdmin(instansiId) as any
-  : firestore.listAllArsipAdmin;
+  : localdb.listAllArsipAdmin;
 
-export const createLogEntry: typeof firestore.createLogEntry = isTursoConfigured
+export const createLogEntry: typeof localdb.createLogEntry = isTursoConfigured
   ? async (data: any) => turso.createLog(data) as any
-  : firestore.createLogEntry;
+  : localdb.createLogEntry;
 
-export const getLogsData: typeof firestore.getLogsData = isTursoConfigured
+export const getLogsData: typeof localdb.getLogsData = isTursoConfigured
   ? async () => turso.listLogs() as any
-  : firestore.getLogsData;
+  : localdb.getLogsData;
 
-export const getSettingValue: typeof firestore.getSettingValue = isTursoConfigured
+export const getSettingValue: typeof localdb.getSettingValue = isTursoConfigured
   ? async (key: string, defaultValue?: string) => { const v = await turso.getSetting(key); return v !== null ? v : (defaultValue || ''); }
-  : firestore.getSettingValue;
+  : localdb.getSettingValue;
 
-export const updateSettingValue: typeof firestore.updateSettingValue = isTursoConfigured
+export const updateSettingValue: typeof localdb.updateSettingValue = isTursoConfigured
   ? async (key: string, value: string) => turso.setSetting(key, value)
-  : firestore.updateSettingValue;
+  : localdb.updateSettingValue;
 
-export const getKategoriList: typeof firestore.getKategoriList = isTursoConfigured
+export const getKategoriList: typeof localdb.getKategoriList = isTursoConfigured
   ? async () => turso.listKategori() as any
-  : firestore.getKategoriList;
+  : localdb.getKategoriList;
 
 export const createKategori = isTursoConfigured
   ? async (data: any) => turso.createKategori(data) as any
@@ -146,9 +146,9 @@ export const deleteKategori = isTursoConfigured
   ? async (id: string) => turso.deleteKategori(id)
   : async (_id: string) => { console.warn('deleteKategori not available (Firestore fallback)'); };
 
-export const getJenisDokumenList: typeof firestore.getJenisDokumenList = isTursoConfigured
+export const getJenisDokumenList: typeof localdb.getJenisDokumenList = isTursoConfigured
   ? async () => turso.listJenisDokumen() as any
-  : firestore.getJenisDokumenList;
+  : localdb.getJenisDokumenList;
 
 export const createJenisDokumen = isTursoConfigured
   ? async (data: any) => turso.createJenisDokumen(data) as any
@@ -164,7 +164,7 @@ export const deleteJenisDokumen = isTursoConfigured
 
 export const bulkValidasiArsip = isTursoConfigured
   ? async (instansiId?: string, statusValidasi: string = 'Valid', updatedBy: string = 'system') => turso.bulkValidasiArsip(instansiId, statusValidasi, updatedBy)
-  : async (_instansiId?: string, _statusValidasi?: string, _updatedBy?: string) => { console.warn('bulkValidasiArsip not available (Firestore fallback)'); return false; };
+  : localdb.bulkValidasiArsip;
 
 export const remapArsipJenisDokumen = isTursoConfigured
   ? async () => turso.remapArsipJenisDokumen()
@@ -178,5 +178,6 @@ export const setPegawaiPassword = isTursoConfigured
   ? async (id: string, hashed: string) => turso.setPegawaiPassword(id, hashed)
   : async (_id: string, _hashed: string) => { console.warn('setPegawaiPassword not available (Firestore fallback)'); };
 
-export const readLocalDb = firestore.readLocalDb;
-export const writeLocalDb = firestore.writeLocalDb;
+export const readLocalDb = localdb.readLocalDb;
+export const writeLocalDb = localdb.writeLocalDb;
+export const readLocalDbAsync = localdb.readLocalDbAsync;

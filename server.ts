@@ -13,15 +13,13 @@ import { createArsipRouter } from './routes/arsip';
 import { createAdminRouter } from './routes/admin';
 import { createFilesRouter } from './routes/files';
 
-// Seed initial data as soon as server modules load
-seedInitialDb()
-  .then(() => console.log('Sistem: Seeding data selesai.'))
-  .catch((err) => console.error('Sistem: Gagal memproses seeding:', err));
-
 const PORT = 3000;
 
 export async function createApp() {
   const app = express();
+  
+  // Await seeding before processing any requests
+  try { await seedInitialDb(); console.log('Sistem: Seeding data selesai.'); } catch (err) { console.error('Sistem: Gagal memproses seeding:', err); }
 
   app.use(express.json({ limit: '50mb' }));
   app.use(express.urlencoded({ extended: true, limit: '50mb' }));
@@ -31,9 +29,10 @@ export async function createApp() {
     const cookiesHeader = req.headers.cookie || '';
     const cookies: Record<string, string> = {};
     cookiesHeader.split(';').forEach(c => {
-      const parts = c.trim().split('=');
-      if (parts.length === 2) {
-        cookies[parts[0]] = parts[1];
+      const trimmed = c.trim();
+      const eqIdx = trimmed.indexOf('=');
+      if (eqIdx > 0) {
+        cookies[trimmed.substring(0, eqIdx)] = trimmed.substring(eqIdx + 1);
       }
     });
     (req as any).cookies = cookies;
@@ -46,7 +45,7 @@ export async function createApp() {
   // -------------------------------------------------------
   // SECURITY MIDDLEWARES
   // -------------------------------------------------------
-  function requireAuth(req: express.Request, res: express.Response, next: express.NextFunction) {
+  async function requireAuth(req: express.Request, res: express.Response, next: express.NextFunction) {
     const token = (req as any).cookies?.session;
     if (!token) {
       return res.status(401).json({ error: 'Akses ditolak. Silakan login terlebih dahulu.' });
@@ -58,6 +57,18 @@ export async function createApp() {
       return res.status(401).json({ error: 'Sesi Anda telah berakhir. Silakan login kembali.' });
     }
     (req as any).session = session;
+    // Verify user still exists and is active in the database
+    try {
+      const { getPegawaiData } = await import('./lib/data');
+      const user = await getPegawaiData(session.pegawaiId);
+      if (!user || user.statusAktif === false) {
+        const isSecure = process.env.NODE_ENV === 'production';
+        res.setHeader('Set-Cookie', `session=; HttpOnly; Path=/; Max-Age=0; SameSite=Strict${isSecure ? '; Secure' : ''}`);
+        return res.status(401).json({ error: 'Akun Anda tidak aktif. Silakan hubungi admin.' });
+      }
+    } catch {
+      // If DB check fails, still allow through to avoid blocking all requests
+    }
     next();
   }
 
@@ -104,7 +115,7 @@ export async function createApp() {
   app.get('/api/kelengkapan/me', requireAuth, async (req, res) => {
     const session = (req as any).session as SessionData;
     try {
-      const { getPegawaiData, listArsipByPegawai } = await import('./lib/firestore');
+      const { getPegawaiData, listArsipByPegawai } = await import('./lib/data');
       const { STATIC_JENIS_DOKUMEN } = await import('./lib/constants');
       const userPegawai = await getPegawaiData(session.pegawaiId);
       if (!userPegawai) return res.status(404).json({ error: 'Data kepegawaian tidak ditemukan.' });
@@ -127,6 +138,20 @@ export async function createApp() {
       return res.status(500).json({ error: 'Gagal memuat rekap kelengkapan.' });
     }
   });
+
+  // -------------------------------------------------------
+  // Multer/File Upload Error Middleware
+  // -------------------------------------------------------
+  const multerErrorHandler = (err: any, _req: express.Request, res: express.Response, next: express.NextFunction) => {
+    if (err?.code === 'LIMIT_FILE_SIZE') {
+      return res.status(400).json({ error: 'Ukuran file melebihi batas maksimal (10 MB).' });
+    }
+    if (err?.name === 'MulterError') {
+      return res.status(400).json({ error: 'Kesalahan upload: ' + err.message });
+    }
+    next(err);
+  };
+  app.use(multerErrorHandler);
 
   // -------------------------------------------------------
   // SPA Middleware

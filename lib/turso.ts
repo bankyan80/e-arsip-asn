@@ -96,7 +96,7 @@ export async function createInstansi(data: {
   id: string; namaInstansi: string; alamat?: string; kecamatan?: string; kabupaten?: string; statusAktif: boolean;
 }) {
   await query(
-    `INSERT INTO instansi (id, nama_instansi, alamat, kecamatan, kabupaten, status_aktif) VALUES (?, ?, ?, ?, ?, ?)`,
+    `INSERT OR IGNORE INTO instansi (id, nama_instansi, alamat, kecamatan, kabupaten, status_aktif) VALUES (?, ?, ?, ?, ?, ?)`,
     [data.id, data.namaInstansi, data.alamat, data.kecamatan, data.kabupaten, data.statusAktif ? 1 : 0]
   );
   return data;
@@ -137,7 +137,7 @@ export async function createPegawai(data: any) {
   const pass = data.password || (data.nip ? data.nip.slice(-6) : (data.nik ? data.nik.slice(-6) : '123456'));
   const hashed = await bcrypt.hash(pass, 10);
   await query(
-    `INSERT INTO pegawai (id, instansi_id, nama_instansi, nama_pegawai, nip, nik, tanggal_lahir, jenis_kelamin, jabatan, status_pegawai, pangkat_golongan, pendidikan_terakhir, nomor_hp, email, alamat, password, role, status_aktif, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    `INSERT OR IGNORE INTO pegawai (id, instansi_id, nama_instansi, nama_pegawai, nip, nik, tanggal_lahir, jenis_kelamin, jabatan, status_pegawai, pangkat_golongan, pendidikan_terakhir, nomor_hp, email, alamat, password, role, status_aktif, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [data.id, data.instansiId, data.namaInstansi, data.namaPegawai, data.nip, data.nik, data.tanggalLahir, data.jenisKelamin, data.jabatan, data.statusPegawai, data.pangkatGolongan, data.pendidikanTerakhir, data.nomorHp, data.email, data.alamat, hashed, data.role, data.statusAktif ? 1 : 0, data.createdAt, data.updatedAt]
   );
   return data;
@@ -332,7 +332,7 @@ export async function seedDefaultPasswords() {
     }
   }
   // Super admin: specific credentials
-  const saPass = await bcrypt.hash('admin456', 10);
+  const saPass = await bcrypt.hash(process.env.SUPER_ADMIN_PASSWORD || 'admin456', 10);
   const sa = await query('SELECT id FROM pegawai WHERE id = ?', ['PGW004']);
   if (sa && sa.rows.length > 0) {
     await query('UPDATE pegawai SET nip = ?, password = ? WHERE id = ?', ['198001292025211035', saPass, 'PGW004']);
@@ -394,8 +394,8 @@ export async function remapArsipJenisDokumen() {
 export async function dedupArsip() {
   // Keep oldest record per pegawai+jenis, delete newer duplicates
   const r = await query(
-    `DELETE FROM arsip WHERE id NOT IN (
-      SELECT MIN(id) FROM arsip WHERE deleted = 0 GROUP BY pegawai_id, jenis_dokumen
+    `DELETE FROM arsip WHERE rowid NOT IN (
+      SELECT MIN(rowid) FROM arsip WHERE deleted = 0 GROUP BY pegawai_id, jenis_dokumen
     ) AND deleted = 0`
   );
   return r !== null;
@@ -405,7 +405,7 @@ export async function ensureSuperAdmin() {
   const existing = await query("SELECT id FROM pegawai WHERE id = ?", ['PGW004']);
   if (existing && existing.rows.length > 0) return;
   const now = new Date().toISOString();
-  const defaultPass = await bcrypt.hash('admin456', 10);
+  const defaultPass = await bcrypt.hash(process.env.SUPER_ADMIN_PASSWORD || 'admin456', 10);
   await query(
     `INSERT INTO pegawai (id, instansi_id, nama_instansi, nama_pegawai, nip, nik, tanggal_lahir, jenis_kelamin, jabatan, status_pegawai, pangkat_golongan, pendidikan_terakhir, nomor_hp, email, alamat, password, role, status_aktif, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
     ['PGW004', 'INST002', 'Kantor Kepegawaian Daerah Cirebon', 'Doni Prasetyo', '198001292025211035', '3209876543210002', '1992-08-15', 'Laki-laki', 'Admin Database', 'PNS', 'Penata Muda / III.a', 'D3', '085678912345', 'doni.prasetyo@asn.id', 'Perum Cipta Asri No. 7, Kesambi, Cirebon', defaultPass, 'super_admin', 1, now, now]

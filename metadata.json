@@ -1,6 +1,0 @@
-{
-  "name": "Arsip Digital ASN",
-  "description": "Sistem aplikasi pengarsipan dokumen digital pegawai ASN untuk mengupload, melihat, mengedit, dan mematangkan kelengkapan berkas arsip secara modern, aman, dan mobile-first.",
-  "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
-}

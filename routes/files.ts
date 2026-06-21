@@ -3,7 +3,6 @@ import path from 'path';
 import { getLocalFileBuffer } from '../lib/storage';
 import { getArsipData } from '../lib/data';
 import { SessionData } from '../src/types';
-
 export function createFilesRouter(requireAuth: any) {
   const router = Router();
 
@@ -30,6 +29,11 @@ export function createFilesRouter(requireAuth: any) {
         res.setHeader('Content-Type', mime);
         res.setHeader('Content-Disposition', `inline; filename="${arsip.fileName || 'dokumen'}"`);
         return res.send(buf);
+      }
+      // If downloadUrl points to external storage, redirect
+      const du = arsip.downloadUrl || '';
+      if (du.startsWith('http')) {
+        return res.redirect(du);
       }
       // Fall back to local file serving
       const result = getLocalFileBuffer(sp);

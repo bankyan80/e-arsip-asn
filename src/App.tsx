@@ -134,9 +134,9 @@ export default function App() {
       loadAllPegawaiData();
     } else {
       adminData.fetchAdminData(session.role);
-      fetch('/api/kategori').then(r => r.json()).then(setKategoriList).catch(() => {});
-      fetch('/api/jenis-dokumen').then(r => r.json()).then(setJenisDokumenList).catch(() => {});
-      fetch('/api/pegawai/me').then(r => r.json()).then(d => { if (d && d.id) setProfile(d); }).catch(() => {});
+      fetch('/api/kategori').then(r => r.json()).then(setKategoriList).catch(e => console.error('Gagal memuat kategori:', e));
+      fetch('/api/jenis-dokumen').then(r => r.json()).then(setJenisDokumenList).catch(e => console.error('Gagal memuat jenis dokumen:', e));
+      fetch('/api/pegawai/me').then(r => r.json()).then(d => { if (d && d.id) setProfile(d); }).catch(e => console.error('Gagal memuat profil:', e));
     }
   }, [session]);
 
@@ -335,11 +335,11 @@ export default function App() {
     }
   };
 
-  const openFileViewer = (id: string, url: string) => {
+  const openFileViewer = (id: string, _url?: string) => {
     const match = myArchives.find(a => a.id === id) || allArchives.find(a => a.id === id);
     setActiveFileName(match ? `${match.jenisDokumen} - ${match.namaDokumen}` : 'Dokumen Arsip');
-    // Use download URL if available; otherwise fetch via API (handles base64 from DB)
-    const fileUrl = url || `/api/files/download?arsipId=${id}`;
+    // Always use API download endpoint to handle base64, migrated files, etc.
+    const fileUrl = `/api/files/download?arsipId=${id}`;
     setActiveFileUrl(fileUrl);
   };
 
@@ -1089,7 +1089,7 @@ export default function App() {
             </div>
             
             <div className="flex-1 bg-white rounded-xl overflow-hidden flex items-center justify-center relative">
-              {activeFileUrl.endsWith('.pdf') || activeFileUrl.includes('pdf') || activeFileUrl.includes('download') ? (
+              {(activeFileUrl.endsWith('.pdf') || activeFileUrl.match(/\.(doc|docx|xls|xlsx)$/i) || activeFileUrl.includes('/api/files/download')) ? (
                 <iframe
                   src={activeFileUrl}
                   className="w-full h-full"
@@ -1102,6 +1102,14 @@ export default function App() {
                   alt="Previa berkas"
                   className="max-w-full max-h-full object-contain"
                   referrerPolicy="no-referrer"
+                  onError={(e) => {
+                    const target = e.currentTarget;
+                    target.style.display = 'none';
+                    const fallback = document.createElement('div');
+                    fallback.className = 'text-slate-400 text-xs p-4 text-center';
+                    fallback.textContent = 'Pratinjau tidak tersedia untuk jenis file ini. Silakan unduh untuk melihat.';
+                    target.parentElement?.appendChild(fallback);
+                  }}
                 />
               )}
             </div>

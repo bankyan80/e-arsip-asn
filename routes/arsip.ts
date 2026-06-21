@@ -146,7 +146,7 @@ export function createArsipRouter(requireAuth: any, upload: any, logAction: any)
         downloadUrl: updates.downloadUrl || existingArsip.downloadUrl,
         updatedAt: new Date().toISOString(),
         updatedByNama: `${session.nama} (${session.role === 'pegawai' ? 'Pegawai' : 'Admin'})`,
-        statusValidasi: (updates.statusValidasi || existingArsip.statusValidasi) as any,
+        statusValidasi: (updates.statusValidasi || existingArsip.statusValidasi) as 'Menunggu Validasi' | 'Valid' | 'Perlu Perbaikan' | 'Ditolak',
         nomorDokumen: updates.nomorDokumen || existingArsip.nomorDokumen,
         tanggalDokumen: updates.tanggalDokumen || existingArsip.tanggalDokumen,
         tahun: updates.tahun || existingArsip.tahun,
@@ -178,7 +178,7 @@ export function createArsipRouter(requireAuth: any, upload: any, logAction: any)
           return res.status(400).json({ error: 'Dokumen yang telah berstatus VALID tidak diperbolehkan untuk dihapus pegawai.' });
         }
       }
-      await updateArsipData(id, { deleted: true, statusValidasi: 'Ditolak' as any });
+      await updateArsipData(id, { deleted: true });
       if (existingArsip.storagePath) await deleteFile(existingArsip.storagePath);
       await logAction(session, 'HAPUS_ARSIP', `Pegawai menghapus arsip: ${existingArsip.jenisDokumen}`, id, existingArsip.namaDokumen);
       return res.json({ message: 'Arsip berhasil dihapus.' });
