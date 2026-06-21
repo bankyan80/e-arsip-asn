@@ -55,7 +55,7 @@ export function createAdminRouter(requireAuth: any, requireRole: any, logAction:
       const existing = await findPegawaiByCredentials(body.nip, 'NIP');
       if (existing) return res.status(400).json({ error: 'Pegawai dengan NIP tersebut sudah ada.' });
 
-      let instansiId = body.instansiId || 'INST001';
+      let instansiId = body.instansiId || 'INST_DINDIK';
       if (session.role === 'admin_instansi') instansiId = session.instansiId;
 
       let instansiName = 'Badan Kepegawaian Daerah';

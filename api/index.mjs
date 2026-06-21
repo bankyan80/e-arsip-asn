@@ -507,7 +507,7 @@ async function ensureSuperAdmin() {
   const defaultPass = await bcrypt.hash(process.env.SUPER_ADMIN_PASSWORD || "admin456", 10);
   await query(
     `INSERT INTO pegawai (id, instansi_id, nama_instansi, nama_pegawai, nip, nik, tanggal_lahir, jenis_kelamin, jabatan, status_pegawai, pangkat_golongan, pendidikan_terakhir, nomor_hp, email, alamat, password, role, status_aktif, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
-    ["PGW004", "INST002", "Kantor Kepegawaian Daerah Cirebon", "Doni Prasetyo", "198001292025211035", "3209876543210002", "1992-08-15", "Laki-laki", "Admin Database", "PNS", "Penata Muda / III.a", "D3", "085678912345", "doni.prasetyo@asn.id", "Perum Cipta Asri No. 7, Kesambi, Cirebon", defaultPass, "super_admin", 1, now, now]
+    ["PGW004", "INST_DINDIK", "Dinas Pendidikan Kabupaten Cirebon", "Doni Prasetyo", "198001292025211035", "3209876543210002", "1992-08-15", "Laki-laki", "Admin Database", "PNS", "Penata Muda / III.a", "D3", "085678912345", "doni.prasetyo@asn.id", "Perum Cipta Asri No. 7, Kesambi, Cirebon", defaultPass, "super_admin", 1, now, now]
   );
 }
 var url, authToken, isConfigured, client;
@@ -649,13 +649,13 @@ async function readLocalDbAsync() {
 }
 async function seedInitialDb() {
   const defaultInstansi = [
-    { id: "INST001", namaInstansi: "SD Negeri 1 Lemahabang", alamat: "Jl. Raya Lemahabang", kecamatan: "Lemahabang", kabupaten: "Cirebon", statusAktif: true },
-    { id: "INST002", namaInstansi: "Kantor Kepegawaian Daerah Cirebon", alamat: "Jl. Pemuda No. 12", kecamatan: "Kesambi", kabupaten: "Cirebon", statusAktif: true }
+    { id: "INST_DINDIK", namaInstansi: "Dinas Pendidikan Kabupaten Cirebon", alamat: "Jl. Siliwangi No. 4, Cirebon", kecamatan: "Kesambi", kabupaten: "Cirebon", statusAktif: true }
   ];
   const defaultPegawai = [
-    { id: "PGW001", instansiId: "INST001", namaInstansi: "SD Negeri 1 Lemahabang", namaPegawai: "Ahmad Hidayat", nip: "198705122010012003", nik: "3209123456780001", tanggalLahir: "1987-05-12", jenisKelamin: "Laki-laki", jabatan: "Guru Kelas", statusPegawai: "PNS", pangkatGolongan: "Penata / III.c", pendidikanTerakhir: "S1", nomorHp: "081234567890", email: "ahmad.hidayat@asn.id", alamat: "Jl. Merdeka No. 4, Lemahabang, Cirebon", role: "pegawai", statusAktif: true, createdAt: (/* @__PURE__ */ new Date()).toISOString(), updatedAt: (/* @__PURE__ */ new Date()).toISOString() },
-    { id: "PGW002", instansiId: "INST001", namaInstansi: "SD Negeri 1 Lemahabang", namaPegawai: "Budi Santoso", nip: "198501012008011002", nik: "3209123456780002", tanggalLahir: "1985-01-01", jenisKelamin: "Laki-laki", jabatan: "Kepala Sekolah", statusPegawai: "PNS", pangkatGolongan: "Penata Tk. I / III.d", pendidikanTerakhir: "S2", nomorHp: "081398765432", email: "budi.santoso@asn.id", alamat: "Kompleks Gria Indah Blok C5, Cirebon", role: "admin_instansi", statusAktif: true, createdAt: (/* @__PURE__ */ new Date()).toISOString(), updatedAt: (/* @__PURE__ */ new Date()).toISOString() },
-    { id: "PGW003", instansiId: "INST002", namaInstansi: "Kantor Kepegawaian Daerah Cirebon", namaPegawai: "Citra Dewi Lestari", nip: "199003102014022001", nik: "3209876543210001", tanggalLahir: "1990-03-10", jenisKelamin: "Perempuan", jabatan: "Analis Kepegawaian", statusPegawai: "PNS", pangkatGolongan: "Penata Muda Tk. I / III.b", pendidikanTerakhir: "S1", nomorHp: "082134567891", email: "citra.dewi@asn.id", alamat: "Jl. Diponegoro No. 23, Kesambi, Cirebon", role: "admin_instansi", statusAktif: true, createdAt: (/* @__PURE__ */ new Date()).toISOString(), updatedAt: (/* @__PURE__ */ new Date()).toISOString() }
+    { id: "PGW001", instansiId: "INST_DINDIK", namaInstansi: "Dinas Pendidikan Kabupaten Cirebon", namaPegawai: "Ahmad Hidayat", nip: "198705122010012003", nik: "3209123456780001", tanggalLahir: "1987-05-12", jenisKelamin: "Laki-laki", jabatan: "Guru Kelas", statusPegawai: "PNS", pangkatGolongan: "Penata / III.c", pendidikanTerakhir: "S1", nomorHp: "081234567890", email: "ahmad.hidayat@asn.id", alamat: "Jl. Merdeka No. 4, Lemahabang, Cirebon", role: "pegawai", statusAktif: true, createdAt: (/* @__PURE__ */ new Date()).toISOString(), updatedAt: (/* @__PURE__ */ new Date()).toISOString() },
+    { id: "PGW002", instansiId: "INST_DINDIK", namaInstansi: "Dinas Pendidikan Kabupaten Cirebon", namaPegawai: "Budi Santoso", nip: "198501012008011002", nik: "3209123456780002", tanggalLahir: "1985-01-01", jenisKelamin: "Laki-laki", jabatan: "Kepala Sekolah", statusPegawai: "PNS", pangkatGolongan: "Penata Tk. I / III.d", pendidikanTerakhir: "S2", nomorHp: "081398765432", email: "budi.santoso@asn.id", alamat: "Kompleks Gria Indah Blok C5, Cirebon", role: "admin_instansi", statusAktif: true, createdAt: (/* @__PURE__ */ new Date()).toISOString(), updatedAt: (/* @__PURE__ */ new Date()).toISOString() },
+    { id: "PGW003", instansiId: "INST_DINDIK", namaInstansi: "Dinas Pendidikan Kabupaten Cirebon", namaPegawai: "Citra Dewi Lestari", nip: "199003102014022001", nik: "3209876543210001", tanggalLahir: "1990-03-10", jenisKelamin: "Perempuan", jabatan: "Analis Kepegawaian", statusPegawai: "PNS", pangkatGolongan: "Penata Muda Tk. I / III.b", pendidikanTerakhir: "S1", nomorHp: "082134567891", email: "citra.dewi@asn.id", alamat: "Jl. Diponegoro No. 23, Kesambi, Cirebon", role: "admin_instansi", statusAktif: true, createdAt: (/* @__PURE__ */ new Date()).toISOString(), updatedAt: (/* @__PURE__ */ new Date()).toISOString() },
+    { id: "PGW004", instansiId: "INST_DINDIK", namaInstansi: "Dinas Pendidikan Kabupaten Cirebon", namaPegawai: "Doni Prasetyo", nip: "198001292025211035", nik: "3209876543210002", tanggalLahir: "1992-08-15", jenisKelamin: "Laki-laki", jabatan: "Admin Database", statusPegawai: "PNS", pangkatGolongan: "Penata Muda / III.a", pendidikanTerakhir: "D3", nomorHp: "085678912345", email: "doni.prasetyo@asn.id", alamat: "Perum Cipta Asri No. 7, Kesambi, Cirebon", role: "super_admin", statusAktif: true, createdAt: (/* @__PURE__ */ new Date()).toISOString(), updatedAt: (/* @__PURE__ */ new Date()).toISOString() }
   ];
   const defaultSettings = [
     { key: "allowDeleteValid", value: "false", keterangan: "Mengizinkan pegawai mendelete dokumen yang sudah divalidasi" },
@@ -857,8 +857,7 @@ async function seedTurso() {
   await initSchema();
   console.log("Seeding Turso database...");
   const defaultInstansi = [
-    { id: "INST001", namaInstansi: "SD Negeri 1 Lemahabang", alamat: "Jl. Raya Lemahabang", kecamatan: "Lemahabang", kabupaten: "Cirebon", statusAktif: true },
-    { id: "INST002", namaInstansi: "Kantor Kepegawaian Daerah Cirebon", alamat: "Jl. Pemuda No. 12", kecamatan: "Kesambi", kabupaten: "Cirebon", statusAktif: true }
+    { id: "INST_DINDIK", namaInstansi: "Dinas Pendidikan Kabupaten Cirebon", alamat: "Jl. Siliwangi No. 4, Cirebon", kecamatan: "Kesambi", kabupaten: "Cirebon", statusAktif: true }
   ];
   for (const i of defaultInstansi) {
     try {
@@ -870,10 +869,10 @@ async function seedTurso() {
   console.log("Instansi seeded");
   const now = (/* @__PURE__ */ new Date()).toISOString();
   const defaultPegawai = [
-    { id: "PGW001", instansiId: "INST001", namaInstansi: "SD Negeri 1 Lemahabang", namaPegawai: "Ahmad Hidayat", nip: "198705122010012003", nik: "3209123456780001", tanggalLahir: "1987-05-12", jenisKelamin: "Laki-laki", jabatan: "Guru Kelas", statusPegawai: "PNS", pangkatGolongan: "Penata / III.c", pendidikanTerakhir: "S1", nomorHp: "081234567890", email: "ahmad.hidayat@asn.id", alamat: "Jl. Merdeka No. 4, Lemahabang, Cirebon", role: "pegawai", statusAktif: true, createdAt: now, updatedAt: now },
-    { id: "PGW002", instansiId: "INST001", namaInstansi: "SD Negeri 1 Lemahabang", namaPegawai: "Budi Santoso", nip: "198501012008011002", nik: "3209123456780002", tanggalLahir: "1985-01-01", jenisKelamin: "Laki-laki", jabatan: "Kepala Sekolah", statusPegawai: "PNS", pangkatGolongan: "Penata Tk. I / III.d", pendidikanTerakhir: "S2", nomorHp: "081398765432", email: "budi.santoso@asn.id", alamat: "Kompleks Gria Indah Blok C5, Cirebon", role: "admin_instansi", statusAktif: true, createdAt: now, updatedAt: now },
-    { id: "PGW003", instansiId: "INST002", namaInstansi: "Kantor Kepegawaian Daerah Cirebon", namaPegawai: "Citra Dewi Lestari", nip: "199003102014022001", nik: "3209876543210001", tanggalLahir: "1990-03-10", jenisKelamin: "Perempuan", jabatan: "Analis Kepegawaian", statusPegawai: "PNS", pangkatGolongan: "Penata Muda Tk. I / III.b", pendidikanTerakhir: "S1", nomorHp: "082134567891", email: "citra.dewi@asn.id", alamat: "Jl. Diponegoro No. 23, Kesambi, Cirebon", role: "admin_instansi", statusAktif: true, createdAt: now, updatedAt: now },
-    { id: "PGW004", instansiId: "INST002", namaInstansi: "Kantor Kepegawaian Daerah Cirebon", namaPegawai: "Doni Prasetyo", nip: "198001292025211035", nik: "3209876543210002", tanggalLahir: "1992-08-15", jenisKelamin: "Laki-laki", jabatan: "Admin Database", statusPegawai: "PNS", pangkatGolongan: "Penata Muda / III.a", pendidikanTerakhir: "D3", nomorHp: "085678912345", email: "doni.prasetyo@asn.id", alamat: "Perum Cipta Asri No. 7, Kesambi, Cirebon", role: "super_admin", statusAktif: true, createdAt: now, updatedAt: now }
+    { id: "PGW001", instansiId: "INST_DINDIK", namaInstansi: "Dinas Pendidikan Kabupaten Cirebon", namaPegawai: "Ahmad Hidayat", nip: "198705122010012003", nik: "3209123456780001", tanggalLahir: "1987-05-12", jenisKelamin: "Laki-laki", jabatan: "Guru Kelas", statusPegawai: "PNS", pangkatGolongan: "Penata / III.c", pendidikanTerakhir: "S1", nomorHp: "081234567890", email: "ahmad.hidayat@asn.id", alamat: "Jl. Merdeka No. 4, Lemahabang, Cirebon", role: "pegawai", statusAktif: true, createdAt: now, updatedAt: now },
+    { id: "PGW002", instansiId: "INST_DINDIK", namaInstansi: "Dinas Pendidikan Kabupaten Cirebon", namaPegawai: "Budi Santoso", nip: "198501012008011002", nik: "3209123456780002", tanggalLahir: "1985-01-01", jenisKelamin: "Laki-laki", jabatan: "Kepala Sekolah", statusPegawai: "PNS", pangkatGolongan: "Penata Tk. I / III.d", pendidikanTerakhir: "S2", nomorHp: "081398765432", email: "budi.santoso@asn.id", alamat: "Kompleks Gria Indah Blok C5, Cirebon", role: "admin_instansi", statusAktif: true, createdAt: now, updatedAt: now },
+    { id: "PGW003", instansiId: "INST_DINDIK", namaInstansi: "Dinas Pendidikan Kabupaten Cirebon", namaPegawai: "Citra Dewi Lestari", nip: "199003102014022001", nik: "3209876543210001", tanggalLahir: "1990-03-10", jenisKelamin: "Perempuan", jabatan: "Analis Kepegawaian", statusPegawai: "PNS", pangkatGolongan: "Penata Muda Tk. I / III.b", pendidikanTerakhir: "S1", nomorHp: "082134567891", email: "citra.dewi@asn.id", alamat: "Jl. Diponegoro No. 23, Kesambi, Cirebon", role: "admin_instansi", statusAktif: true, createdAt: now, updatedAt: now },
+    { id: "PGW004", instansiId: "INST_DINDIK", namaInstansi: "Dinas Pendidikan Kabupaten Cirebon", namaPegawai: "Doni Prasetyo", nip: "198001292025211035", nik: "3209876543210002", tanggalLahir: "1992-08-15", jenisKelamin: "Laki-laki", jabatan: "Admin Database", statusPegawai: "PNS", pangkatGolongan: "Penata Muda / III.a", pendidikanTerakhir: "D3", nomorHp: "085678912345", email: "doni.prasetyo@asn.id", alamat: "Perum Cipta Asri No. 7, Kesambi, Cirebon", role: "super_admin", statusAktif: true, createdAt: now, updatedAt: now }
   ];
   for (const p of defaultPegawai) {
     try {
@@ -1590,7 +1589,7 @@ function createAdminRouter(requireAuth, requireRole, logAction) {
     try {
       const existing = await findPegawaiByCredentials2(body.nip, "NIP");
       if (existing) return res.status(400).json({ error: "Pegawai dengan NIP tersebut sudah ada." });
-      let instansiId = body.instansiId || "INST001";
+      let instansiId = body.instansiId || "INST_DINDIK";
       if (session.role === "admin_instansi") instansiId = session.instansiId;
       let instansiName = "Badan Kepegawaian Daerah";
       if (instansiId) {

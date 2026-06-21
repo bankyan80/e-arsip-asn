@@ -408,7 +408,7 @@ export async function ensureSuperAdmin() {
   const defaultPass = await bcrypt.hash(process.env.SUPER_ADMIN_PASSWORD || 'admin456', 10);
   await query(
     `INSERT INTO pegawai (id, instansi_id, nama_instansi, nama_pegawai, nip, nik, tanggal_lahir, jenis_kelamin, jabatan, status_pegawai, pangkat_golongan, pendidikan_terakhir, nomor_hp, email, alamat, password, role, status_aktif, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
-    ['PGW004', 'INST002', 'Kantor Kepegawaian Daerah Cirebon', 'Doni Prasetyo', '198001292025211035', '3209876543210002', '1992-08-15', 'Laki-laki', 'Admin Database', 'PNS', 'Penata Muda / III.a', 'D3', '085678912345', 'doni.prasetyo@asn.id', 'Perum Cipta Asri No. 7, Kesambi, Cirebon', defaultPass, 'super_admin', 1, now, now]
+    ['PGW004', 'INST_DINDIK', 'Dinas Pendidikan Kabupaten Cirebon', 'Doni Prasetyo', '198001292025211035', '3209876543210002', '1992-08-15', 'Laki-laki', 'Admin Database', 'PNS', 'Penata Muda / III.a', 'D3', '085678912345', 'doni.prasetyo@asn.id', 'Perum Cipta Asri No. 7, Kesambi, Cirebon', defaultPass, 'super_admin', 1, now, now]
   );
 }
 
