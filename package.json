@@ -1,0 +1,45 @@
+{
+  "name": "e-arsip-asn",
+  "version": "3.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "typecheck": "tsc --noEmit",
+    "db:migrate": "node scripts/migrate-db.mjs migrate",
+    "db:seed": "node scripts/migrate-db.mjs seed",
+    "db:seed:asn": "node scripts/migrate-db.mjs seed:asn",
+    "db:setup": "node scripts/migrate-db.mjs all",
+    "telegram:webhook": "node scripts/setup-webhook.mjs",
+    "telegram:commands": "node scripts/setup-commands.mjs",
+    "admin:create": "node scripts/create-admin.mjs"
+  },
+  "dependencies": {
+    "@neondatabase/serverless": "^0.10.4",
+    "archiver": "^7.0.1",
+    "bcryptjs": "^2.4.3",
+    "clsx": "^2.1.1",
+    "jose": "^5.9.6",
+    "jspdf": "^2.5.2",
+    "jspdf-autotable": "^3.8.4",
+    "lucide-react": "^0.453.0",
+    "next": "^14.2.28",
+    "pdf-lib": "^1.17.1",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "sharp": "^0.33.5"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/node": "^20.17.9",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.4.49",
+    "pg": "^8.13.1",
+    "tailwindcss": "^3.4.15",
+    "typescript": "^5.7.2"
+  }
+}
