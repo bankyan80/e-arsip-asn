@@ -139,6 +139,7 @@ CREATE TABLE IF NOT EXISTS notifications (
   asn_id BIGINT REFERENCES asn(id) ON DELETE CASCADE,
   nip VARCHAR(30),
   telegram_chat_id BIGINT,
+  email_to VARCHAR(200),
   judul VARCHAR(200),
   pesan TEXT,
   status VARCHAR(20) NOT NULL DEFAULT 'SENT',
@@ -147,6 +148,7 @@ CREATE TABLE IF NOT EXISTS notifications (
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS idx_notifications_chat ON notifications(telegram_chat_id);
+ALTER TABLE notifications ADD COLUMN IF NOT EXISTS email_to VARCHAR(200);
 
 CREATE TABLE IF NOT EXISTS settings (
   kunci VARCHAR(100) PRIMARY KEY,

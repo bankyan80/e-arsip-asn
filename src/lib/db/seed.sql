@@ -32,6 +32,7 @@ INSERT INTO notifikasi_config (kunci, nama, aktif, deskripsi) VALUES
   ('DOKUMEN_DISETUJUI',  'Dokumen Disetujui',     true,  'Notifikasi saat dokumen disetujui admin'),
   ('DOKUMEN_DITOLAK',    'Dokumen Ditolak',       true,  'Notifikasi saat dokumen ditolak admin (dengan alasan)'),
   ('PENGINGAT',          'Pengingat Kelengkapan', true,  'Pengingat otomatis untuk melengkapi arsip'),
+  ('PENGINGAT_EMAIL',    'Pengingat Email',       true,  'Himbauan otomatis via email untuk melengkapi arsip'),
   ('PENGUMUMAN',         'Pengumuman',            true,  'Pengumuman/admin broadcast ke ASN'),
   ('ERROR',              'Notifikasi Error',      true,  'Notifikasi error sistem ke admin')
 ON CONFLICT (kunci) DO NOTHING;

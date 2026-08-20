@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { query, db } from "@/lib/db";
+import { query } from "@/lib/db";
 import { settingsGet } from "@/lib/settings";
 import { notifyReminder } from "@/lib/notifications";
+import { sendReminderEmail } from "@/lib/email";
 import type { ASN, JenisDokumen, Dokumen } from "@/lib/types";
 
 export const runtime = "nodejs";
@@ -15,7 +16,7 @@ export async function GET(request: NextRequest) {
   }
 
   const asnList = await query<ASN>(
-    `SELECT * FROM asn WHERE telegram_user_id IS NOT NULL AND telegram_chat_id IS NOT NULL`
+    `SELECT * FROM asn WHERE telegram_chat_id IS NOT NULL OR (email IS NOT NULL AND email <> '')`
   );
 
   const reminderDay = Number(await settingsGet("reminder_day", "1"));
@@ -44,7 +45,12 @@ export async function GET(request: NextRequest) {
 
     if (kurang.length > 0) {
       report.push({ nip: asn.nip, nama: asn.nama, kurang });
-      await notifyReminder(asn.nama, asn.telegram_chat_id!, asn.id, asn.nip, kurang);
+      if (asn.telegram_chat_id) {
+        await notifyReminder(asn.nama, asn.telegram_chat_id, asn.id, asn.nip, kurang);
+      }
+      if (asn.email) {
+        await sendReminderEmail(asn.nama, asn.email, asn.id, asn.nip, kurang);
+      }
     }
   }
 

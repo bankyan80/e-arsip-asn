@@ -29,6 +29,12 @@ export const env = {
   get cronKey() {
     return get("CRON_KEY") || "e-arsip-reminder-2026";
   },
+  get resendApiKey() {
+    return get("RESEND_API_KEY");
+  },
+  get emailFrom() {
+    return get("EMAIL_FROM") || "e-ARSIP ASN <no-reply@arsipasn.sch.id>";
+  },
   get googleDriveClientId() {
     return get("GOOGLE_DRIVE_CLIENT_ID");
   },
