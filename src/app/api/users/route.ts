@@ -29,6 +29,9 @@ export async function POST(request: NextRequest) {
   if (!username || !password || !nama || !role) {
     return NextResponse.json({ error: "Username, password, nama, dan role wajib diisi" }, { status: 400 });
   }
+  if (session.role !== "SUPER ADMIN" && role === "SUPER ADMIN") {
+    return NextResponse.json({ error: "Hanya Super Admin yang dapat membuat akun Super Admin" }, { status: 403 });
+  }
   const hash = await bcrypt.hash(password, 10);
   const rows = await query<User>(
     `INSERT INTO users (username, password_hash, nama, role) VALUES ($1,$2,$3,$4) RETURNING id, username, nama, role, aktif`,
@@ -49,6 +52,19 @@ export async function PUT(request: NextRequest) {
 
   const body = await request.json().catch(() => ({}));
   const { id, username, nama, role, aktif, password } = body;
+  if (!id) return NextResponse.json({ error: "id wajib" }, { status: 400 });
+
+  if (session.role !== "SUPER ADMIN") {
+    if (role === "SUPER ADMIN") {
+      return NextResponse.json({ error: "Hanya Super Admin yang dapat menetapkan peran Super Admin" }, { status: 403 });
+    }
+    const target = await query<User>(`SELECT role FROM users WHERE id = $1`, [Number(id)]);
+    if (!target[0]) return NextResponse.json({ error: "Pengguna tidak ditemukan" }, { status: 404 });
+    if (target[0].role === "SUPER ADMIN") {
+      return NextResponse.json({ error: "Hanya Super Admin yang dapat mengubah akun Super Admin" }, { status: 403 });
+    }
+  }
+
   const sets: string[] = [];
   const vals: any[] = [];
   let i = 1;

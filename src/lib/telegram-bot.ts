@@ -170,9 +170,9 @@ async function handleNipInput(chatId: number, fromId: number, text: string, user
   await tg.sendMessage(
     chatId,
     `✅ Identitas berhasil ditemukan.\n\n` +
-      `👤 <b>${asn.nama}</b>\n` +
-      `NIP: <code>${asn.nip}</code>\n` +
-      `Unit Kerja: ${asn.unit_kerja ?? "-"}\n\n` +
+      `👤 <b>${tg.escapeHtml(asn.nama)}</b>\n` +
+      `NIP: <code>${tg.escapeHtml(asn.nip)}</code>\n` +
+      `Unit Kerja: ${tg.escapeHtml(asn.unit_kerja ?? "-")}\n\n` +
       `Silakan pilih menu:`,
     { reply_markup: keyboard }
   );
@@ -184,7 +184,7 @@ async function handleStart(chatId: number, fromId: number) {
     const keyboard = buildMenuKeyboard();
     return tg.sendMessage(
       chatId,
-      `Selamat datang kembali, <b>${asn.nama}</b>!`,
+      `Selamat datang kembali, <b>${tg.escapeHtml(asn.nama)}</b>!`,
       { reply_markup: keyboard }
     );
   }
@@ -339,13 +339,13 @@ async function handleDataSaya(chatId: number, fromId: number, opts: { messageId?
   }
   const text =
     `👤 <b>DATA ASN</b>\n\n` +
-    `Nama: <b>${asn.nama}</b>\n` +
-    `NIP: <code>${asn.nip}</code>\n` +
-    `Pangkat/Golongan: ${asn.pangkat ?? "-"} / ${asn.golongan ?? "-"}\n` +
-    `Jabatan: ${asn.jabatan ?? "-"}\n` +
-    `Unit Kerja: ${asn.unit_kerja ?? "-"}\n` +
-    `Status: ${asn.status}\n\n` +
-    `Terhubung Telegram: ✅ (${asn.telegram_username ?? "-"})`;
+    `Nama: <b>${tg.escapeHtml(asn.nama)}</b>\n` +
+    `NIP: <code>${tg.escapeHtml(asn.nip)}</code>\n` +
+    `Pangkat/Golongan: ${tg.escapeHtml(asn.pangkat ?? "-")} / ${tg.escapeHtml(asn.golongan ?? "-")}\n` +
+    `Jabatan: ${tg.escapeHtml(asn.jabatan ?? "-")}\n` +
+    `Unit Kerja: ${tg.escapeHtml(asn.unit_kerja ?? "-")}\n` +
+    `Status: ${tg.escapeHtml(asn.status)}\n\n` +
+    `Terhubung Telegram: ✅ (${tg.escapeHtml(asn.telegram_username ?? "-")})`;
 
   const keyboard = tg.inlineKeyboard([
     [{ text: "⬅️ Kembali", callback_data: cbData("menu") }],
@@ -423,13 +423,13 @@ async function handleDocSelected(
     [{ text: "❌ Batal", callback_data: cbData("upload-cancel") }],
   ]);
 
-  let text = `📄 <b>${jenis.nama}</b>\n\nSilakan kirim dokumen Anda.\n\n`;
+  let text = `📄 <b>${tg.escapeHtml(jenis.nama)}</b>\n\nSilakan kirim dokumen Anda.\n\n`;
   text += `Format yang disarankan: PDF.\n`;
   text += `Jika dokumen hanya tersedia dalam bentuk foto, Anda tetap dapat mengirim foto. Sistem akan otomatis mengubahnya menjadi PDF.\n\n`;
   text += `Untuk dokumen multi halaman, kirim foto halaman demi halaman secara berurutan.`;
 
   if (existing) {
-    text += `\n\nℹ️ Anda sudah memiliki ${jenis.nama} (versi ${existing.versi}, diunggah ${fmtDate(existing.tanggal_upload)}). Dokumen baru akan disimpan sebagai versi berikutnya.`;
+    text += `\n\nℹ️ Anda sudah memiliki ${tg.escapeHtml(jenis.nama)} (versi ${existing.versi}, diunggah ${fmtDate(existing.tanggal_upload)}). Dokumen baru akan disimpan sebagai versi berikutnya.`;
   }
 
   if (messageId) {
@@ -605,7 +605,7 @@ async function handleSessionDone(chatId: number, fromId: number, messageId: numb
   await tg.editMessageText(
     chatId,
     messageId,
-    `📑 <b>${session.jumlah_foto} halaman</b> telah diterima untuk dokumen <b>${jenis?.nama ?? "-"}</b>.\n\n` +
+    `📑 <b>${session.jumlah_foto} halaman</b> telah diterima untuk dokumen <b>${tg.escapeHtml(jenis?.nama ?? "-")}</b>.\n\n` +
       `Foto akan digabungkan menjadi satu PDF.\n\nTekan <b>Simpan PDF</b> untuk melanjutkan.`,
     { reply_markup: keyboard }
   );
@@ -726,7 +726,7 @@ async function saveDokumenFromBuffer(
   await tg.sendMessage(
     chatId,
     `✅ <b>Dokumen diterima dan disimpan.</b>\n\n` +
-      `📄 ${jenis.nama}\n` +
+      `📄 ${tg.escapeHtml(jenis.nama)}\n` +
       `Versi: ${doc.versi}\n` +
       `Jumlah halaman: ${pages}\n` +
       `Ukuran: ${Math.round(pdfBuffer.length / 1024)} KB\n\n` +
@@ -759,7 +759,7 @@ async function handleArsipSaya(chatId: number, fromId: number, opts: { messageId
   for (const j of jenisList) {
     const d = docs.find((x) => x.jenis_dokumen_id === j.id);
     const mark = d ? "✅" : "❌";
-    text += `${mark} ${j.nama}\n`;
+    text += `${mark} ${tg.escapeHtml(j.nama)}\n`;
   }
 
   const rows = docs.map((d) => [
@@ -795,12 +795,12 @@ async function handleViewDoc(chatId: number, fromId: number, docIdStr: string, m
   };
 
   const text =
-    `📄 <b>${doc.jenis_dokumen_kode}</b>\n\n` +
+    `📄 <b>${tg.escapeHtml(doc.jenis_dokumen_kode)}</b>\n\n` +
     `Status: ${statusMap[doc.status] ?? doc.status}\n` +
     `Upload: ${fmtDate(doc.tanggal_upload)}\n` +
     `Versi: ${doc.versi}\n` +
     `Halaman: ${doc.jumlah_halaman}\n` +
-    (doc.catatan_verifikasi ? `Catatan: ${doc.catatan_verifikasi}\n` : "");
+    (doc.catatan_verifikasi ? `Catatan: ${tg.escapeHtml(doc.catatan_verifikasi)}\n` : "");
 
   const keyboard = tg.inlineKeyboard([
     [
@@ -824,7 +824,7 @@ async function handleDownloadDoc(chatId: number, fromId: number, docIdStr: strin
     if (!stored) throw new Error("file not found");
     // Kirim file PDF langsung dari Google Drive (private storage)
     await tg.sendDocumentBuffer(chatId, stored.buffer, stored.name, {
-      caption: `📄 ${doc.jenis_dokumen_kode} (v${doc.versi})`,
+      caption: `📄 ${tg.escapeHtml(doc.jenis_dokumen_kode)} (v${doc.versi})`,
     });
     await query(`INSERT INTO download_log (dokumen_id, nip, aksi) VALUES ($1, $2, 'DOWNLOAD')`, [doc.id, asn.nip]);
   } catch {
@@ -847,7 +847,7 @@ async function handleKelengkapan(chatId: number, fromId: number, opts: { message
     [asn.nip]
   );
 
-  const tersedia = jenisList.filter((j) => docs.some((d) => d.jenis_dokumen_id === j.id && d.status !== "DITOLAK"));
+  const tersedia = jenisList.filter((j) => docs.some((d) => d.jenis_dokumen_id === j.id && d.status === "DISETUJUI"));
   const total = jenisList.length;
   const ada = tersedia.length;
   const pct = total === 0 ? 0 : Math.round((ada / total) * 100);
@@ -858,8 +858,8 @@ async function handleKelengkapan(chatId: number, fromId: number, opts: { message
 
   for (const j of jenisList) {
     const d = docs.find((x) => x.jenis_dokumen_id === j.id);
-    const mark = d && d.status !== "DITOLAK" ? "✅" : "❌";
-    text += `${mark} ${j.nama}\n`;
+    const mark = d && d.status === "DISETUJUI" ? "✅" : "❌";
+    text += `${mark} ${tg.escapeHtml(j.nama)}\n`;
   }
 
   const keyboard = tg.inlineKeyboard([

@@ -48,7 +48,7 @@ export async function notifyDokumenTerkonversi(chatId: number, asnId: number, ni
     nip,
     tipe: "DOKUMEN_KONVERSI",
     judul: "Dokumen Terkonversi",
-    pesan: `📄 <b>${jenisNama}</b> berhasil dikonversi menjadi PDF (${pages} halaman).\n\nStatus: ⏳ Menunggu verifikasi admin.`,
+    pesan: `📄 <b>${tg.escapeHtml(jenisNama)}</b> berhasil dikonversi menjadi PDF (${pages} halaman).\n\nStatus: ⏳ Menunggu verifikasi admin.`,
   });
 }
 
@@ -61,13 +61,21 @@ export async function notifyDokumenDisetujui(chatId: number, asnId: number, nip:
     judul: "Dokumen Disetujui",
     pesan:
       `✅ <b>Dokumen disetujui.</b>\n\n` +
-      `📄 ${jenisNama}\n` +
-      (catatan ? `Catatan: ${catatan}\n` : ""),
+      `📄 ${tg.escapeHtml(jenisNama)}\n` +
+      (catatan ? `Catatan: ${tg.escapeHtml(catatan)}\n` : ""),
   });
 }
 
-export async function notifyDokumenDitolak(chatId: number, asnId: number, nip: string, jenisNama: string, alasan: string) {
-  const replyMarkup = tg.inlineKeyboard([[{ text: "🔄 Upload Ulang", callback_data: "arsip:upload-select" }]]);
+export async function notifyDokumenDitolak(
+  chatId: number,
+  asnId: number,
+  nip: string,
+  jenisNama: string,
+  alasan: string,
+  jenisId?: number
+) {
+  const callbackData = jenisId ? `arsip:upload-select:${jenisId}` : "arsip:upload";
+  const replyMarkup = tg.inlineKeyboard([[{ text: "🔄 Upload Ulang", callback_data: callbackData }]]);
   return notifyAsn({
     chatId,
     asnId,
@@ -76,14 +84,14 @@ export async function notifyDokumenDitolak(chatId: number, asnId: number, nip: s
     judul: "Dokumen Ditolak",
     replyMarkup,
     pesan:
-      `⚠️ <b>Dokumen ${jenisNama} perlu diperbaiki.</b>\n\n` +
-      `Alasan:\n${alasan}\n\n` +
+      `⚠️ <b>Dokumen ${tg.escapeHtml(jenisNama)} perlu diperbaiki.</b>\n\n` +
+      `Alasan:\n${tg.escapeHtml(alasan)}\n\n` +
       `Silakan upload ulang dokumen.`,
   });
 }
 
 export async function notifyReminder(nama: string, chatId: number, asnId: number, nip: string, daftarKurang: string[]) {
-  const list = daftarKurang.map((x) => `❌ ${x}`).join("\n");
+  const list = daftarKurang.map((x) => `❌ ${tg.escapeHtml(x)}`).join("\n");
   return notifyAsn({
     chatId,
     asnId,
@@ -92,7 +100,7 @@ export async function notifyReminder(nama: string, chatId: number, asnId: number
     judul: "Pengingat Arsip",
     pesan:
       `🔔 <b>PENGINGAT ARSIP</b>\n\n` +
-      `Halo ${nama}.\n\n` +
+      `Halo ${tg.escapeHtml(nama)}.\n\n` +
       `Arsip Anda belum lengkap.\n\n` +
       `Dokumen yang belum tersedia:\n${list}\n\n` +
       `Silakan lengkapi melalui bot.`,

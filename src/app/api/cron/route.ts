@@ -14,8 +14,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const ocrEnabled = (await settingsGet("ocr_enabled", "false")) === "true";
-
   const asnList = await query<ASN>(
     `SELECT * FROM asn WHERE telegram_user_id IS NOT NULL AND telegram_chat_id IS NOT NULL`
   );

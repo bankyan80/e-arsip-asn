@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { query } from "@/lib/db";
 import { getSession } from "@/lib/auth";
-import { roleRank } from "@/lib/guard";
 import type { ASN, JenisDokumen, Dokumen } from "@/lib/types";
 
 export const runtime = "nodejs";
@@ -49,7 +48,7 @@ export async function GET(request: NextRequest) {
   const total = countRow[0]?.total ?? 0;
 
   const asnRows = await query<ASN & { jumlah_dokumen: number }>(
-    `SELECT a.*, (SELECT COUNT(*)::int FROM dokumen d WHERE d.nip = a.nip AND d.is_latest = true) AS jumlah_dokumen
+    `SELECT a.*, (SELECT COUNT(*)::int FROM dokumen d WHERE d.nip = a.nip AND d.is_latest = true AND d.status = 'DISETUJUI') AS jumlah_dokumen
      FROM asn a
      ${where}
      ORDER BY a.nama ASC

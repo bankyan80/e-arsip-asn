@@ -39,6 +39,7 @@ export default function AsnListPage() {
 
   useEffect(() => {
     load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, status]);
 
   const totalPages = Math.max(1, Math.ceil(total / perPage));

@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { query } from "@/lib/db";
 import { getSession } from "@/lib/auth";
-import { roleRank } from "@/lib/guard";
 import { auditLog } from "@/lib/audit";
 import type { JenisDokumen } from "@/lib/types";
 

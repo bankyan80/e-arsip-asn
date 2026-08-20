@@ -13,7 +13,7 @@ export function db() {
 
 export async function query<T = any>(text: string, params: unknown[] = []): Promise<T[]> {
   const run = db();
-  const rows = await run(text, ...(params as any[]));
+  const rows = await run(text, params);
   return rows as T[];
 }
 

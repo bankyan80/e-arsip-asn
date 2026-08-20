@@ -40,6 +40,7 @@ export default function DokumenPage() {
 
   useEffect(() => {
     load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, status]);
 
   async function verify(doc: DocRow, action: "approve" | "reject", catatan = "") {

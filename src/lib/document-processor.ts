@@ -85,13 +85,10 @@ async function embedImage(pdf: PDFDocument, page: ProcessedPage) {
 
 function fitPage(page: ProcessedPage, target: { width: number; height: number }) {
   const scale = Math.min(target.width / page.width, target.height / page.height);
-  const width = Math.round(page.width * scale);
-  const height = Math.round(page.height * scale);
-  // Gunakan orientasi mengikuti dokumen
-  if (page.height > page.width) {
-    return { width: Math.round(target.height * (height / target.height)), height };
-  }
-  return { width, height };
+  return {
+    width: Math.round(page.width * scale),
+    height: Math.round(page.height * scale),
+  };
 }
 
 export function isImageMime(mime: string): boolean {

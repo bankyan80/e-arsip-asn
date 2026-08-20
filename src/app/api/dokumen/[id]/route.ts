@@ -4,13 +4,17 @@ import { getSession } from "@/lib/auth";
 import { auditLog } from "@/lib/audit";
 import { notifyAsn } from "@/lib/notifications";
 import { deleteBlob } from "@/lib/storage";
+import { escapeHtml } from "@/lib/telegram";
 import type { ASN, Dokumen } from "@/lib/types";
 
 export const runtime = "nodejs";
 
-async function guard(request: NextRequest) {
+async function guard(request: NextRequest, allowedRoles?: string[]) {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (allowedRoles && !allowedRoles.includes(session.role)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
   return session;
 }
 
@@ -37,7 +41,7 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
 }
 
 export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
-  const session = await guard(request);
+  const session = await guard(request, ["SUPER ADMIN", "ADMIN"]);
   if (session instanceof Response) return session;
 
   const id = Number(params.id);
@@ -69,7 +73,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
         nip: asn.nip,
         tipe: "DOKUMEN_DISETUJUI",
         judul: "Dokumen Disetujui",
-        pesan: `✅ <b>Dokumen disetujui.</b>\n\n📄 ${doc.jenis_dokumen_kode}\n` + (catatan ? `Catatan: ${catatan}\n` : ""),
+        pesan: `✅ <b>Dokumen disetujui.</b>\n\n📄 ${escapeHtml(doc.jenis_dokumen_kode)}\n` + (catatan ? `Catatan: ${escapeHtml(catatan)}\n` : ""),
       });
     }
     return NextResponse.json({ ok: true, status: "DISETUJUI" });
@@ -97,7 +101,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
         nip: asn.nip,
         tipe: "DOKUMEN_DITOLAK",
         judul: "Dokumen Ditolak",
-        pesan: `⚠️ <b>Dokumen ${doc.jenis_dokumen_kode} perlu diperbaiki.</b>\n\nAlasan:\n${catatan}\n\nSilakan upload ulang dokumen.`,
+        pesan: `⚠️ <b>Dokumen ${escapeHtml(doc.jenis_dokumen_kode)} perlu diperbaiki.</b>\n\nAlasan:\n${escapeHtml(catatan)}\n\nSilakan upload ulang dokumen.`,
       });
     }
     return NextResponse.json({ ok: true, status: "DITOLAK" });
@@ -107,7 +111,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
 }
 
 export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
-  const session = await guard(request);
+  const session = await guard(request, ["SUPER ADMIN", "ADMIN"]);
   if (session instanceof Response) return session;
 
   const id = Number(params.id);

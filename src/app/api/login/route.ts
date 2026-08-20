@@ -7,10 +7,32 @@ import type { User } from "@/lib/types";
 
 export const runtime = "nodejs";
 
+const attempts = new Map<string, { count: number; resetAt: number }>();
+const MAX_ATTEMPTS = 5;
+const WINDOW_MS = 15 * 60 * 1000;
+
+function recordAttempt(key: string): number {
+  const now = Date.now();
+  const rec = attempts.get(key);
+  if (!rec || now > rec.resetAt) {
+    attempts.set(key, { count: 1, resetAt: now + WINDOW_MS });
+    return 1;
+  }
+  rec.count++;
+  return rec.count;
+}
+
 export async function POST(request: NextRequest) {
   const { username, password } = await request.json().catch(() => ({}));
   if (!username || !password) {
     return NextResponse.json({ error: "Username dan password wajib diisi" }, { status: 400 });
+  }
+
+  const ip = request.headers.get("x-forwarded-for")?.split(",")[0] ?? "local";
+  const key = `${ip}|${String(username).toLowerCase()}`;
+  const count = recordAttempt(key);
+  if (count > MAX_ATTEMPTS) {
+    return NextResponse.json({ error: "Terlalu banyak percobaan. Silakan coba lagi beberapa saat." }, { status: 429 });
   }
 
   const user = await queryOne<User>(`SELECT * FROM users WHERE username = $1 LIMIT 1`, [username]);
@@ -23,8 +45,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Username atau password salah" }, { status: 401 });
   }
 
+  attempts.delete(key);
+
   await query(`UPDATE users SET last_login_at = now() WHERE id = $1`, [user.id]);
-  const ip = request.headers.get("x-forwarded-for")?.split(",")[0] ?? "local";
 
   await setSession({
     userId: user.id,

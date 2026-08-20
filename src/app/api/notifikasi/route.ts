@@ -51,17 +51,21 @@ export async function POST(request: NextRequest) {
   let terkirim = 0;
   for (const asn of asnList) {
     try {
-      await tg.sendMessage(asn.telegram_chat_id!, `🔔 <b>PENGUMUMAN</b>\n\n${pesan}`);
+      await tg.sendMessage(asn.telegram_chat_id!, `🔔 <b>PENGUMUMAN</b>\n\n${tg.escapeHtml(pesan)}`);
+      await query(
+        `INSERT INTO notifications (tipe, asn_id, nip, telegram_chat_id, judul, pesan, status)
+         VALUES ('PENGUMUMAN', $1, $2, $3, 'Pengumuman', $4, 'SENT')`,
+        [asn.id, asn.nip, asn.telegram_chat_id, pesan]
+      );
       terkirim++;
-    } catch {
-      // skip gagal
+    } catch (e: any) {
+      await query(
+        `INSERT INTO notifications (tipe, asn_id, nip, telegram_chat_id, judul, pesan, status, error)
+         VALUES ('PENGUMUMAN', $1, $2, $3, 'Pengumuman', $4, 'FAILED', $5)`,
+        [asn.id, asn.nip, asn.telegram_chat_id, pesan, e.message]
+      );
     }
   }
-
-  await query(
-    `INSERT INTO notifications (tipe, nip, judul, pesan, status) VALUES ('PENGUMUMAN', $1, 'Pengumuman', $2, 'SENT')`,
-    [nip ?? null, pesan]
-  );
 
   await auditLog({
     aksi: "SEND",
