@@ -1,5 +1,5 @@
 {
   "crons": [
-    { "path": "/api/cron?key=e-arsip-reminder-2026", "schedule": "0 1 * * 1" }
+    { "path": "/api/cron?key=e-arsip-reminder-2026", "schedule": "0 1 * * *" }
   ]
 }

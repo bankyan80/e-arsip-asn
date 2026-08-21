@@ -52,6 +52,8 @@ export default function SettingsPage() {
               { k: "max_file_size_mb", label: "Batas Ukuran File (MB)", type: "number", desc: "Batas maksimal ukuran file upload" },
               { k: "reminder_day", label: "Hari Pengingat (0=Senin)", type: "number", desc: "Hari pengingat mingguan" },
               { k: "reminder_hour", label: "Jam Pengingat", type: "number", desc: "Jam pengingat (waktu server)" },
+              { k: "email_daily_limit", label: "Batas Email per Hari", type: "number", desc: "Maksimal email himbauan per hari (kuota Resend 100/hari, disarankan 90)" },
+              { k: "reminder_interval_days", label: "Jarak Antar Pengingat (hari)", type: "number", desc: "ASN yang sama tidak diingatkan lagi sebelum selang ini" },
             ].map((item) => (
               <div key={item.k} className="flex items-end gap-3">
                 <div className="flex-1">

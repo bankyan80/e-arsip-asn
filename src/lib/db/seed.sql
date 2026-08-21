@@ -58,6 +58,8 @@ INSERT INTO settings (kunci, nilai, deskripsi) VALUES
   ('auto_approve', 'false', 'Setujui otomatis dokumen masuk (0/1)'),
   ('reminder_day', '1', 'Hari pengingat mingguan (0=Senin)'),
   ('reminder_hour', '8', 'Jam pengingat (waktu lokal server)'),
+  ('email_daily_limit', '90', 'Batas maksimal email himbauan per hari (kuota Resend 100/hari)'),
+  ('reminder_interval_days', '7', 'Jarak minimal hari antar pengingat ke ASN yang sama'),
   ('drive_enabled', 'false', 'Gunakan Google Drive sebagai cadangan (0/1)')
 ON CONFLICT (kunci) DO NOTHING;
 
