@@ -20,6 +20,19 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
 
   const asn = await queryOne<ASN>(`SELECT * FROM asn WHERE nip = $1`, [doc.nip]);
 
+  // Dokumen hasil import Drive: arahkan langsung ke file asli di Google Drive
+  if (doc.sumber === "drive" && doc.blob_url) {
+    await auditLog({
+      aksi: "DOWNLOAD",
+      adminUserId: session.userId,
+      adminUsername: session.username,
+      nip: doc.nip,
+      namaAsn: asn?.nama,
+      dokumenId: doc.id,
+    });
+    return NextResponse.redirect(doc.blob_url, 302);
+  }
+
   // Ambil file dari Google Drive (private storage, streaming langsung)
   const file = await readBlob(doc.blob_pathname);
   if (!file) return NextResponse.json({ error: "File tidak ditemukan di storage" }, { status: 404 });

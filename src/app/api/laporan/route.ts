@@ -41,7 +41,7 @@ export async function GET(request: NextRequest) {
   } else if (type === "kelengkapan") {
     const data = await query<any>(`
       SELECT a.nip, a.nama, a.status, a.unit_kerja,
-             (SELECT COUNT(*)::int FROM dokumen d WHERE d.nip = a.nip AND d.is_latest = true AND d.status = 'DISETUJUI') AS lengkap,
+             (SELECT COUNT(*)::int FROM dokumen d WHERE d.nip = a.nip AND d.is_latest = true AND d.status IN ('DISETUJUI','TERVERIFIKASI')) AS lengkap,
              (SELECT COUNT(*)::int FROM jenis_dokumen j WHERE j.aktif AND (a.status='PNS' AND j.berlaku_pns OR a.status='PPPK' AND j.berlaku_pppk OR a.status NOT IN ('PNS','PPPK'))) AS total
       FROM asn a ORDER BY a.nama ASC
     `);

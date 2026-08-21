@@ -792,6 +792,7 @@ async function handleViewDoc(chatId: number, fromId: number, docIdStr: string, m
     MENUNGGU: "⏳ Menunggu Verifikasi",
     DISETUJUI: "✅ Disetujui",
     DITOLAK: "❌ Ditolak",
+    TERVERIFIKASI: "✅ Terverifikasi (arsip sekolah)",
   };
 
   const text =
@@ -802,13 +803,19 @@ async function handleViewDoc(chatId: number, fromId: number, docIdStr: string, m
     `Halaman: ${doc.jumlah_halaman}\n` +
     (doc.catatan_verifikasi ? `Catatan: ${tg.escapeHtml(doc.catatan_verifikasi)}\n` : "");
 
-  const keyboard = tg.inlineKeyboard([
-    [
+  // Dokumen hasil import Drive: tombol buka file asli di Google Drive
+  const rowsBtn: Array<Array<{ text: string; callback_data?: string; url?: string }>> = [];
+  if (doc.sumber === "drive" && doc.blob_url) {
+    rowsBtn.push([{ text: "📥 Buka di Google Drive", url: doc.blob_url }]);
+  } else {
+    rowsBtn.push([
       { text: "📥 Unduh", callback_data: cbData("download-doc", String(doc.id)) },
       { text: "🔄 Perbarui", callback_data: cbData("update-select", String(doc.jenis_dokumen_id)) },
-    ],
-    [{ text: "⬅️ Kembali", callback_data: cbData("arsip") }],
-  ]);
+    ]);
+  }
+  rowsBtn.push([{ text: "⬅️ Kembali", callback_data: cbData("arsip") }]);
+
+  const keyboard = tg.inlineKeyboard(rowsBtn);
 
   await tg.editMessageText(chatId, messageId, text, { reply_markup: keyboard });
 }
@@ -818,6 +825,16 @@ async function handleDownloadDoc(chatId: number, fromId: number, docIdStr: strin
   if (!asn) return tg.sendMessage(chatId, "Silakan ketik /start terlebih dahulu.");
   const doc = await queryOne<Dokumen>(`SELECT * FROM dokumen WHERE id = $1 AND nip = $2`, [Number(docIdStr), asn.nip]);
   if (!doc) return tg.sendMessage(chatId, "Dokumen tidak ditemukan.");
+
+  // Dokumen hasil import Drive: kirim tautan file asli
+  if (doc.sumber === "drive" && doc.blob_url) {
+    await tg.sendMessage(
+      chatId,
+      `📄 <b>${tg.escapeHtml(doc.jenis_dokumen_kode)}</b> (arsip sekolah)\n\nBuka file di Google Drive:\n${doc.blob_url}`
+    );
+    await query(`INSERT INTO download_log (dokumen_id, nip, aksi) VALUES ($1, $2, 'DOWNLOAD')`, [doc.id, asn.nip]);
+    return;
+  }
 
   try {
     const stored = await readBlob(doc.blob_pathname);
@@ -847,7 +864,7 @@ async function handleKelengkapan(chatId: number, fromId: number, opts: { message
     [asn.nip]
   );
 
-  const tersedia = jenisList.filter((j) => docs.some((d) => d.jenis_dokumen_id === j.id && d.status === "DISETUJUI"));
+  const tersedia = jenisList.filter((j) => docs.some((d) => d.jenis_dokumen_id === j.id && (d.status === "DISETUJUI" || d.status === "TERVERIFIKASI")));
   const total = jenisList.length;
   const ada = tersedia.length;
   const pct = total === 0 ? 0 : Math.round((ada / total) * 100);
@@ -858,7 +875,7 @@ async function handleKelengkapan(chatId: number, fromId: number, opts: { message
 
   for (const j of jenisList) {
     const d = docs.find((x) => x.jenis_dokumen_id === j.id);
-    const mark = d && d.status === "DISETUJUI" ? "✅" : "❌";
+    const mark = d && (d.status === "DISETUJUI" || d.status === "TERVERIFIKASI") ? "✅" : "❌";
     text += `${mark} ${tg.escapeHtml(j.nama)}\n`;
   }
 

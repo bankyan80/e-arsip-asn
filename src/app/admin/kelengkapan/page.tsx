@@ -64,7 +64,7 @@ export default function KelengkapanPage() {
               <p className="mb-2 text-xs text-slate-500">{r.unit_kerja || "-"}</p>
               <ProgressBar value={r.pct_kelengkapan} />
               <div className="mt-3 flex items-center justify-between text-xs text-slate-500">
-                <span>{r.dokumen.filter((d) => d.status === "DISETUJUI").length} disetujui</span>
+                <span>{r.dokumen.filter((d) => d.status === "DISETUJUI" || d.status === "TERVERIFIKASI").length} disetujui</span>
                 <span>{r.dokumen.length} terunggah / {r.total_jenis} wajib</span>
               </div>
             </Card>

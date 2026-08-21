@@ -19,7 +19,7 @@ export async function GET() {
         WHERE j.aktif = true
           AND ((a.status = 'PNS' AND j.berlaku_pns) OR (a.status = 'PPPK' AND j.berlaku_pppk) OR a.status NOT IN ('PNS','PPPK'))
           AND NOT EXISTS (
-            SELECT 1 FROM dokumen d WHERE d.nip = a.nip AND d.jenis_dokumen_id = j.id AND d.is_latest = true AND d.status = 'DISETUJUI'
+            SELECT 1 FROM dokumen d WHERE d.nip = a.nip AND d.jenis_dokumen_id = j.id AND d.is_latest = true AND d.status IN ('DISETUJUI','TERVERIFIKASI')
           )
       )`),
     query<{ n: number }>(`
@@ -30,7 +30,7 @@ export async function GET() {
         WHERE j.aktif = true
           AND ((a.status = 'PNS' AND j.berlaku_pns) OR (a.status = 'PPPK' AND j.berlaku_pppk) OR a.status NOT IN ('PNS','PPPK'))
           AND NOT EXISTS (
-            SELECT 1 FROM dokumen d WHERE d.nip = a.nip AND d.jenis_dokumen_id = j.id AND d.is_latest = true AND d.status = 'DISETUJUI'
+            SELECT 1 FROM dokumen d WHERE d.nip = a.nip AND d.jenis_dokumen_id = j.id AND d.is_latest = true AND d.status IN ('DISETUJUI','TERVERIFIKASI')
           )
       )`),
     query<{ n: number }>(`SELECT COUNT(*)::int AS n FROM dokumen WHERE tanggal_upload::date = CURRENT_DATE`),

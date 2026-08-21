@@ -2,9 +2,9 @@ export type Role = "SUPER ADMIN" | "ADMIN" | "OPERATOR";
 
 export type ASNStatus = "PNS" | "PPPK" | "LAINNYA";
 
-export type DokumenStatus = "MENUNGGU" | "DISETUJUI" | "DITOLAK";
+export type DokumenStatus = "MENUNGGU" | "DISETUJUI" | "DITOLAK" | "TERVERIFIKASI";
 
-export type DokumenSumber = "foto" | "pdf" | "scan";
+export type DokumenSumber = "foto" | "pdf" | "scan" | "drive";
 
 export interface ASN {
   id: number;

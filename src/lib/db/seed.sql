@@ -23,7 +23,20 @@ INSERT INTO jenis_dokumen (kode, nama, deskripsi, kategori, wajib, berlaku_pns, 
   ('SK_CPNS',           'SK CPNS',           'Surat Keputusan CPNS',                     'Kepegawaian', false, true,  false, 17),
   ('SK_KGB',            'SK KGB',            'SK Kenaikan Gaji Berkala',                 'Kepegawaian', false, true,  false, 18),
   ('SK_TASJEN',         'SK TASJEN',         'SK Tunjangan Struktural/Jabatan',          'Kepegawaian', false, true,  false, 19),
-  ('DOKUMEN_LAINNYA',   'Dokumen Lainnya',   'Dokumen kepegawaian lainnya',              'Lainnya',     false, true,  true,  99)
+  ('DOKUMEN_LAINNYA',   'Dokumen Lainnya',   'Dokumen kepegawaian lainnya',              'Lainnya',     false, true,  true,  99),
+  ('SKP',               'SKP',               'Sasaran Kinerja Pegawai / RHK',            'Kinerja',     false, true,  true,  20),
+  ('PKG',               'PKG',               'Penilaian Kinerja Guru',                   'Kinerja',     false, true,  false, 21),
+  ('PKKS',              'PKKS',              'Penilaian Kinerja Kepala Sekolah',         'Kinerja',     false, true,  false, 22),
+  ('PAK',               'PAK',               'Penilaian Angka Kredit',                   'Kinerja',     false, true,  false, 23),
+  ('JABFUNG',           'Jabatan Fungsional','SK Jabatan Fungsional',                    'Kepegawaian', false, true,  false, 24),
+  ('SK_PNS',            'SK PNS',            'SK Kepegawaian PNS (lainnya)',             'Kepegawaian', false, true,  false, 25),
+  ('AKTA_NIKAH',        'Akta Nikah',        'Akta/Buku Nikah',                          'Kependudukan', false, true, true,  26),
+  ('AKTA_KELAHIRAN',    'Akta Kelahiran',    'Akta Kelahiran (sendiri/keluarga)',        'Kependudukan', false, true, true,  27),
+  ('TRANSKRIP',         'Transkrip Nilai',   'Transkrip nilai pendidikan',               'Pendidikan',  false, true,  true,  28),
+  ('FOTO',              'Foto',              'Foto pegawai / pas foto',                  'Lainnya',     false, true,  true,  29),
+  ('NIP_BARU',          'Kartu NIP Baru',    'Kartu NIP baru',                           'Kepegawaian', false, true,  false, 30),
+  ('REKENING',          'Rekening Bank',     'Buku/surat rekening bank',                 'Kependudukan', false, true, true,  31),
+  ('SERDIK',            'Serdik',            'Surat tugas/pengesahan pendidikan & pelatihan', 'Lainnya', false, true, false, 32)
 ON CONFLICT (kode) DO NOTHING;
 
 INSERT INTO notifikasi_config (kunci, nama, aktif, deskripsi) VALUES

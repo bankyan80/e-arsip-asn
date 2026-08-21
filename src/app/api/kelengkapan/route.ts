@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
       );
       const total = relevant.length;
       const docs = await query<Dokumen>(`SELECT * FROM dokumen WHERE nip = $1 AND is_latest = true`, [a.nip]);
-      const ada = relevant.filter((j) => docs.some((d) => d.jenis_dokumen_id === j.id && d.status === "DISETUJUI")).length;
+      const ada = relevant.filter((j) => docs.some((d) => d.jenis_dokumen_id === j.id && (d.status === "DISETUJUI" || d.status === "TERVERIFIKASI"))).length;
       const pct = total === 0 ? 0 : Math.round((ada / total) * 100);
       return { ...a, total_jenis: total, pct_kelengkapan: pct, dokumen: docs };
     })

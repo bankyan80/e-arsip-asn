@@ -52,6 +52,29 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
   if (!doc) return NextResponse.json({ error: "Dokumen tidak ditemukan" }, { status: 404 });
   const asn = await queryOne<ASN>(`SELECT * FROM asn WHERE nip = $1`, [doc.nip]);
 
+  // Ubah kategori/jenis dokumen (untuk koreksi hasil import)
+  if (action === "edit") {
+    const { jenis_dokumen_id } = body;
+    const jenis = await queryOne<{ id: number; kode: string }>(`SELECT id, kode FROM jenis_dokumen WHERE id = $1`, [
+      Number(jenis_dokumen_id),
+    ]);
+    if (!jenis) return NextResponse.json({ error: "Jenis dokumen tidak ditemukan" }, { status: 404 });
+    await query(
+      `UPDATE dokumen SET jenis_dokumen_id = $1, jenis_dokumen_kode = $2, updated_at = now() WHERE id = $3`,
+      [jenis.id, jenis.kode, id]
+    );
+    await auditLog({
+      aksi: "EDIT",
+      adminUserId: session.userId,
+      adminUsername: session.username,
+      nip: doc.nip,
+      namaAsn: asn?.nama,
+      dokumenId: id,
+      detail: { dari: doc.jenis_dokumen_kode, ke: jenis.kode },
+    });
+    return NextResponse.json({ ok: true, jenis_dokumen_kode: jenis.kode });
+  }
+
   if (action === "approve") {
     await query(
       `UPDATE dokumen SET status = 'DISETUJUI', tanggal_verifikasi = now(), verified_by = $1, catatan_verifikasi = $2, updated_at = now() WHERE id = $3`,
@@ -118,7 +141,10 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
   const doc = await queryOne<Dokumen>(`SELECT * FROM dokumen WHERE id = $1`, [id]);
   if (!doc) return NextResponse.json({ error: "Dokumen tidak ditemukan" }, { status: 404 });
 
-  await deleteBlob(doc.blob_url);
+  // Dokumen hasil import Drive: hapus record saja, file asli milik sekolah tidak disentuh
+  if (doc.sumber !== "drive") {
+    await deleteBlob(doc.blob_url);
+  }
   await query(`DELETE FROM dokumen WHERE id = $1`, [id]);
 
   await auditLog({

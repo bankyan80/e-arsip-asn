@@ -70,7 +70,7 @@ export default function AsnDetailPage() {
 
   if (!asn) return <p className="text-slate-500">Memuat...</p>;
 
-  const statusTone = (s: string) => (s === "DISETUJUI" ? "green" : s === "DITOLAK" ? "red" : "yellow");
+  const statusTone = (s: string) => (s === "DISETUJUI" || s === "TERVERIFIKASI" ? "green" : s === "DITOLAK" ? "red" : "yellow");
 
   return (
     <div className="space-y-6">

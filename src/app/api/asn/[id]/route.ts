@@ -95,6 +95,8 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
 
   const docs = await query<Dokumen>(`SELECT * FROM dokumen WHERE nip = $1`, [asn.nip]);
   for (const doc of docs) {
+    // Dokumen hasil import Drive: file asli milik sekolah tidak dihapus
+    if (doc.sumber === "drive") continue;
     if (doc.blob_url) {
       try {
         await deleteBlob(doc.blob_url);

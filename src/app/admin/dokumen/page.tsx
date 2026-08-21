@@ -28,6 +28,15 @@ export default function DokumenPage() {
   const [selected, setSelected] = useState<DocRow | null>(null);
   const [rejectReason, setRejectReason] = useState("");
   const [modal, setModal] = useState<"detail" | "reject" | null>(null);
+  const [jenisList, setJenisList] = useState<Array<{ id: number; nama: string }>>([]);
+  const [editJenisId, setEditJenisId] = useState("");
+  const [savingJenis, setSavingJenis] = useState(false);
+
+  useEffect(() => {
+    apiFetch<{ data: Array<{ id: number; nama: string }> }>("/api/jenis-dokumen")
+      .then((d) => setJenisList(d.data ?? d))
+      .catch(() => {});
+  }, []);
 
   async function load() {
     const params = new URLSearchParams({ page: String(page) });
@@ -53,6 +62,22 @@ export default function DokumenPage() {
     load();
   }
 
+  async function saveJenis() {
+    if (!selected || !editJenisId) return;
+    setSavingJenis(true);
+    try {
+      await apiFetch(`/api/dokumen/${selected.id}`, {
+        method: "PUT",
+        body: JSON.stringify({ action: "edit", jenis_dokumen_id: Number(editJenisId) }),
+      });
+      setModal(null);
+      setSelected(null);
+      load();
+    } finally {
+      setSavingJenis(false);
+    }
+  }
+
   const perPage = 20;
   const totalPages = Math.max(1, Math.ceil(total / perPage));
 
@@ -72,6 +97,7 @@ export default function DokumenPage() {
             <option value="">Semua Status</option>
             <option value="MENUNGGU">Menunggu</option>
             <option value="DISETUJUI">Disetujui</option>
+            <option value="TERVERIFIKASI">Terverifikasi (arsip sekolah)</option>
             <option value="DITOLAK">Ditolak</option>
           </Select>
         </div>
@@ -103,7 +129,7 @@ export default function DokumenPage() {
                 <td className="px-4 py-3 font-mono text-xs">{r.nip}</td>
                 <td className="px-4 py-3 font-medium">{r.nama_asn}</td>
                 <td className="px-4 py-3">{r.jenis_nama}</td>
-                <td className="px-4 py-3"><Badge tone={r.status === "DISETUJUI" ? "green" : r.status === "DITOLAK" ? "red" : "yellow"}>{r.status}</Badge></td>
+                <td className="px-4 py-3"><Badge tone={r.status === "DISETUJUI" || r.status === "TERVERIFIKASI" ? "green" : r.status === "DITOLAK" ? "red" : "yellow"}>{r.status}</Badge></td>
                 <td className="px-4 py-3">v{r.versi}</td>
                 <td className="px-4 py-3">{r.jumlah_halaman}</td>
                 <td className="px-4 py-3 text-xs">{formatBytes(r.ukuran_file)}</td>
@@ -128,14 +154,28 @@ export default function DokumenPage() {
       {selected && (
         <Modal open={modal === "detail"} onClose={() => setModal(null)} title="Detail Dokumen">
           <div className="space-y-3 text-sm">
-            <div className="flex items-center justify-between">
-              <span className="text-slate-500">Dokumen</span><span className="font-medium">{selected.jenis_nama}</span>
+            <div className="flex items-center justify-between gap-3">
+              <span className="shrink-0 text-slate-500">Kategori</span>
+              <div className="flex flex-1 items-center justify-end gap-2">
+                <Select
+                  className="max-w-56"
+                  value={editJenisId || String(jenisList.find((j) => j.nama === selected.jenis_nama)?.id ?? "")}
+                  onChange={(e) => setEditJenisId(e.target.value)}
+                >
+                  {jenisList.map((j) => (
+                    <option key={j.id} value={j.id}>{j.nama}</option>
+                  ))}
+                </Select>
+                {editJenisId && editJenisId !== String(jenisList.find((j) => j.nama === selected.jenis_nama)?.id ?? "") && (
+                  <Button disabled={savingJenis} onClick={saveJenis}>{savingJenis ? "..." : "Simpan"}</Button>
+                )}
+              </div>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-slate-500">NIP / Nama</span><span>{selected.nip} - {selected.nama_asn}</span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-slate-500">Status</span><Badge tone={selected.status === "DISETUJUI" ? "green" : selected.status === "DITOLAK" ? "red" : "yellow"}>{selected.status}</Badge>
+              <span className="text-slate-500">Status</span><Badge tone={selected.status === "DISETUJUI" || selected.status === "TERVERIFIKASI" ? "green" : selected.status === "DITOLAK" ? "red" : "yellow"}>{selected.status}</Badge>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-slate-500">Versi / Halaman</span><span>v{selected.versi} / {selected.jumlah_halaman} hal</span>
