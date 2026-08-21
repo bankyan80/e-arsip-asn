@@ -4,7 +4,7 @@ export default function HomePage() {
   return (
     <main className="flex min-h-screen flex-col items-center justify-center p-6">
       <div className="w-full max-w-md text-center">
-        <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-indigo-600 text-3xl font-bold text-white">📁</div>
+        <img src="/logokab.png" alt="Logo Kabupaten" className="mx-auto mb-6 h-20 w-auto object-contain" />
         <h1 className="text-3xl font-bold text-slate-900">e-ARSIP ASN</h1>
         <p className="mt-2 text-slate-600">
           Sistem Arsip Dokumen ASN berbasis Telegram Bot + Web Dashboard Admin
