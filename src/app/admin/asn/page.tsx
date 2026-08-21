@@ -10,10 +10,33 @@ interface ASNRow {
   nip: string;
   nama: string;
   status: string;
+  jenis_asn_resolved: string;
   jabatan: string;
   unit_kerja: string;
   telegram_username: string | null;
   pct_kelengkapan: number;
+}
+
+const JENIS_OPTIONS = [
+  { value: "PNS", label: "PNS" },
+  { value: "PPPK_GURU", label: "PPPK Guru" },
+  { value: "PPPK_TENDIK", label: "PPPK Tendik" },
+  { value: "PPPK_GURU_PARUH_WAKTU", label: "PPPK Guru Paruh Waktu" },
+  { value: "PPPK_TENDIK_PARUH_WAKTU", label: "PPPK Tendik Paruh Waktu" },
+];
+
+function jenisLabel(v: string) {
+  return JENIS_OPTIONS.find((o) => o.value === v)?.label ?? v;
+}
+
+function jenisTone(v: string): "blue" | "green" | "yellow" | "indigo" | "gray" {
+  switch (v) {
+    case "PNS": return "blue";
+    case "PPPK_GURU": return "green";
+    case "PPPK_TENDIK": return "indigo";
+    case "PPPK_GURU_PARUH_WAKTU": return "yellow";
+    default: return "gray";
+  }
 }
 
 export default function AsnListPage() {
@@ -39,7 +62,7 @@ export default function AsnListPage() {
     setLoading(true);
     const params = new URLSearchParams({ page: String(page) });
     if (dq) params.set("q", dq);
-    if (status) params.set("status", status);
+    if (status) params.set("jenis", status);
     const data = await apiFetch<{ data: ASNRow[]; total: number }>(`/api/asn?${params}`);
     setRows(data.data);
     setTotal(data.total);
@@ -94,10 +117,10 @@ export default function AsnListPage() {
             />
           </div>
           <Select value={status} onChange={(e) => { setStatus(e.target.value); setPage(1); }}>
-            <option value="">Semua Status</option>
-            <option value="PNS">PNS</option>
-            <option value="PPPK">PPPK</option>
-            <option value="LAINNYA">Lainnya</option>
+            <option value="">Semua Jenis ASN</option>
+            {JENIS_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>{o.label}</option>
+            ))}
           </Select>
         </div>
       </div>
@@ -109,7 +132,7 @@ export default function AsnListPage() {
               <th className="px-4 py-3">No</th>
               <th className="px-4 py-3">NIP</th>
               <th className="px-4 py-3">Nama</th>
-              <th className="px-4 py-3">Status</th>
+              <th className="px-4 py-3">Jenis ASN</th>
               <th className="px-4 py-3">Jabatan</th>
               <th className="px-4 py-3">Unit Kerja</th>
               <th className="px-4 py-3">Telegram</th>
@@ -129,7 +152,7 @@ export default function AsnListPage() {
                   <td className="px-4 py-3 font-mono text-xs">{r.nip}</td>
                   <td className="px-4 py-3 font-medium">{r.nama}</td>
                   <td className="px-4 py-3">
-                    <Badge tone={r.status === "PNS" ? "blue" : r.status === "PPPK" ? "green" : "gray"}>{r.status}</Badge>
+                    <Badge tone={jenisTone(r.jenis_asn_resolved)}>{jenisLabel(r.jenis_asn_resolved)}</Badge>
                   </td>
                   <td className="px-4 py-3">{r.jabatan || "-"}</td>
                   <td className="px-4 py-3">{r.unit_kerja || "-"}</td>

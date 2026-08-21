@@ -58,7 +58,13 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
   const id = Number(params.id);
   const body = await request.json().catch(() => ({}));
 
-  const allowed = ["nama", "pangkat", "golongan", "jabatan", "unit_kerja", "status", "email", "no_hp", "alamat", "foto_url"];
+  const allowed = [
+    "nama", "pangkat", "golongan", "jabatan", "unit_kerja", "status", "email", "no_hp", "alamat", "foto_url",
+    "jenis_asn",
+    "menikah", "punya_anak", "sertifikat_pendidik", "jabatan_tambahan",
+    "pernah_mutasi", "pernah_naik_pangkat", "pernah_diklat", "pernah_penghargaan",
+    "pernah_hukdis", "mendekati_pensiun", "pernah_tugas_belajar", "pernah_cerai", "wajib_lhkpn",
+  ];
   const sets: string[] = [];
   const vals: any[] = [];
   let i = 1;

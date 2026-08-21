@@ -15,12 +15,74 @@ interface ASNData {
   jabatan: string | null;
   unit_kerja: string | null;
   status: string;
+  jenis_asn: string | null;
+  menikah: boolean;
+  punya_anak: boolean;
+  sertifikat_pendidik: boolean;
+  jabatan_tambahan: boolean;
+  pernah_mutasi: boolean;
+  pernah_naik_pangkat: boolean;
+  pernah_diklat: boolean;
+  pernah_penghargaan: boolean;
+  pernah_hukdis: boolean;
+  mendekati_pensiun: boolean;
+  pernah_tugas_belajar: boolean;
+  pernah_cerai: boolean;
+  wajib_lhkpn: boolean;
   email: string | null;
   no_hp: string | null;
   alamat: string | null;
   telegram_username: string | null;
   telegram_verified_at: string | null;
 }
+
+interface ChecklistItemRow {
+  kode: string;
+  nama: string;
+  kategori: string | null;
+  sifat: "WAJIB" | "KONDISIONAL" | "OPSIONAL" | "LAINNYA";
+  kondisi_label: string | null;
+  status: string;
+  dokumen_id: number | null;
+  versi: number | null;
+}
+
+interface ChecklistSummaryRow {
+  total_wajib: number;
+  total_kondisional: number;
+  total_opsional: number;
+  total_lainnya: number;
+  tidak_relevan: number;
+  terverifikasi: number;
+  menunggu: number;
+  belum: number;
+  pct: number;
+}
+
+const JENIS_OPTIONS = [
+  { value: "", label: "(Otomatis dari status)" },
+  { value: "PNS", label: "PNS" },
+  { value: "PPPK_GURU", label: "PPPK Guru" },
+  { value: "PPPK_TENDIK", label: "PPPK Tendik" },
+  { value: "PPPK_GURU_PARUH_WAKTU", label: "PPPK Guru Paruh Waktu" },
+  { value: "PPPK_TENDIK_PARUH_WAKTU", label: "PPPK Tendik Paruh Waktu" },
+];
+
+const KONDISI_FIELDS: Array<{ key: keyof ASNData; label: string }> = [
+  { key: "menikah", label: "Menikah" },
+  { key: "punya_anak", label: "Punya anak" },
+  { key: "sertifikat_pendidik", label: "Sertifikat pendidik" },
+  { key: "jabatan_tambahan", label: "Jabatan/tugas tambahan" },
+  { key: "pernah_mutasi", label: "Pernah mutasi" },
+  { key: "pernah_naik_pangkat", label: "Pernah naik pangkat" },
+  { key: "pernah_diklat", label: "Pernah diklat" },
+  { key: "pernah_penghargaan", label: "Pernah penghargaan" },
+  { key: "pernah_hukdis", label: "Pernah hukuman disiplin" },
+  { key: "mendekati_pensiun", label: "Mendekati pensiun" },
+  { key: "pernah_tugas_belajar", label: "Pernah tugas belajar" },
+  { key: "pernah_cerai", label: "Pernah bercerai" },
+  { key: "wajib_lhkpn", label: "Wajib LHKPN" },
+];
 
 interface DokumenRow {
   id: number;
@@ -43,6 +105,7 @@ export default function AsnDetailPage() {
   const [asn, setAsn] = useState<ASNData | null>(null);
   const [docs, setDocs] = useState<DokumenRow[]>([]);
   const [audit, setAudit] = useState<any[]>([]);
+  const [checklist, setChecklist] = useState<{ items: ChecklistItemRow[]; summary: ChecklistSummaryRow; jenis_asn_label: string } | null>(null);
   const [edit, setEdit] = useState(false);
   const [form, setForm] = useState<any>({});
   const [delOpen, setDelOpen] = useState(false);
@@ -55,6 +118,14 @@ export default function AsnDetailPage() {
     setDocs(data.dokumen);
     setAudit(data.audit);
     setForm(data.asn);
+    try {
+      const cl = await apiFetch<{ items: ChecklistItemRow[]; summary: ChecklistSummaryRow; jenis_asn_label: string }>(
+        `/api/checklist?nip=${encodeURIComponent(data.asn.nip)}`
+      );
+      setChecklist(cl);
+    } catch {
+      setChecklist(null);
+    }
   }
 
   useEffect(() => {
@@ -85,6 +156,17 @@ export default function AsnDetailPage() {
 
   const statusTone = (s: string) => (s === "DISETUJUI" || s === "TERVERIFIKASI" ? "green" : s === "DITOLAK" ? "red" : "yellow");
 
+  const itemStatusTone = (s: string) =>
+    s === "TERVERIFIKASI" || s === "SUDAH TERUPLOAD"
+      ? "green"
+      : s === "DITOLAK" || s === "BELUM TERSEDIA"
+        ? "red"
+        : s === "PERLU DIPERBARUI"
+          ? "yellow"
+          : s === "MENUNGGU VERIFIKASI"
+            ? "yellow"
+            : "blue";
+
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
@@ -114,6 +196,9 @@ export default function AsnDetailPage() {
           <div>
             <p className="text-xs text-slate-500">Status</p>
             <Badge tone={asn.status === "PNS" ? "blue" : asn.status === "PPPK" ? "green" : "gray"}>{asn.status}</Badge>
+            {checklist && (
+              <p className="mt-1 font-medium">{checklist.jenis_asn_label}</p>
+            )}
           </div>
           <div>
             <p className="text-xs text-slate-500">Telegram</p>
@@ -179,6 +264,54 @@ export default function AsnDetailPage() {
         </Card>
       </div>
 
+      {checklist && (
+        <Card className="overflow-x-auto p-0">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 px-5 py-3">
+            <span className="font-semibold">✅ Checklist Arsip (Rule Engine) — {checklist.jenis_asn_label}</span>
+            <div className="flex flex-wrap items-center gap-2 text-xs">
+              <Badge tone="green">{checklist.summary.pct}% lengkap</Badge>
+              <Badge tone="blue">⭐ Wajib: {checklist.summary.total_wajib}</Badge>
+              <Badge tone="yellow">🟡 Kondisional: {checklist.summary.total_kondisional}</Badge>
+              <Badge>🔵 Opsional: {checklist.summary.total_opsional}</Badge>
+              {checklist.summary.total_lainnya > 0 && <Badge tone="gray">📦 Lainnya: {checklist.summary.total_lainnya}</Badge>}
+              {checklist.summary.tidak_relevan > 0 && <Badge tone="gray">⚪ Tidak relevan: {checklist.summary.tidak_relevan}</Badge>}
+            </div>
+          </div>
+          <table className="w-full text-left text-sm">
+            <thead className="border-b bg-slate-50 text-xs uppercase text-slate-500">
+              <tr>
+                <th className="px-4 py-2">Dokumen</th>
+                <th className="px-4 py-2">Sifat</th>
+                <th className="px-4 py-2">Status</th>
+                <th className="px-4 py-2">Versi</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {checklist.items.map((it, idx) => (
+                <tr key={`${it.kode}-${idx}`} className="hover:bg-slate-50">
+                  <td className="px-4 py-2 font-medium">
+                    {it.nama}
+                    {it.kondisi_label && (
+                      <span className="ml-1 text-xs text-slate-400">({it.kondisi_label})</span>
+                    )}
+                    {it.sifat === "LAINNYA" && <span className="ml-1 text-xs text-slate-400">📦 di luar kategori</span>}
+                  </td>
+                  <td className="px-4 py-2">
+                    <Badge tone={it.sifat === "WAJIB" ? "red" : it.sifat === "KONDISIONAL" ? "yellow" : it.sifat === "LAINNYA" ? "gray" : "blue"}>
+                      {it.sifat}
+                    </Badge>
+                  </td>
+                  <td className="px-4 py-2">
+                    <Badge tone={itemStatusTone(it.status)}>{it.status}</Badge>
+                  </td>
+                  <td className="px-4 py-2 text-slate-500">{it.versi ? `v${it.versi}` : "-"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </Card>
+      )}
+
       <Modal open={delOpen} onClose={() => setDelOpen(false)} title="Hapus ASN">
         <p className="text-sm text-slate-600">
           ASN <b>{asn.nama}</b> ({asn.nip}) beserta <b>{docs.length} dokumen</b> arsipnya akan dihapus permanen.
@@ -201,6 +334,14 @@ export default function AsnDetailPage() {
           <div>
             <label className="mb-1 block text-sm text-slate-600">Nama</label>
             <Input value={form.nama || ""} onChange={(e) => setForm({ ...form, nama: e.target.value })} />
+          </div>
+          <div>
+            <label className="mb-1 block text-sm text-slate-600">Jenis Kepegawaian (Rule Engine)</label>
+            <Select value={form.jenis_asn || ""} onChange={(e) => setForm({ ...form, jenis_asn: e.target.value || null })}>
+              {JENIS_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
+            </Select>
           </div>
           <div>
             <label className="mb-1 block text-sm text-slate-600">Status</label>
@@ -233,6 +374,21 @@ export default function AsnDetailPage() {
           <div>
             <label className="mb-1 block text-sm text-slate-600">No HP</label>
             <Input value={form.no_hp || ""} onChange={(e) => setForm({ ...form, no_hp: e.target.value })} />
+          </div>
+        </div>
+        <div className="mt-4">
+          <p className="mb-2 text-sm font-medium text-slate-600">Kondisi Profil (menentukan dokumen kondisional)</p>
+          <div className="grid grid-cols-2 gap-2 md:grid-cols-3">
+            {KONDISI_FIELDS.map((f) => (
+              <label key={f.key as string} className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={!!form[f.key]}
+                  onChange={(e) => setForm({ ...form, [f.key]: e.target.checked })}
+                />
+                {f.label}
+              </label>
+            ))}
           </div>
         </div>
         <div className="mt-4 flex justify-end gap-2">

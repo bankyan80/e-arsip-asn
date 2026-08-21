@@ -84,13 +84,60 @@ export async function sendReminderEmail(
   daftarKurang: string[]
 ): Promise<boolean> {
   const list = daftarKurang.map((x) => `<li>${escapeHtml(x)}</li>`).join("");
+  const botUrl = "https://t.me/ArsipASN_bot";
   const body = `
     <p>Halo <b>${escapeHtml(nama)}</b>,</p>
     <p>Kami mengimbau Anda untuk segera melengkapi arsip dokumen kepegawaian Anda melalui sistem
     <b>${escapeHtml(env.appName)}</b>.</p>
-    <p>Dokumen yang belum tersedia:</p>
-    <ul>${list}</ul>
-    <p>Silakan hubungi operator sekolah atau admin untuk melengkapi berkas tersebut.</p>
+    <p><b>Dokumen yang belum tersedia:</b></p>
+    <ul style="margin-top:4px;padding-left:20px;">${list}</ul>
+    <p>Silakan lengkapi dokumen dengan mengupload ke
+    <a href="${botUrl}" style="color:#2563eb;font-weight:bold;">${botUrl}</a> dengan cara:</p>
+
+    <div style="text-align:center;margin:24px 0;">
+      <a href="${botUrl}" style="display:inline-block;background:#2563eb;color:#ffffff;text-decoration:none;padding:12px 32px;border-radius:8px;font-weight:bold;font-size:16px;">📁 Buka Bot e-ARSIP ASN</a>
+    </div>
+
+    <h3 style="margin:20px 0 8px;font-size:15px;color:#111827;">1. Verifikasi Awal (sekali saja)</h3>
+    <ol style="margin:0;padding-left:20px;">
+      <li>Buka <a href="${botUrl}" style="color:#2563eb;">${botUrl}</a> &rarr; tekan <b>START</b></li>
+      <li>Bot minta NIP &rarr; ketik NIP Anda</li>
+      <li>Jika NIP terdaftar di database, akun Telegram langsung tertaut dan menu utama muncul</li>
+    </ol>
+
+    <h3 style="margin:20px 0 8px;font-size:15px;color:#111827;">2. Menu Utama (tombol inline)</h3>
+    <table style="width:100%;border-collapse:collapse;font-size:14px;">
+      <tr style="background:#f3f4f6;">
+        <th style="border:1px solid #e5e7eb;padding:8px;text-align:left;width:45%;">Menu</th>
+        <th style="border:1px solid #e5e7eb;padding:8px;text-align:left;">Fungsi</th>
+      </tr>
+      <tr><td style="border:1px solid #e5e7eb;padding:8px;">👤 Data Saya</td><td style="border:1px solid #e5e7eb;padding:8px;">Lihat data kepegawaian (nama, pangkat, jabatan, unit kerja)</td></tr>
+      <tr><td style="border:1px solid #e5e7eb;padding:8px;">📁 Upload Arsip</td><td style="border:1px solid #e5e7eb;padding:8px;">Unggah dokumen baru &mdash; pilih jenis dokumen (&#11088; = wajib)</td></tr>
+      <tr><td style="border:1px solid #e5e7eb;padding:8px;">📂 Arsip Saya</td><td style="border:1px solid #e5e7eb;padding:8px;">Lihat daftar dokumen + unduh PDF / buka di Drive</td></tr>
+      <tr><td style="border:1px solid #e5e7eb;padding:8px;">📊 Kelengkapan Arsip</td><td style="border:1px solid #e5e7eb;padding:8px;">Progress bar % kelengkapan dokumen</td></tr>
+      <tr><td style="border:1px solid #e5e7eb;padding:8px;">🔄 Perbarui Dokumen</td><td style="border:1px solid #e5e7eb;padding:8px;">Ganti dokumen lama dengan versi baru</td></tr>
+      <tr><td style="border:1px solid #e5e7eb;padding:8px;">❓ Bantuan</td><td style="border:1px solid #e5e7eb;padding:8px;">Panduan singkat</td></tr>
+    </table>
+
+    <h3 style="margin:20px 0 8px;font-size:15px;color:#111827;">3. Cara Upload Dokumen</h3>
+    <ol style="margin:0;padding-left:20px;">
+      <li>Pilih 📁 <b>Upload Arsip</b> &rarr; pilih jenis dokumen</li>
+      <li>Kirim file PDF (langsung tersimpan), atau foto halaman demi halaman</li>
+      <li>Untuk multi-halaman: kirim foto berurutan &rarr; tekan ➕ Tambah Halaman atau ✅ Selesai</li>
+      <li>Foto otomatis digabung jadi 1 PDF &rarr; tekan ✅ Simpan PDF</li>
+      <li>Dokumen masuk status ⏳ Menunggu verifikasi admin</li>
+    </ol>
+
+    <h3 style="margin:20px 0 8px;font-size:15px;color:#111827;">4. Perintah Teks</h3>
+    <p style="margin:0;"><code style="background:#f3f4f6;padding:2px 6px;border-radius:4px;">/menu</code>
+    <code style="background:#f3f4f6;padding:2px 6px;border-radius:4px;">/profil</code>
+    <code style="background:#f3f4f6;padding:2px 6px;border-radius:4px;">/upload</code>
+    <code style="background:#f3f4f6;padding:2px 6px;border-radius:4px;">/arsip</code>
+    <code style="background:#f3f4f6;padding:2px 6px;border-radius:4px;">/status</code>
+    <code style="background:#f3f4f6;padding:2px 6px;border-radius:4px;">/bantuan</code>
+    <code style="background:#f3f4f6;padding:2px 6px;border-radius:4px;">/batal</code></p>
+    <p style="font-size:13px;color:#6b7280;margin-top:8px;">Batas ukuran file: 15 MB. Format: PDF, JPG, PNG, WEBP.</p>
+
     <p>Terima kasih.</p>`;
   return sendEmail({
     to: email,

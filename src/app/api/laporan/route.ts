@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { query } from "@/lib/db";
 import { getSession } from "@/lib/auth";
 import { auditLog } from "@/lib/audit";
+import { buildChecklist, resolveJenisAsn } from "@/lib/rule-engine";
+import { labelJenisAsn } from "@/lib/types";
+import type { ASN, Dokumen } from "@/lib/types";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 
@@ -39,14 +42,27 @@ export async function GET(request: NextRequest) {
     headers = ["NIP", "Nama", "Jenis Dokumen", "Nama File", "Status", "Versi", "Halaman", "Tgl Upload", "Tgl Verifikasi"];
     rows = data.map((r) => [r.nip, r.nama_asn, r.jenis_nama, r.nama_file, r.status, r.versi, r.jumlah_halaman, r.tanggal_upload, r.tanggal_verifikasi ?? ""]);
   } else if (type === "kelengkapan") {
-    const data = await query<any>(`
-      SELECT a.nip, a.nama, a.status, a.unit_kerja,
-             (SELECT COUNT(*)::int FROM dokumen d WHERE d.nip = a.nip AND d.is_latest = true AND d.status IN ('DISETUJUI','TERVERIFIKASI')) AS lengkap,
-             (SELECT COUNT(*)::int FROM jenis_dokumen j WHERE j.aktif AND (a.status='PNS' AND j.berlaku_pns OR a.status='PPPK' AND j.berlaku_pppk OR a.status NOT IN ('PNS','PPPK'))) AS total
-      FROM asn a ORDER BY a.nama ASC
-    `);
-    headers = ["NIP", "Nama", "Status", "Unit Kerja", "Dokumen Lengkap", "Total Wajib"];
-    rows = data.map((r) => [r.nip, r.nama, r.status, r.unit_kerja, r.lengkap, r.total]);
+    const asnRows = await query<ASN>(`SELECT * FROM asn ORDER BY nama ASC`);
+    const allDocs = await query<Pick<Dokumen, "id" | "nip" | "jenis_dokumen_id" | "jenis_dokumen_kode" | "status" | "tanggal_upload" | "versi">>(
+      `SELECT id, nip, jenis_dokumen_id, jenis_dokumen_kode, status, tanggal_upload, versi FROM dokumen WHERE is_latest = true`
+    );
+    const docsByNip = new Map<string, typeof allDocs>();
+    for (const d of allDocs) {
+      const arr = docsByNip.get(d.nip) ?? [];
+      arr.push(d);
+      docsByNip.set(d.nip, arr);
+    }
+    headers = ["NIP", "Nama", "Jenis ASN", "Status", "Unit Kerja", "Terverifikasi", "Wajib+Kondisional", "Persentase"];
+    rows = [];
+    for (const a of asnRows) {
+      const { summary } = await buildChecklist(a, docsByNip.get(a.nip) ?? []);
+      rows.push([
+        a.nip, a.nama, labelJenisAsn(resolveJenisAsn(a)), a.status, a.unit_kerja ?? "",
+        summary.terverifikasi,
+        summary.total_wajib + summary.total_kondisional,
+        `${summary.pct}%`,
+      ]);
+    }
   } else {
     return NextResponse.json({ error: "Jenis laporan tidak dikenal" }, { status: 400 });
   }

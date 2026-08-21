@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { query } from "@/lib/db";
 import { getSession } from "@/lib/auth";
-import type { ASN, JenisDokumen, Dokumen } from "@/lib/types";
+import { buildChecklist, resolveJenisAsn } from "@/lib/rule-engine";
+import type { ASN, Dokumen } from "@/lib/types";
 
 export const runtime = "nodejs";
 
@@ -16,8 +17,8 @@ export async function GET(request: NextRequest) {
   const url = new URL(request.url);
   const q = url.searchParams.get("q") ?? "";
   const status = url.searchParams.get("status") ?? "";
+  const jenis = url.searchParams.get("jenis") ?? "";
   const unitKerja = url.searchParams.get("unitKerja") ?? "";
-  const kelengkapan = url.searchParams.get("kelengkapan") ?? "";
   const page = clampPage(Number(url.searchParams.get("page") ?? 1));
   const perPage = 20;
   const offset = (page - 1) * perPage;
@@ -35,6 +36,11 @@ export async function GET(request: NextRequest) {
     params.push(status);
     i++;
   }
+  if (jenis) {
+    where += ` AND a.jenis_asn = $${i}`;
+    params.push(jenis);
+    i++;
+  }
   if (unitKerja) {
     where += ` AND a.unit_kerja ILIKE $${i}`;
     params.push(`%${unitKerja}%`);
@@ -47,24 +53,40 @@ export async function GET(request: NextRequest) {
   );
   const total = countRow[0]?.total ?? 0;
 
-  const asnRows = await query<ASN & { jumlah_dokumen: number }>(
-    `SELECT a.*, (SELECT COUNT(*)::int FROM dokumen d WHERE d.nip = a.nip AND d.is_latest = true AND d.status IN ('DISETUJUI','TERVERIFIKASI')) AS jumlah_dokumen
-     FROM asn a
-     ${where}
+  const asnRows = await query<ASN>(
+    `SELECT a.* FROM asn a ${where}
      ORDER BY a.nama ASC
      LIMIT $${i} OFFSET $${i + 1}`,
     [...params, perPage, offset]
   );
 
-  const jenisList = await query<JenisDokumen>(`SELECT * FROM jenis_dokumen WHERE aktif = true`);
+  // Ambil semua dokumen terlatest untuk halaman ini sekaligus
+  const nips = asnRows.map((a) => a.nip);
+  const docs = nips.length
+    ? await query<Pick<Dokumen, "id" | "nip" | "jenis_dokumen_id" | "jenis_dokumen_kode" | "status" | "tanggal_upload" | "versi">>(
+        `SELECT id, nip, jenis_dokumen_id, jenis_dokumen_kode, status, tanggal_upload, versi
+         FROM dokumen WHERE is_latest = true AND nip = ANY($1)`,
+        [nips]
+      )
+    : [];
+  const docsByNip = new Map<string, typeof docs>();
+  for (const d of docs) {
+    const arr = docsByNip.get(d.nip) ?? [];
+    arr.push(d);
+    docsByNip.set(d.nip, arr);
+  }
 
-  const list = asnRows.map((a) => {
-    const totalJenis = jenisList.filter((j) =>
-      a.status === "PNS" ? j.berlaku_pns : a.status === "PPPK" ? j.berlaku_pppk : true
-    ).length;
-    const pct = totalJenis === 0 ? 0 : Math.round((a.jumlah_dokumen / totalJenis) * 100);
-    return { ...a, total_jenis: totalJenis, pct_kelengkapan: pct };
-  });
+  const list = await Promise.all(
+    asnRows.map(async (a) => {
+      const { summary } = await buildChecklist(a, docsByNip.get(a.nip) ?? []);
+      return {
+        ...a,
+        jenis_asn_resolved: resolveJenisAsn(a),
+        total_wajib: summary.total_wajib,
+        pct_kelengkapan: summary.pct,
+      };
+    })
+  );
 
   return NextResponse.json({ data: list, total, page, perPage });
 }

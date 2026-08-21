@@ -15,7 +15,24 @@ import {
 } from "./document-processor";
 import { saveBlob, buildStoragePath, readBlob } from "./storage";
 import { settingsGet } from "./settings";
-import type { ASN, JenisDokumen, Dokumen, UploadSession } from "./types";
+import {
+  buildChecklist,
+  resolveJenisAsn,
+  conditionLabel,
+} from "./rule-engine";
+import {
+  JENIS_ASN_LIST,
+  labelJenisAsn,
+} from "./types";
+import type {
+  ASN,
+  JenisDokumen,
+  Dokumen,
+  UploadSession,
+  ChecklistItem,
+  ChecklistSummary,
+  JenisAsn,
+} from "./types";
 
 const CB_PREFIX = "arsip";
 
@@ -40,15 +57,29 @@ async function getAsnByNip(nip: string): Promise<ASN | null> {
   return queryOne<ASN>(`SELECT * FROM asn WHERE nip = $1 LIMIT 1`, [nip]);
 }
 
-async function getJenisDokumenList(extra: { status?: string } = {}): Promise<JenisDokumen[]> {
-  const status = extra.status ?? "PNS";
-  return query<JenisDokumen>(
-    `SELECT * FROM jenis_dokumen
-     WHERE aktif = true
-       AND (($1 = 'PNS' AND berlaku_pns = true) OR ($1 = 'PPPK' AND berlaku_pppk = true) OR $1 NOT IN ('PNS','PPPK'))
-     ORDER BY urutan ASC, nama ASC`,
-    [status]
-  );
+async function getChecklist(asn: ASN): Promise<{ items: ChecklistItem[]; summary: ChecklistSummary }> {
+  return buildChecklist(asn);
+}
+
+function statusIcon(status: string): string {
+  switch (status) {
+    case "TERVERIFIKASI":
+    case "SUDAH TERUPLOAD": return "✅";
+    case "MENUNGGU VERIFIKASI": return "⏳";
+    case "DITOLAK": return "❌";
+    case "PERLU DIPERBARUI": return "⚠️";
+    case "BELUM TERSEDIA": return "🔴";
+    default: return "🔵"; // OPSIONAL
+  }
+}
+
+function sifatIcon(sifat: string): string {
+  switch (sifat) {
+    case "WAJIB": return "⭐";
+    case "KONDISIONAL": return "🟡";
+    case "LAINNYA": return "📦";
+    default: return "🔵";
+  }
 }
 
 function fmtDate(d: string | null | undefined): string {
@@ -71,12 +102,27 @@ function progressBar(percent: number): string {
 
 function buildMenuKeyboard() {
   return tg.inlineKeyboard([
-    [{ text: "👤 Data Saya", callback_data: cbData("data") }],
-    [{ text: "📁 Upload Arsip", callback_data: cbData("upload") }],
-    [{ text: "📂 Arsip Saya", callback_data: cbData("arsip") }],
-    [{ text: "📊 Kelengkapan Arsip", callback_data: cbData("kelengkapan") }],
-    [{ text: "🔄 Perbarui Dokumen", callback_data: cbData("perbarui") }],
-    [{ text: "❓ Bantuan", callback_data: cbData("bantuan") }],
+    [{ text: "🔴 Yang Harus Dilengkapi", callback_data: cbData("kurang") }],
+    [
+      { text: "📁 Upload Arsip", callback_data: cbData("upload") },
+      { text: "📂 Arsip Saya", callback_data: cbData("arsip") },
+    ],
+    [
+      { text: "📊 Kelengkapan Arsip", callback_data: cbData("kelengkapan") },
+      { text: "🔄 Perbarui Dokumen", callback_data: cbData("perbarui") },
+    ],
+    [
+      { text: "👤 Data Saya", callback_data: cbData("data") },
+      { text: "❓ Bantuan", callback_data: cbData("bantuan") },
+    ],
+  ]);
+}
+
+function buildJenisAsnKeyboard() {
+  return tg.inlineKeyboard([
+    ...JENIS_ASN_LIST.map((j) => [
+      { text: labelJenisAsn(j), callback_data: cbData("set-jenis", j) },
+    ]),
   ]);
 }
 
@@ -166,6 +212,18 @@ async function handleNipInput(chatId: number, fromId: number, text: string, user
     [fromId, chatId, username, asn.id]
   );
 
+  if (!asn.jenis_asn) {
+    return tg.sendMessage(
+      chatId,
+      `✅ Identitas berhasil ditemukan.\n\n` +
+        `👤 <b>${tg.escapeHtml(asn.nama)}</b>\n` +
+        `NIP: <code>${tg.escapeHtml(asn.nip)}</code>\n\n` +
+        `Terakhir, pilih <b>jenis kepegawaian</b> Anda.\n` +
+        `Sistem akan menyusun daftar arsip yang sesuai secara otomatis:`,
+      { reply_markup: buildJenisAsnKeyboard() }
+    );
+  }
+
   const keyboard = buildMenuKeyboard();
   await tg.sendMessage(
     chatId,
@@ -181,6 +239,14 @@ async function handleNipInput(chatId: number, fromId: number, text: string, user
 async function handleStart(chatId: number, fromId: number) {
   const asn = await getAsnByTelegram(fromId);
   if (asn) {
+    if (!asn.jenis_asn) {
+      return tg.sendMessage(
+        chatId,
+        `Selamat datang kembali, <b>${tg.escapeHtml(asn.nama)}</b>!\n\n` +
+          `Pilih <b>jenis kepegawaian</b> Anda untuk menyusun daftar arsip:`,
+        { reply_markup: buildJenisAsnKeyboard() }
+      );
+    }
     const keyboard = buildMenuKeyboard();
     return tg.sendMessage(
       chatId,
@@ -230,6 +296,44 @@ async function handleCallback(cb: CallbackQuery) {
       }
       await tg.editMessageText(chatId, messageId, "Silakan ketik /start untuk memulai.");
       break;
+
+    case "set-jenis": {
+      await tg.answerCallbackQuery(cb.id);
+      if (!asn) return sendNeedRegister(chatId, messageId);
+      const jenis = parsed.payload as JenisAsn;
+      if (!(JENIS_ASN_LIST as string[]).includes(jenis)) {
+        return tg.answerCallbackQuery(cb.id, "Jenis kepegawaian tidak dikenali.", { alert: true });
+      }
+      await query(`UPDATE asn SET jenis_asn = $2, updated_at = now() WHERE id = $1`, [asn.id, jenis]);
+      const keyboard = buildMenuKeyboard();
+      return tg.editMessageText(
+        chatId,
+        messageId,
+        `✅ Jenis kepegawaian disimpan: <b>${labelJenisAsn(jenis)}</b>\n\n` +
+          `Daftar arsip Anda sudah disesuaikan otomatis.\nSilakan pilih menu:`,
+        { reply_markup: keyboard }
+      );
+    }
+
+    case "kurang":
+      await tg.answerCallbackQuery(cb.id);
+      if (!asn) return sendNeedRegister(chatId, messageId);
+      return handleKurang(chatId, fromId, { messageId });
+
+    case "upload-ops":
+      await tg.answerCallbackQuery(cb.id);
+      if (!asn) return sendNeedRegister(chatId, messageId);
+      return handleUploadOps(chatId, fromId, { messageId });
+
+    case "ganti-jenis":
+      await tg.answerCallbackQuery(cb.id);
+      if (!asn) return sendNeedRegister(chatId, messageId);
+      return tg.editMessageText(
+        chatId,
+        messageId,
+        `🔁 <b>Ganti Jenis Kepegawaian</b>\n\nJenis saat ini: <b>${labelJenisAsn(resolveJenisAsn(asn))}</b>\n\nPilih jenis kepegawaian yang baru:`,
+        { reply_markup: buildJenisAsnKeyboard() }
+      );
 
     case "data":
       await tg.answerCallbackQuery(cb.id);
@@ -341,6 +445,7 @@ async function handleDataSaya(chatId: number, fromId: number, opts: { messageId?
     `👤 <b>DATA ASN</b>\n\n` +
     `Nama: <b>${tg.escapeHtml(asn.nama)}</b>\n` +
     `NIP: <code>${tg.escapeHtml(asn.nip)}</code>\n` +
+    `Jenis ASN: <b>${labelJenisAsn(resolveJenisAsn(asn))}</b>\n` +
     `Pangkat/Golongan: ${tg.escapeHtml(asn.pangkat ?? "-")} / ${tg.escapeHtml(asn.golongan ?? "-")}\n` +
     `Jabatan: ${tg.escapeHtml(asn.jabatan ?? "-")}\n` +
     `Unit Kerja: ${tg.escapeHtml(asn.unit_kerja ?? "-")}\n` +
@@ -348,6 +453,7 @@ async function handleDataSaya(chatId: number, fromId: number, opts: { messageId?
     `Terhubung Telegram: ✅ (${tg.escapeHtml(asn.telegram_username ?? "-")})`;
 
   const keyboard = tg.inlineKeyboard([
+    [{ text: "🔁 Ganti Jenis ASN", callback_data: cbData("ganti-jenis") }],
     [{ text: "⬅️ Kembali", callback_data: cbData("menu") }],
   ]);
   if (opts.messageId) {
@@ -369,23 +475,107 @@ async function handleUploadMenu(
     return tg.sendMessage(chatId, "Silakan ketik /start untuk verifikasi NIP terlebih dahulu.");
   }
 
-  const jenisList = await getJenisDokumenList({ status: asn.status });
+  const { items } = await getChecklist(asn);
+  // WAJIB + KONDISIONAL aktif; OPSIONAL dipisah ke layar tersendiri
+  const prioritas = items.filter(
+    (i) => i.sifat === "WAJIB" || i.sifat === "KONDISIONAL" || i.sifat === "LAINNYA"
+  );
+  const jumlahOpsional = items.filter((i) => i.sifat === "OPSIONAL").length;
 
-  const rows = jenisList.map((j) => [
-    { text: `📄 ${j.nama}${j.wajib ? " ⭐" : ""}`, callback_data: cbData("upload-select", String(j.id)) },
+  const rows = prioritas.slice(0, 80).map((i) => [
+    {
+      text: `${sifatIcon(i.sifat)} ${i.nama}${statusIcon(i.status) !== "🔵" ? " " + statusIcon(i.status) : ""}`,
+      callback_data: cbData("upload-select", String(i.jenis_dokumen_id)),
+    },
   ]);
+  if (jumlahOpsional > 0) {
+    rows.push([{ text: `🔵 Dokumen Opsional (${jumlahOpsional})`, callback_data: cbData("upload-ops") }]);
+  }
+  rows.push([{ text: "⬅️ Kembali", callback_data: cbData("menu") }]);
 
-  // Kelompokkan per kategori untuk tampilan ringkas
-  const keyboard = tg.inlineKeyboard([
-    ...rows,
-    [{ text: "⬅️ Kembali", callback_data: cbData("menu") }],
-  ]);
+  const keyboard = tg.inlineKeyboard(rows);
 
-  const text = `📁 <b>UPLOAD ARSIP</b>\n\nPilih jenis dokumen yang ingin Anda unggah:`;
+  const text =
+    `📁 <b>UPLOAD ARSIP</b>\n` +
+    `Jenis ASN: <b>${labelJenisAsn(resolveJenisAsn(asn))}</b>\n\n` +
+    `⭐ = Wajib · 🟡 = Kondisional · 📦 = Lainnya\n` +
+    `Pilih jenis dokumen yang ingin Anda unggah:`;
+
   if (opts.messageId) {
     await tg.editMessageText(chatId, opts.messageId, text, { reply_markup: keyboard });
   } else {
     await tg.sendMessage(chatId, text, { reply_markup: keyboard });
+  }
+}
+
+async function handleUploadOps(
+  chatId: number,
+  fromId: number,
+  opts: { messageId?: number } = {}
+) {
+  const asn = await getAsnByTelegram(fromId);
+  if (!asn) return tg.sendMessage(chatId, "Silakan ketik /start untuk verifikasi NIP terlebih dahulu.");
+
+  const { items } = await getChecklist(asn);
+  const opsional = items.filter((i) => i.sifat === "OPSIONAL");
+
+  const rows = opsional.slice(0, 90).map((i) => [
+    {
+      text: `🔵 ${i.nama}${i.dokumen_id ? " ✅" : ""}`,
+      callback_data: cbData("upload-select", String(i.jenis_dokumen_id)),
+    },
+  ]);
+  rows.push([{ text: "⬅️ Kembali", callback_data: cbData("upload") }]);
+
+  const text =
+    `🔵 <b>DOKUMEN OPSIONAL</b>\n\nDokumen berikut bersifat pilihan — unggah jika Anda memilikinya:`;
+
+  if (opts.messageId) {
+    await tg.editMessageText(chatId, opts.messageId, text, { reply_markup: tg.inlineKeyboard(rows) });
+  } else {
+    await tg.sendMessage(chatId, text, { reply_markup: tg.inlineKeyboard(rows) });
+  }
+}
+
+// ---------- yang harus dilengkapi ----------
+
+async function handleKurang(
+  chatId: number,
+  fromId: number,
+  opts: { messageId?: number } = {}
+) {
+  const asn = await getAsnByTelegram(fromId);
+  if (!asn) return tg.sendMessage(chatId, "Silakan ketik /start untuk verifikasi NIP terlebih dahulu.");
+
+  const { items, summary } = await getChecklist(asn);
+  const kurang = items.filter(
+    (i) =>
+      (i.sifat === "WAJIB" || i.sifat === "KONDISIONAL") &&
+      (i.status === "BELUM TERSEDIA" || i.status === "DITOLAK" || i.status === "PERLU DIPERBARUI")
+  );
+
+  let text = `🔴 <b>BELUM LENGKAP</b>\n\n`;
+  if (kurang.length === 0) {
+    text += `🎉 Selamat! Semua dokumen wajib Anda sudah lengkap.\n\n${progressBar(summary.pct)} ${summary.pct}%`;
+  } else {
+    text += `Yang harus dilengkapi:\n`;
+    kurang.slice(0, 30).forEach((i, idx) => {
+      const tanda = i.status === "PERLU DIPERBARUI" ? "⚠️" : i.status === "DITOLAK" ? "❌" : "🔴";
+      text += `\n${idx + 1}. ${tanda} ${tg.escapeHtml(i.nama)}\n   ${sifatIcon(i.sifat)} ${i.sifat}${i.kondisi ? ` · ${conditionLabel(i.kondisi)}` : ""}`;
+    });
+    if (kurang.length > 30) text += `\n\n…dan ${kurang.length - 30} dokumen lainnya.`;
+  }
+
+  const rows = kurang.slice(0, 40).map((i) => [
+    { text: `📄 ${i.nama}`, callback_data: cbData("upload-select", String(i.jenis_dokumen_id)) },
+  ]);
+  rows.push([{ text: "📁 Upload Arsip Lain", callback_data: cbData("upload") }]);
+  rows.push([{ text: "⬅️ Kembali", callback_data: cbData("menu") }]);
+
+  if (opts.messageId) {
+    await tg.editMessageText(chatId, opts.messageId, text, { reply_markup: tg.inlineKeyboard(rows) });
+  } else {
+    await tg.sendMessage(chatId, text, { reply_markup: tg.inlineKeyboard(rows) });
   }
 }
 
@@ -745,36 +935,31 @@ async function handleArsipSaya(chatId: number, fromId: number, opts: { messageId
   const asn = await getAsnByTelegram(fromId);
   if (!asn) return tg.sendMessage(chatId, "Silakan ketik /start untuk verifikasi NIP terlebih dahulu.");
 
-  const docs = await query<Dokumen>(
-    `SELECT d.*, j.nama AS jenis_nama FROM dokumen d
-     JOIN jenis_dokumen j ON j.id = d.jenis_dokumen_id
-     WHERE d.nip = $1 AND d.is_latest = true
-     ORDER BY d.created_at DESC`,
-    [asn.nip]
-  );
+  const { items } = await getChecklist(asn);
 
-  const jenisList = await getJenisDokumenList({ status: asn.status });
+  let text = `📂 <b>ARSIP SAYA</b>\n`;
+  text += `Jenis ASN: <b>${labelJenisAsn(resolveJenisAsn(asn))}</b>\n\n`;
 
-  let text = `📂 <b>ARSIP SAYA</b>\n\n`;
-  for (const j of jenisList) {
-    const d = docs.find((x) => x.jenis_dokumen_id === j.id);
-    const mark = d ? "✅" : "❌";
-    text += `${mark} ${tg.escapeHtml(j.nama)}\n`;
+  const uploaded = items.filter((i) => i.dokumen_id);
+  for (const i of items.slice(0, 90)) {
+    text += `${statusIcon(i.status)} ${tg.escapeHtml(i.nama)}${i.sifat === "LAINNYA" ? " 📦" : ""}\n`;
   }
+  if (items.length > 90) text += `\n…dan ${items.length - 90} dokumen lainnya.`;
 
-  const rows = docs.map((d) => [
-    { text: `📄 ${d.jenis_dokumen_kode} (v${d.versi})`, callback_data: cbData("view-doc", String(d.id)) },
-  ]);
-
-  const keyboard = tg.inlineKeyboard([
-    ...rows,
-    [{ text: "⬅️ Kembali", callback_data: cbData("menu") }],
-  ]);
+  const rows = uploaded
+    .slice(0, 50)
+    .map((i) => [
+      {
+        text: `📄 ${i.kode}${(i.versi ?? 1) > 1 ? ` (v${i.versi})` : ""}`,
+        callback_data: cbData("view-doc", String(i.dokumen_id)),
+      },
+    ]);
+  rows.push([{ text: "⬅️ Kembali", callback_data: cbData("menu") }]);
 
   if (opts.messageId) {
-    await tg.editMessageText(chatId, opts.messageId, text, { reply_markup: keyboard });
+    await tg.editMessageText(chatId, opts.messageId, text, { reply_markup: tg.inlineKeyboard(rows) });
   } else {
-    await tg.sendMessage(chatId, text, { reply_markup: keyboard });
+    await tg.sendMessage(chatId, text, { reply_markup: tg.inlineKeyboard(rows) });
   }
 }
 
@@ -858,29 +1043,25 @@ async function handleKelengkapan(chatId: number, fromId: number, opts: { message
   const asn = await getAsnByTelegram(fromId);
   if (!asn) return tg.sendMessage(chatId, "Silakan ketik /start untuk verifikasi NIP terlebih dahulu.");
 
-  const jenisList = await getJenisDokumenList({ status: asn.status });
-  const docs = await query<Dokumen>(
-    `SELECT * FROM dokumen WHERE nip = $1 AND is_latest = true`,
-    [asn.nip]
-  );
-
-  const tersedia = jenisList.filter((j) => docs.some((d) => d.jenis_dokumen_id === j.id && (d.status === "DISETUJUI" || d.status === "TERVERIFIKASI")));
-  const total = jenisList.length;
-  const ada = tersedia.length;
-  const pct = total === 0 ? 0 : Math.round((ada / total) * 100);
+  const { items, summary } = await getChecklist(asn);
 
   let text = `📊 <b>KELENGKAPAN ARSIP</b>\n\n`;
-  text += `${progressBar(pct)} ${pct}%\n\n`;
-  text += `${ada} dari ${total} dokumen tersedia.\n\n`;
+  text += `${progressBar(summary.pct)} <b>${summary.pct}% LENGKAP</b>\n\n`;
+  text += `✓ ${summary.terverifikasi} Terverifikasi\n`;
+  text += `⏳ ${summary.menunggu} Menunggu verifikasi\n`;
+  text += `🔴 ${summary.belum} Belum tersedia\n\n`;
 
-  for (const j of jenisList) {
-    const d = docs.find((x) => x.jenis_dokumen_id === j.id);
-    const mark = d && (d.status === "DISETUJUI" || d.status === "TERVERIFIKASI") ? "✅" : "❌";
-    text += `${mark} ${tg.escapeHtml(j.nama)}\n`;
-  }
+  text += `📁 <b>ARSIP ANDA</b>\n`;
+  text += `Jenis ASN: <b>${labelJenisAsn(resolveJenisAsn(asn))}</b>\n\n`;
+  text += `⭐ Wajib: ${summary.total_wajib} dokumen\n`;
+  text += `🟡 Kondisional: ${summary.total_kondisional} dokumen\n`;
+  text += `🔵 Opsional: ${summary.total_opsional} dokumen\n`;
+  if (summary.total_lainnya > 0) text += `📦 Lainnya (terupload): ${summary.total_lainnya} dokumen\n`;
+  if (summary.tidak_relevan > 0) text += `⚪ Tidak relevan untuk Anda: ${summary.tidak_relevan} dokumen\n`;
 
   const keyboard = tg.inlineKeyboard([
-    [{ text: "📁 Lengkapi Arsip", callback_data: cbData("upload") }],
+    [{ text: "🔴 Yang Harus Dilengkapi", callback_data: cbData("kurang") }],
+    [{ text: "📁 Upload Arsip", callback_data: cbData("upload") }],
     [{ text: "⬅️ Kembali", callback_data: cbData("menu") }],
   ]);
 

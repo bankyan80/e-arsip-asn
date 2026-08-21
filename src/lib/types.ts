@@ -2,6 +2,82 @@ export type Role = "SUPER ADMIN" | "ADMIN" | "OPERATOR";
 
 export type ASNStatus = "PNS" | "PPPK" | "LAINNYA";
 
+export type JenisAsn =
+  | "PNS"
+  | "PPPK_GURU"
+  | "PPPK_TENDIK"
+  | "PPPK_GURU_PARUH_WAKTU"
+  | "PPPK_TENDIK_PARUH_WAKTU";
+
+export const JENIS_ASN_LIST: JenisAsn[] = [
+  "PNS",
+  "PPPK_GURU",
+  "PPPK_TENDIK",
+  "PPPK_GURU_PARUH_WAKTU",
+  "PPPK_TENDIK_PARUH_WAKTU",
+];
+
+export function labelJenisAsn(j: string | null | undefined): string {
+  switch (j) {
+    case "PNS": return "PNS";
+    case "PPPK_GURU": return "PPPK Guru";
+    case "PPPK_TENDIK": return "PPPK Tendik";
+    case "PPPK_GURU_PARUH_WAKTU": return "PPPK Guru Paruh Waktu";
+    case "PPPK_TENDIK_PARUH_WAKTU": return "PPPK Tendik Paruh Waktu";
+    default: return "-";
+  }
+}
+
+export type SifatDokumen = "WAJIB" | "KONDISIONAL" | "OPSIONAL" | "LAINNYA";
+
+export type ItemStatusArsip =
+  | "BELUM TERSEDIA"
+  | "SUDAH TERUPLOAD"
+  | "MENUNGGU VERIFIKASI"
+  | "TERVERIFIKASI"
+  | "DITOLAK"
+  | "PERLU DIPERBARUI"
+  | "OPSIONAL";
+
+export interface DocumentRule {
+  id: number;
+  jenis_asn: JenisAsn;
+  jenis_dokumen_kode: string;
+  sifat: SifatDokumen;
+  kondisi: string | null;
+  masa_berlaku_tahun: number | null;
+  urutan: number;
+  aktif: boolean;
+}
+
+export interface ChecklistItem {
+  jenis_dokumen_id: number;
+  kode: string;
+  nama: string;
+  kategori: string | null;
+  sifat: SifatDokumen;
+  kondisi: string | null;
+  status: ItemStatusArsip;
+  urutan: number;
+  dokumen_id: number | null;
+  versi: number | null;
+  tanggal_upload: string | null;
+}
+
+export interface ChecklistSummary {
+  total_wajib: number;
+  total_kondisional: number;
+  total_opsional: number;
+  total_lainnya: number;
+  tidak_relevan: number;
+  terverifikasi: number;
+  menunggu: number;
+  belum: number;
+  perlu_diperbarui: number;
+  ditolak: number;
+  pct: number;
+}
+
 export type DokumenStatus = "MENUNGGU" | "DISETUJUI" | "DITOLAK" | "TERVERIFIKASI";
 
 export type DokumenSumber = "foto" | "pdf" | "scan" | "drive";
@@ -15,6 +91,20 @@ export interface ASN {
   jabatan: string | null;
   unit_kerja: string | null;
   status: ASNStatus;
+  jenis_asn: JenisAsn | null;
+  menikah: boolean;
+  punya_anak: boolean;
+  sertifikat_pendidik: boolean;
+  jabatan_tambahan: boolean;
+  pernah_mutasi: boolean;
+  pernah_naik_pangkat: boolean;
+  pernah_diklat: boolean;
+  pernah_penghargaan: boolean;
+  pernah_hukdis: boolean;
+  mendekati_pensiun: boolean;
+  pernah_tugas_belajar: boolean;
+  pernah_cerai: boolean;
+  wajib_lhkpn: boolean;
   email: string | null;
   no_hp: string | null;
   alamat: string | null;

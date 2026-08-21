@@ -156,3 +156,50 @@ CREATE TABLE IF NOT EXISTS settings (
   deskripsi TEXT,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+-- ============================================================
+-- MASTER DOKUMEN — Rule Engine
+-- ============================================================
+
+-- Profil kepegawaian ASN (rule engine)
+ALTER TABLE asn ADD COLUMN IF NOT EXISTS jenis_asn VARCHAR(40);
+ALTER TABLE asn ADD COLUMN IF NOT EXISTS menikah BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE asn ADD COLUMN IF NOT EXISTS punya_anak BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE asn ADD COLUMN IF NOT EXISTS sertifikat_pendidik BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE asn ADD COLUMN IF NOT EXISTS jabatan_tambahan BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE asn ADD COLUMN IF NOT EXISTS pernah_mutasi BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE asn ADD COLUMN IF NOT EXISTS pernah_naik_pangkat BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE asn ADD COLUMN IF NOT EXISTS pernah_diklat BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE asn ADD COLUMN IF NOT EXISTS pernah_penghargaan BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE asn ADD COLUMN IF NOT EXISTS pernah_hukdis BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE asn ADD COLUMN IF NOT EXISTS mendekati_pensiun BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE asn ADD COLUMN IF NOT EXISTS pernah_tugas_belajar BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE asn ADD COLUMN IF NOT EXISTS pernah_cerai BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE asn ADD COLUMN IF NOT EXISTS wajib_lhkpn BOOLEAN NOT NULL DEFAULT false;
+
+-- Aturan dokumen per jenis ASN
+-- sifat: WAJIB | KONDISIONAL | OPSIONAL
+-- kondisi: kunci kondisi profil (menikah, punya_anak, dst) jika sifat=KONDISIONAL
+CREATE TABLE IF NOT EXISTS document_rules (
+  id BIGSERIAL PRIMARY KEY,
+  jenis_asn VARCHAR(40) NOT NULL,
+  jenis_dokumen_kode VARCHAR(60) NOT NULL REFERENCES jenis_dokumen(kode) ON DELETE CASCADE,
+  sifat VARCHAR(20) NOT NULL DEFAULT 'WAJIB',
+  kondisi VARCHAR(60),
+  masa_berlaku_tahun INTEGER,
+  urutan INTEGER NOT NULL DEFAULT 0,
+  aktif BOOLEAN NOT NULL DEFAULT true,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  CONSTRAINT uq_document_rules UNIQUE (jenis_asn, jenis_dokumen_kode)
+);
+CREATE INDEX IF NOT EXISTS idx_document_rules_jenis ON document_rules(jenis_asn, aktif);
+
+-- Backfill jenis_asn dari status lama (idempotent, hanya isi yang masih kosong)
+UPDATE asn SET jenis_asn = CASE
+    WHEN status = 'PNS' THEN 'PNS'
+    WHEN status = 'PPPK' AND UPPER(jabatan) LIKE '%TENAGA KEPENDIDIKAN%' THEN 'PPPK_TENDIK'
+    WHEN status = 'PPPK' AND UPPER(jabatan) LIKE '%GURU%' THEN 'PPPK_GURU'
+    WHEN status = 'PPPK' THEN 'PPPK_TENDIK'
+    ELSE NULL
+  END
+WHERE jenis_asn IS NULL;

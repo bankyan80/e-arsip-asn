@@ -3,7 +3,8 @@ import { query } from "@/lib/db";
 import { settingsGet } from "@/lib/settings";
 import { notifyReminder } from "@/lib/notifications";
 import { sendReminderEmail } from "@/lib/email";
-import type { ASN, JenisDokumen, Dokumen } from "@/lib/types";
+import { buildChecklist } from "@/lib/rule-engine";
+import type { ASN, Dokumen } from "@/lib/types";
 
 export const runtime = "nodejs";
 
@@ -58,8 +59,16 @@ export async function GET(request: NextRequest) {
     (a, b) => (lastSentMap.get(a.id) ?? 0) - (lastSentMap.get(b.id) ?? 0)
   );
 
-  const docs = await query<Dokumen>(`SELECT * FROM dokumen WHERE is_latest = true`);
-  const jenisCache = new Map<string, JenisDokumen[]>();
+  const docs = await query<Pick<Dokumen, "id" | "nip" | "jenis_dokumen_id" | "jenis_dokumen_kode" | "status" | "tanggal_upload" | "versi">>(
+    `SELECT id, nip, jenis_dokumen_id, jenis_dokumen_kode, status, tanggal_upload, versi
+     FROM dokumen WHERE is_latest = true`
+  );
+  const docsByNip = new Map<string, typeof docs>();
+  for (const d of docs) {
+    const arr = docsByNip.get(d.nip) ?? [];
+    arr.push(d);
+    docsByNip.set(d.nip, arr);
+  }
 
   const report: { nip: string; nama: string; kurang: string[] }[] = [];
   let emailsSent = 0;
@@ -69,21 +78,15 @@ export async function GET(request: NextRequest) {
   const now = Date.now();
 
   for (const asn of asnList) {
-    let jenisList = jenisCache.get(asn.status);
-    if (!jenisList) {
-      jenisList = await query<JenisDokumen>(
-        `SELECT * FROM jenis_dokumen
-         WHERE aktif = true
-           AND (($1 = 'PNS' AND berlaku_pns = true) OR ($1 = 'PPPK' AND berlaku_pppk = true) OR $1 NOT IN ('PNS','PPPK'))
-         ORDER BY urutan ASC`,
-        [asn.status]
-      );
-      jenisCache.set(asn.status, jenisList);
-    }
-
-    const kurang = jenisList
-      .filter((j) => !docs.some((d) => d.nip === asn.nip && d.jenis_dokumen_id === j.id && d.status !== "DITOLAK"))
-      .map((j) => j.nama);
+    // Rule engine: hanya dokumen WAJIB/KONDISIONAL aktif yang dihitung kurang
+    const { items } = await buildChecklist(asn, docsByNip.get(asn.nip) ?? []);
+    const kurang = items
+      .filter(
+        (it) =>
+          (it.sifat === "WAJIB" || it.sifat === "KONDISIONAL") &&
+          (it.status === "BELUM TERSEDIA" || it.status === "DITOLAK" || it.status === "PERLU DIPERBARUI")
+      )
+      .map((it) => it.nama);
 
     if (kurang.length === 0) continue;
 
