@@ -33,7 +33,7 @@ export default function LoginPage() {
     <main className="flex min-h-screen items-center justify-center p-6">
       <div className="w-full max-w-sm">
         <div className="mb-6 text-center">
-          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-indigo-600 text-2xl font-bold text-white">📁</div>
+          <img src="/logokab.png" alt="Logo Kabupaten" className="mx-auto mb-4 h-16 w-auto object-contain" />
           <h1 className="text-2xl font-bold">Masuk Admin</h1>
           <p className="text-sm text-slate-500">e-ARSIP ASN</p>
         </div>

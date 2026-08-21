@@ -57,8 +57,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       {/* Sidebar desktop */}
       <aside className="fixed inset-y-0 left-0 z-40 hidden w-60 flex-col bg-slate-900 text-white lg:flex">
         <div className="flex items-center gap-2 px-6 py-5">
-          <span className="text-xl">📁</span>
-          <span className="font-semibold">e-ARSIP ASN</span>
+          <img src="/logokab.png" alt="Logo" className="h-8 w-auto object-contain" />
+        <span className="flex items-center gap-2 font-semibold">
+          <img src="/logokab.png" alt="Logo" className="h-7 w-auto object-contain" />
+          e-ARSIP ASN
+        </span>
         </div>
         <nav className="flex-1 space-y-1 px-3 py-4">
           {navItems.map((item) => {
@@ -105,7 +108,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <div className="absolute inset-0 bg-black/40" onClick={() => setOpen(false)} />
           <div className="absolute inset-y-0 left-0 w-64 bg-slate-900 p-4 text-white">
             <div className="mb-4 flex items-center justify-between">
-              <span className="font-semibold">e-ARSIP ASN</span>
+              <span className="flex items-center gap-2 font-semibold">
+                <img src="/logokab.png" alt="Logo" className="h-7 w-auto object-contain" />
+                e-ARSIP ASN
+              </span>
               <button onClick={() => setOpen(false)} className="rounded-lg p-1 hover:bg-slate-800">
                 <X className="h-5 w-5" />
               </button>
