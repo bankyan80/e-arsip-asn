@@ -88,7 +88,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
 }
 
 export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
-  const session = await guard(request, ["SUPER ADMIN"]);
+  const session = await guard(request, ["SUPER ADMIN", "ADMIN"]);
   if (session instanceof Response) return session;
   const asn = await queryOne<ASN>(`SELECT * FROM asn WHERE id = $1`, [Number(params.id)]);
   if (!asn) return NextResponse.json({ error: "ASN tidak ditemukan" }, { status: 404 });

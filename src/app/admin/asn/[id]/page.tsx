@@ -45,6 +45,9 @@ export default function AsnDetailPage() {
   const [audit, setAudit] = useState<any[]>([]);
   const [edit, setEdit] = useState(false);
   const [form, setForm] = useState<any>({});
+  const [delOpen, setDelOpen] = useState(false);
+  const [delText, setDelText] = useState("");
+  const [deleting, setDeleting] = useState(false);
 
   async function load() {
     const data = await apiFetch<{ asn: ASNData; dokumen: DokumenRow[]; audit: any[] }>(`/api/asn/${id}`);
@@ -66,6 +69,16 @@ export default function AsnDetailPage() {
     });
     setEdit(false);
     load();
+  }
+
+  async function hapus() {
+    setDeleting(true);
+    try {
+      await apiFetch(`/api/asn/${id}`, { method: "DELETE" });
+      router.push("/admin/asn");
+    } finally {
+      setDeleting(false);
+    }
   }
 
   if (!asn) return <p className="text-slate-500">Memuat...</p>;
@@ -113,6 +126,7 @@ export default function AsnDetailPage() {
         </div>
         <div className="mt-4 flex gap-2">
           <Button variant="outline" onClick={() => setEdit(true)}>✏️ Edit Data</Button>
+          <Button variant="danger" onClick={() => { setDelOpen(true); setDelText(""); }}>🗑 Hapus ASN</Button>
         </div>
       </Card>
 
@@ -164,6 +178,23 @@ export default function AsnDetailPage() {
           </div>
         </Card>
       </div>
+
+      <Modal open={delOpen} onClose={() => setDelOpen(false)} title="Hapus ASN">
+        <p className="text-sm text-slate-600">
+          ASN <b>{asn.nama}</b> ({asn.nip}) beserta <b>{docs.length} dokumen</b> arsipnya akan dihapus permanen.
+          Gunakan untuk ASN yang meninggal atau mutasi keluar.
+        </p>
+        <p className="mt-3 text-sm text-slate-600">
+          Ketik <span className="rounded bg-slate-100 px-1 font-mono font-semibold">HAPUS</span> untuk konfirmasi:
+        </p>
+        <Input className="mt-2" value={delText} onChange={(e) => setDelText(e.target.value)} placeholder="HAPUS" />
+        <div className="mt-4 flex justify-end gap-2">
+          <Button variant="outline" onClick={() => setDelOpen(false)}>Batal</Button>
+          <Button variant="danger" disabled={delText !== "HAPUS" || deleting} onClick={hapus}>
+            {deleting ? "Menghapus..." : "Hapus Permanen"}
+          </Button>
+        </div>
+      </Modal>
 
       <Modal open={edit} onClose={() => setEdit(false)} title="Edit Data ASN">
         <div className="grid gap-3 md:grid-cols-2">

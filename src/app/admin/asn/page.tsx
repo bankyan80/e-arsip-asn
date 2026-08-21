@@ -17,12 +17,20 @@ interface ASNRow {
 }
 
 export default function AsnListPage() {
+  // Pulihkan posisi halaman/pencarian setelah kembali dari halaman detail
+  const saved = (() => {
+    try {
+      return JSON.parse(sessionStorage.getItem("asnListState") || "{}");
+    } catch {
+      return {};
+    }
+  })();
   const [rows, setRows] = useState<ASNRow[]>([]);
   const [total, setTotal] = useState(0);
-  const [page, setPage] = useState(1);
-  const [q, setQ] = useState("");
-  const [dq, setDq] = useState(""); // query yang sudah di-debounce
-  const [status, setStatus] = useState("");
+  const [page, setPage] = useState<number>(saved.page ?? 1);
+  const [q, setQ] = useState<string>(saved.q ?? "");
+  const [dq, setDq] = useState<string>(saved.q ?? ""); // query yang sudah di-debounce
+  const [status, setStatus] = useState<string>(saved.status ?? "");
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<ASNRow | null>(null);
   const perPage = 20;
@@ -58,6 +66,11 @@ export default function AsnListPage() {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, status, dq]);
+
+  // Simpan posisi list untuk dipulihkan saat kembali dari detail
+  useEffect(() => {
+    sessionStorage.setItem("asnListState", JSON.stringify({ page, q: dq, status }));
+  }, [page, dq, status]);
 
   const totalPages = Math.max(1, Math.ceil(total / perPage));
   const offset = (page - 1) * perPage;
