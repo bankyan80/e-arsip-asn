@@ -46,3 +46,7 @@ yarn-error.log*
 /drive-asn-documents.csv
 /drive-asn-summary.csv
 /drive-match-report.json
+
+# temp scripts
+/tmp-*.mjs
+/tmp-out.txt
