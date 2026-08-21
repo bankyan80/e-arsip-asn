@@ -19,18 +19,22 @@ export async function GET(request: NextRequest) {
     `SELECT * FROM asn WHERE telegram_chat_id IS NOT NULL OR (email IS NOT NULL AND email <> '')`
   );
 
+  const force = url.searchParams.get("force") === "1";
+  const nipFilter = url.searchParams.get("nip");
   const reminderDay = Number(await settingsGet("reminder_day", "1"));
   const today = new Date().getDay(); // 0=Sunday
-  // Jalankan hanya pada hari yang dikonfigurasi (default Senin=1)
-  if (today !== reminderDay) {
+  // Jalankan hanya pada hari yang dikonfigurasi (default Senin=1), kecuali force=1
+  if (!force && today !== reminderDay) {
     return NextResponse.json({ skipped: "not reminder day", day: today, expected: reminderDay });
   }
+
+  const target = nipFilter ? asnList.filter((a) => a.nip === nipFilter) : asnList;
 
   const docs = await query<Dokumen>(`SELECT * FROM dokumen WHERE is_latest = true`);
 
   const report: { nip: string; nama: string; kurang: string[] }[] = [];
 
-  for (const asn of asnList) {
+  for (const asn of target) {
     const jenisList = await query<JenisDokumen>(
       `SELECT * FROM jenis_dokumen
        WHERE aktif = true

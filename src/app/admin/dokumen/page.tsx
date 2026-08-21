@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Search, CheckCircle2, XCircle } from "lucide-react";
 import { apiFetch } from "@/lib/fetch";
 import { Card, Input, Select, Badge, Button, Modal, formatDate, formatBytes } from "@/components/ui";
@@ -24,6 +24,7 @@ export default function DokumenPage() {
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [q, setQ] = useState("");
+  const [dq, setDq] = useState(""); // query yang sudah di-debounce
   const [status, setStatus] = useState("");
   const [selected, setSelected] = useState<DocRow | null>(null);
   const [rejectReason, setRejectReason] = useState("");
@@ -40,17 +41,33 @@ export default function DokumenPage() {
 
   async function load() {
     const params = new URLSearchParams({ page: String(page) });
-    if (q) params.set("q", q);
+    if (dq) params.set("q", dq);
     if (status) params.set("status", status);
     const data = await apiFetch<{ data: DocRow[]; total: number }>(`/api/dokumen?${params}`);
     setRows(data.data);
     setTotal(data.total);
   }
 
+  // Live search: tunggu 400ms setelah berhenti mengetik
+  useEffect(() => {
+    const t = setTimeout(() => setDq(q), 400);
+    return () => clearTimeout(t);
+  }, [q]);
+
+  // Kembali ke halaman 1 saat kata kunci berubah
+  const firstRun = useRef(true);
+  useEffect(() => {
+    if (firstRun.current) {
+      firstRun.current = false;
+      return;
+    }
+    setPage(1);
+  }, [dq]);
+
   useEffect(() => {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, status]);
+  }, [page, status, dq]);
 
   async function verify(doc: DocRow, action: "approve" | "reject", catatan = "") {
     const res = await apiFetch(`/api/dokumen/${doc.id}`, {
@@ -91,7 +108,7 @@ export default function DokumenPage() {
         <div className="flex flex-wrap gap-2">
           <div className="relative">
             <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
-            <Input className="pl-9" placeholder="Cari NIP / Nama" value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={(e) => e.key === "Enter" && load()} />
+            <Input className="pl-9" placeholder="Cari NIP / Nama" value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={(e) => e.key === "Enter" && setDq(q)} />
           </div>
           <Select value={status} onChange={(e) => { setStatus(e.target.value); setPage(1); }}>
             <option value="">Semua Status</option>

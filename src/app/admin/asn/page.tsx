@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Search, UserPlus, ChevronLeft, ChevronRight } from "lucide-react";
 import { apiFetch } from "@/lib/fetch";
 import { Card, Input, Select, Badge, ProgressBar, Button } from "@/components/ui";
@@ -21,6 +21,7 @@ export default function AsnListPage() {
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [q, setQ] = useState("");
+  const [dq, setDq] = useState(""); // query yang sudah di-debounce
   const [status, setStatus] = useState("");
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<ASNRow | null>(null);
@@ -29,7 +30,7 @@ export default function AsnListPage() {
   async function load() {
     setLoading(true);
     const params = new URLSearchParams({ page: String(page) });
-    if (q) params.set("q", q);
+    if (dq) params.set("q", dq);
     if (status) params.set("status", status);
     const data = await apiFetch<{ data: ASNRow[]; total: number }>(`/api/asn?${params}`);
     setRows(data.data);
@@ -37,10 +38,26 @@ export default function AsnListPage() {
     setLoading(false);
   }
 
+  // Live search: tunggu 400ms setelah berhenti mengetik
+  useEffect(() => {
+    const t = setTimeout(() => setDq(q), 400);
+    return () => clearTimeout(t);
+  }, [q]);
+
+  // Kembali ke halaman 1 saat kata kunci berubah
+  const firstRun = useRef(true);
+  useEffect(() => {
+    if (firstRun.current) {
+      firstRun.current = false;
+      return;
+    }
+    setPage(1);
+  }, [dq]);
+
   useEffect(() => {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, status]);
+  }, [page, status, dq]);
 
   const totalPages = Math.max(1, Math.ceil(total / perPage));
   const offset = (page - 1) * perPage;
@@ -60,7 +77,7 @@ export default function AsnListPage() {
               placeholder="Cari NIP / Nama / Jabatan"
               value={q}
               onChange={(e) => setQ(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && load()}
+              onKeyDown={(e) => e.key === "Enter" && setDq(q)}
             />
           </div>
           <Select value={status} onChange={(e) => { setStatus(e.target.value); setPage(1); }}>
