@@ -39,3 +39,10 @@ yarn-error.log*
 # database backups (contains PII)
 /backups/
 *.json.tmp
+
+# drive scan outputs (contains PII)
+/drive-arsip-list.json
+/drive-arsip-urls.csv
+/drive-asn-documents.csv
+/drive-asn-summary.csv
+/drive-match-report.json
