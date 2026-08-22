@@ -86,9 +86,7 @@ export default function AsnLoginPage() {
     <main className="min-h-screen bg-slate-50">
       {/* Header brand */}
       <div className="bg-gradient-to-br from-indigo-700 to-blue-600 px-6 pb-16 pt-12 text-center text-white">
-        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-white/15">
-          <img src="/logokab.png" alt="Logo" className="h-10 w-auto object-contain" />
-        </div>
+        <img src="/logokab.png" alt="Logo" className="mx-auto mb-4 h-28 w-auto object-contain" />
         <h1 className="text-xl font-bold">e-ARSIP ASN</h1>
         <p className="mt-1 text-sm opacity-90">
           {step === 1 ? "Masuk ke arsip kepegawaian Anda" : `Halo${nama ? `, ${nama}` : ""}`}
