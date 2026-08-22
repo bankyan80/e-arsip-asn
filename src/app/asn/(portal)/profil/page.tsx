@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import {
   MessageCircle,
   BadgeCheck,
@@ -25,7 +24,6 @@ function labelJenis(j: string): string {
 }
 
 export default function AsnProfilPage() {
-  const router = useRouter();
   const [me, setMe] = useState<MeResponse | null>(null);
   const [loggingOut, setLoggingOut] = useState(false);
 
