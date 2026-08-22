@@ -12,12 +12,13 @@ const cooldowns = new Map<string, number>();
 const COOLDOWN_MS = 60_000;
 
 export async function POST(request: NextRequest) {
-  const { nip } = await request.json().catch(() => ({}));
+  const { nip, kanal } = await request.json().catch(() => ({}));
   if (!nip) {
     return NextResponse.json({ error: "NIP wajib diisi" }, { status: 400 });
   }
+  const kanalReq =
+    kanal === "TELEGRAM" || kanal === "EMAIL" ? kanal : "AUTO";
 
-  const ip = request.headers.get("x-forwarded-for")?.split(",")[0] ?? "local";
   const last = cooldowns.get(String(nip));
   if (last && Date.now() - last < COOLDOWN_MS) {
     return NextResponse.json(
@@ -39,17 +40,16 @@ export async function POST(request: NextRequest) {
   const kode = generateOtp();
   const kodeHash = await bcrypt.hash(kode, 10);
   await query(`DELETE FROM asn_login_otp WHERE nip = $1 AND terpakai = false`, [asn.nip]);
-  await query(
-    `INSERT INTO asn_login_otp (nip, kode_hash, kanal, kadaluarsa_at)
-     VALUES ($1, $2, $3, now() + interval '10 minutes')`,
-    [asn.nip, kodeHash, asn.telegram_chat_id ? "TELEGRAM" : "EMAIL"]
-  );
 
   let viaTelegram = false;
   let viaEmail: string | null = null;
   const errors: string[] = [];
 
-  if (asn.telegram_chat_id) {
+  const kirimTelegram = async (): Promise<boolean> => {
+    if (!asn.telegram_chat_id) {
+      errors.push("telegram: belum terhubung");
+      return false;
+    }
     try {
       await tg.sendMessage(
         asn.telegram_chat_id,
@@ -58,13 +58,22 @@ export async function POST(request: NextRequest) {
           `Berlaku 10 menit. Jangan bagikan kode ini kepada siapa pun.`,
         { disable_notification: false }
       );
-      viaTelegram = true;
+      return true;
     } catch (e: any) {
       errors.push(`telegram: ${e.message}`);
+      return false;
     }
-  }
+  };
 
-  if (asn.email && env.resendApiKey) {
+  const kirimEmail = async (): Promise<boolean> => {
+    if (!asn.email) {
+      errors.push("email: tidak terdaftar");
+      return false;
+    }
+    if (!env.resendApiKey) {
+      errors.push("email: layanan email belum tersedia");
+      return false;
+    }
     try {
       const { Resend } = await import("resend");
       const resend = new Resend(env.resendApiKey);
@@ -97,8 +106,45 @@ export async function POST(request: NextRequest) {
       });
       if (error) throw new Error(error.message);
       viaEmail = maskEmail(asn.email);
+      return true;
     } catch (e: any) {
       errors.push(`email: ${e.message}`);
+      return false;
+    }
+  };
+
+  // Simpan OTP hanya bila minimal satu kanal berhasil dipakai.
+  // Untuk kanal eksplisit, validasi ketersediaan lebih dulu sebelum insert.
+  if (kanalReq === "TELEGRAM") {
+    if (!asn.telegram_chat_id) {
+      return NextResponse.json(
+        { error: "Telegram belum terhubung untuk NIP ini. Silakan pilih Email atau hubungi admin." },
+        { status: 400 }
+      );
+    }
+  } else if (kanalReq === "EMAIL") {
+    if (!asn.email || !env.resendApiKey) {
+      return NextResponse.json(
+        { error: "Email tidak terdaftar atau layanan email belum tersedia. Silakan pilih Telegram atau hubungi admin." },
+        { status: 400 }
+      );
+    }
+  }
+
+  await query(
+    `INSERT INTO asn_login_otp (nip, kode_hash, kanal, kadaluarsa_at)
+     VALUES ($1, $2, $3, now() + interval '10 minutes')`,
+    [asn.nip, kodeHash, kanalReq === "AUTO" ? (asn.telegram_chat_id ? "TELEGRAM" : "EMAIL") : kanalReq]
+  );
+
+  if (kanalReq === "TELEGRAM") {
+    viaTelegram = await kirimTelegram();
+  } else if (kanalReq === "EMAIL") {
+    await kirimEmail();
+  } else {
+    // AUTO: Telegram dulu, email sebagai cadangan
+    if (!(await kirimTelegram())) {
+      await kirimEmail();
     }
   }
 
@@ -106,7 +152,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         error:
-          "Belum ada Telegram/email terdaftar yang bisa dipakai menerima kode. Silakan hubungkan akun Telegram melalui bot e-ARSIP ASN atau hubungi admin/pengelola.",
+          "Gagal mengirim kode melalui kanal yang tersedia. Silakan hubungkan akun Telegram melalui bot e-ARSIP ASN atau hubungi admin/pengelola.",
         detail: errors.join("; ") || undefined,
       },
       { status: 400 }

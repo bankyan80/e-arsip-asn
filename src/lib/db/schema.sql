@@ -219,3 +219,22 @@ CREATE TABLE IF NOT EXISTS asn_login_otp (
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS idx_asn_otp_nip ON asn_login_otp(nip, terpakai);
+
+-- ============================================================
+-- PORTAL ASN — Ganti Email (verifikasi ke email baru)
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS asn_email_change (
+  id BIGSERIAL PRIMARY KEY,
+  asn_id BIGINT NOT NULL REFERENCES asn(id) ON DELETE CASCADE,
+  nip VARCHAR(30) NOT NULL,
+  email_baru VARCHAR(200) NOT NULL,
+  kode_hash TEXT NOT NULL,
+  kanal VARCHAR(20) NOT NULL DEFAULT 'EMAIL',
+  percobaan INTEGER NOT NULL DEFAULT 0,
+  terpakai BOOLEAN NOT NULL DEFAULT false,
+  kadaluarsa_at TIMESTAMPTZ NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_asn_email_change_asn ON asn_email_change(asn_id, terpakai);
+ALTER TABLE asn_email_change ADD COLUMN IF NOT EXISTS kanal VARCHAR(20) NOT NULL DEFAULT 'EMAIL';
