@@ -64,6 +64,11 @@ export default function AsnListPage() {
     if (dq) params.set("q", dq);
     if (status) params.set("jenis", status);
     const data = await apiFetch<{ data: ASNRow[]; total: number }>(`/api/asn?${params}`);
+    // Halaman tersimpan bisa melebihi jumlah data terbaru (mis. ganti akun/filter) → kembali ke halaman 1
+    if (data.data.length === 0 && data.total > 0 && page > 1) {
+      setPage(1);
+      return;
+    }
     setRows(data.data);
     setTotal(data.total);
     setLoading(false);

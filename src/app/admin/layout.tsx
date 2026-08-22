@@ -61,6 +61,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   async function logout() {
     await fetch("/api/logout", { method: "POST" });
+    sessionStorage.removeItem("asnListState");
     window.location.href = "/login";
   }
 
