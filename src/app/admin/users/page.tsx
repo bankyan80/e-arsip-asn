@@ -16,9 +16,15 @@ interface AdminUser {
   created_at: string;
 }
 
+interface AsnNama {
+  nama: string;
+  unit_kerja: string | null;
+}
+
 export default function UsersPage() {
   const [rows, setRows] = useState<AdminUser[]>([]);
   const [units, setUnits] = useState<string[]>([]);
+  const [asnNames, setAsnNames] = useState<AsnNama[]>([]);
   const [modal, setModal] = useState<"create" | "edit" | null>(null);
   const [form, setForm] = useState<Partial<AdminUser> & { password?: string }>({});
   const [msg, setMsg] = useState("");
@@ -34,7 +40,20 @@ export default function UsersPage() {
     apiFetch<{ data: string[] }>("/api/asn/units")
       .then((d) => setUnits(d.data))
       .catch(() => {});
+    apiFetch<{ data: AsnNama[] }>("/api/asn/nama")
+      .then((d) => setAsnNames(d.data))
+      .catch(() => {});
   }, []);
+
+  function onNamaChange(v: string) {
+    // Jika nama persis ada di data ASN, isi otomatis unit kerjanya (kecuali sudah diisi manual)
+    const hit = asnNames.find((n) => n.nama.toLowerCase() === v.trim().toLowerCase());
+    setForm((f) => ({
+      ...f,
+      nama: v,
+      ...(hit && f.role === "ADMIN SEKOLAH" && !f.unit_kerja && hit.unit_kerja ? { unit_kerja: hit.unit_kerja } : {}),
+    }));
+  }
 
   async function save() {
     const isEdit = !!form.id;
@@ -111,7 +130,18 @@ export default function UsersPage() {
           </div>
           <div>
             <label className="mb-1 block text-sm text-slate-600">Nama</label>
-            <Input value={form.nama || ""} onChange={(e) => setForm({ ...form, nama: e.target.value })} />
+            <Input
+              list="daftar-nama-asn"
+              value={form.nama || ""}
+              onChange={(e) => onNamaChange(e.target.value)}
+              placeholder="Ketik nama — pilih dari data ASN atau isi manual"
+              autoComplete="off"
+            />
+            <datalist id="daftar-nama-asn">
+              {asnNames.map((n) => (
+                <option key={n.nama} value={n.nama} />
+              ))}
+            </datalist>
           </div>
           <div>
             <label className="mb-1 block text-sm text-slate-600">Role</label>
