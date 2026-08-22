@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { queryOne, query, timestamp } from "@/lib/db";
+import { queryOne, query } from "@/lib/db";
 import { setSession } from "@/lib/auth";
 import { auditLog } from "@/lib/audit";
 import bcrypt from "bcryptjs";

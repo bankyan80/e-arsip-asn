@@ -16,7 +16,7 @@ interface AuditRow {
 }
 
 const toneFor = (a: string) =>
-  a === "LOGIN" ? "blue" : a === "VERIFY" || a === "CREATE" ? "green" : a === "REJECT" || a === "DELETE" ? "red" : a === "DOWNLOAD" || a === "VIEW" ? "yellow" : "gray";
+  a === "LOGIN" ? "blue" : a === "LOGIN_GAGAL" ? "red" : a === "VERIFY" || a === "CREATE" ? "green" : a === "REJECT" || a === "DELETE" ? "red" : a === "DOWNLOAD" || a === "VIEW" ? "yellow" : "gray";
 
 export default function AuditLogPage() {
   const [rows, setRows] = useState<AuditRow[]>([]);

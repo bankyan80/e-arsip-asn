@@ -28,7 +28,13 @@ export async function signSession(payload: SessionPayload): Promise<string> {
 export async function verifySession(token: string): Promise<SessionPayload | null> {
   try {
     const { payload } = await jwtVerify(token, secret());
-    return payload as unknown as SessionPayload;
+    // Tolak token ASN dan payload tak valid agar tidak lolos sebagai sesi admin
+    if ((payload as Record<string, unknown>).scope === "ASN") return null;
+    const p = payload as unknown as SessionPayload;
+    if (typeof p.userId !== "number" || typeof p.username !== "string" || typeof p.role !== "string") {
+      return null;
+    }
+    return p;
   } catch {
     return null;
   }
