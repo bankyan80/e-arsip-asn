@@ -1,0 +1,463 @@
+=================================================================
+           LAPORAN ISI EMAIL PENGINGAT - e-ARSIP ASN
+           Dibuat: Jumat, 21 Agustus 2026 pukul 13.47.58
+=================================================================
+
+1. ISI EMAIL YANG DIKIRIM
+-----------------------------------------------------------------
+Subjek  : Himbauan Melengkapi Arsip Dokumen - e-ARSIP ASN
+Pengirim: (sesuai konfigurasi Resend)
+
+--- Isi Email ---
+
+Halo [Nama ASN],
+
+Kami mengimbau Anda untuk segera melengkapi arsip dokumen
+kepegawaian Anda melalui sistem e-ARSIP ASN.
+Dokumen yang belum tersedia:
+  - [daftar dokumen yang belum diunggah, disesuaikan per pegawai]
+
+Silakan lengkapi dokumen dengan mengupload ke https://t.me/ArsipASN_bot
+dengan cara
+
+1. Verifikasi Awal (sekali saja)
+   1. Buka https://t.me/ArsipASN_bot -> tekan START
+   2. Bot minta NIP -> ketik NIP Anda (contoh: 198007212014062003)
+   3. Jika NIP terdaftar di database, akun Telegram langsung tertaut dan menu utama muncul
+
+2. Menu Utama (tombol inline)
+   Menu                    Fungsi
+   👤 Data Saya            Lihat data kepegawaian (nama, pangkat, jabatan, unit kerja)
+   📁 Upload Arsip         Unggah dokumen baru — pilih jenis dokumen (⭐ = wajib)
+   📂 Arsip Saya           Lihat daftar dokumen + unduh PDF / buka di Drive
+   📊 Kelengkapan Arsip    Progress bar % kelengkapan dokumen
+   🔄 Perbarui Dokumen     Ganti dokumen lama dengan versi baru
+   ❓ Bantuan              Panduan singkat
+
+3. Cara Upload Dokumen
+   1. Pilih 📁 Upload Arsip -> pilih jenis dokumen
+   2. Kirim file PDF (langsung tersimpan), atau foto halaman demi halaman
+   3. Untuk multi-halaman: kirim foto berurutan -> tekan ➕ Tambah Halaman atau ✅ Selesai
+   4. Foto otomatis digabung jadi 1 PDF -> tekan ✅ Simpan PDF
+   5. Dokumen masuk status ⏳ Menunggu verifikasi admin
+
+4. Perintah Teks
+   /menu /profil /upload /arsip /status /bantuan /batal
+   Batas ukuran file: 15 MB. Format: PDF, JPG, PNG, WEBP.
+
+Terima kasih.
+
+--- Footer Email ---
+e-ARSIP ASN -- Sistem Arsip Digital ASN
+
+
+2. RINGKASAN PENGIRIMAN
+-----------------------------------------------------------------
+Total percobaan kirim : 264
+Berhasil terkirim     : 201
+Gagal                 : 63
+  - Gagal kuota harian Resend : 62
+  - Gagal lainnya             : 1
+Waktu pengiriman      : Jumat, 21 Agustus 2026 pukul 10.00.11 s/d Jumat, 21 Agustus 2026 pukul 10.56.59 (WIB)
+
+
+3. DAFTAR EMAIL BERHASIL TERKIRIM (201 penerima)
+-----------------------------------------------------------------
+  1. Etin Rohayatin | NIP: 198007212014062003 | etinrohayatin21@gmail.com | Jumat, 21 Agustus 2026 pukul 10.53.03
+  2. AMINAH | NIP: 196704092007012010 | aam62044@gmail.com | Jumat, 21 Agustus 2026 pukul 10.53.47
+  3. ADE SETIA MAULANA | NIP: 199906292025211051 | adesetiamaulana27@gmail.com | Jumat, 21 Agustus 2026 pukul 10.53.48
+  4. CUCU SUHATI | NIP: 196804092007012010 | ibu.eki1968@gmail.com | Jumat, 21 Agustus 2026 pukul 10.53.49
+  5. Eri Ernawati | NIP: 198301182014092002 | de.errie83@gmail.com | Jumat, 21 Agustus 2026 pukul 10.53.50
+  6. Etin Rohayatin | NIP: 198007212014062003 | etinrohayatin21@gmail.com | Jumat, 21 Agustus 2026 pukul 10.53.50
+  7. HERI KUSWANTO | NIP: 199201012025211199 | herikuswanto1192@gmail.com | Jumat, 21 Agustus 2026 pukul 10.53.51
+  8. HIKMATUL MAULA | NIP: 199012222024212034 | hikmatulmaula22@gmail.com | Jumat, 21 Agustus 2026 pukul 10.53.52
+  9. ISLAMIATI ISTIQOMAH | NIP: 199605242025212064 | islamiatiistiqomah4@gmail.com | Jumat, 21 Agustus 2026 pukul 10.53.53
+ 10. ISMAWATI | NIP: 199612132025212054 | imarasahs@gmail.com | Jumat, 21 Agustus 2026 pukul 10.53.53
+ 11. ADE SUBUR SUGIHARTO | NIP: 197705092025211048 | ade.subur77@gmail.com | Jumat, 21 Agustus 2026 pukul 10.53.54
+ 12. Sriwati Setianah | NIP: 197301171998032004 | sriwati_setianah@ymail.com | Jumat, 21 Agustus 2026 pukul 10.53.55
+ 13. MARZUKI | NIP: 198809272025211017 | masterzukiy133@gmail.com | Jumat, 21 Agustus 2026 pukul 10.53.56
+ 14. Yuda Maulana | NIP: 198403012022211004 | yudamaulana260@gmail.com | Jumat, 21 Agustus 2026 pukul 10.53.56
+ 15. Haerun Nisa | NIP: 198401142022212004 | haerunnisa1401@gmail.com | Jumat, 21 Agustus 2026 pukul 10.53.57
+ 16. MEIGY IRMA OKTAVERINA | NIP: 199905222025212039 | meigyirma@gmail.com | Jumat, 21 Agustus 2026 pukul 10.53.58
+ 17. Muhammad Muti | NIP: 196807151990091001 | muhammadmutiahmad3280@gmail.com | Jumat, 21 Agustus 2026 pukul 10.53.59
+ 18. Muhammad Naim | NIP: 196803092007011010 | naimmuhamad071@gmail.com | Jumat, 21 Agustus 2026 pukul 10.53.59
+ 19. Purnamawati Utami | NIP: 198910142022212002 | utamipurnamawati@gmail.com | Jumat, 21 Agustus 2026 pukul 10.54.00
+ 20. SUPRIHATIN | NIP: 199712112025212060 | suprihatina089@gmail.com | Jumat, 21 Agustus 2026 pukul 10.54.01
+ 21. TSAQILLAH MUMTAJH | NIP: 199603282019032005 | tsaqillahmumtajh.28@gmail.com | Jumat, 21 Agustus 2026 pukul 10.54.02
+ 22. GOFUR | NIP: 198503202025211091 | shakeelalfarizki3@gmail.com | Jumat, 21 Agustus 2026 pukul 10.54.02
+ 23. Jamaludin | NIP: 198408252009021002 | jamaludin.1@student.upi.edu | Jumat, 21 Agustus 2026 pukul 10.54.03
+ 24. MOCHAMAD RAMDHANI | NIP: 199901092025211041 | muhammadramdhany528@gmail.com | Jumat, 21 Agustus 2026 pukul 10.54.04
+ 25. Jajuli | NIP: 197004052007011024 | jajulijazz@gmail.com | Jumat, 21 Agustus 2026 pukul 10.54.05
+ 26. Mohamad Ismail | NIP: 198301042023211003 | ismilecs1@gmail.com | Jumat, 21 Agustus 2026 pukul 10.54.05
+ 27. NURIL HIDAYATI | NIP: 199208262022212012 | nurilnh08@gmail.com | Jumat, 21 Agustus 2026 pukul 10.54.06
+ 28. SILMI ADILAH | NIP: 199605212022212010 | adilahsilmi@gmail.com | Jumat, 21 Agustus 2026 pukul 10.54.07
+ 29. Siti Aisah | NIP: 198710302022212012 | ichaniezz154@gmail.com | Jumat, 21 Agustus 2026 pukul 10.54.08
+ 30. SYLVIA AULIYA SARI | NIP: 199504042022212023 | sylviaauliyasari@gmail.com | Jumat, 21 Agustus 2026 pukul 10.54.08
+ 31. Likah | NIP: 198511032023212003 | likahsigong@gmail.com | Jumat, 21 Agustus 2026 pukul 10.54.09
+ 32. Adang Maulana | NIP: 197510142025211033 | adangmaulana20@gmail.com | Jumat, 21 Agustus 2026 pukul 10.54.10
+ 33. Casdi | NIP: 196711071994031005 | cascasdi@gmail.com | Jumat, 21 Agustus 2026 pukul 10.54.11
+ 34. Abdul Rochmat | NIP: 199106022024211002 | rochmatdapodik@gmail.com | Jumat, 21 Agustus 2026 pukul 10.54.11
+ 35. FARIZIAH AMBARSARI | NIP: 199903242025212046 | ambarsari899@gmail.com | Jumat, 21 Agustus 2026 pukul 10.54.12
+ 36. Fisti Pebrylia Alpintari | NIP: 199302022022212012 | vistialvintari@gmail.com | Jumat, 21 Agustus 2026 pukul 10.54.13
+ 37. Imas Supriasih | NIP: 198503302022212008 | imasupriasihspdsd@gmail.com | Jumat, 21 Agustus 2026 pukul 10.54.14
+ 38. KHANNATUL MAULA  DASUKI | NIP: 197608192022212001 | khannatulmaulagurupai@gmail.com | Jumat, 21 Agustus 2026 pukul 10.54.14
+ 39. MAULANA MUHAMMAD | NIP: 199504022022211001 | alanmaulanamuhammad@gmail.com | Jumat, 21 Agustus 2026 pukul 10.54.15
+ 40. Siti Ratih | NIP: 198502062014092001 | azzharfathiralrizky@gmail.com | Jumat, 21 Agustus 2026 pukul 10.54.16
+ 41. Marlinah Febriasari | NIP: 197002222000032003 | marlinahfebriasari@gmail.com | Jumat, 21 Agustus 2026 pukul 10.54.17
+ 42. MUHAMAD SYAHRUL EFENDI | NIP: 199911152025211031 | syahrulefendi587@gmail.com | Jumat, 21 Agustus 2026 pukul 10.54.17
+ 43. RAHMAT | NIP: 197505032025211057 | pakrahmat232@gmail.com | Jumat, 21 Agustus 2026 pukul 10.54.18
+ 44. Aeni Asfi Hani | NIP: 198809232022212008 | aeniasfihani@gmail.com | Jumat, 21 Agustus 2026 pukul 10.54.19
+ 45. FAJAR DEDI MIFTAKHUDDIN | NIP: 199510062025211079 | dedifajar95@gmail.com | Jumat, 21 Agustus 2026 pukul 10.54.20
+ 46. Fitri Wardhani | NIP: 198605222022212015 | fitdeyasser@gmail.com | Jumat, 21 Agustus 2026 pukul 10.54.20
+ 47. ICA ANISAH | NIP: 199709162025212054 | icafristian@gmail.com | Jumat, 21 Agustus 2026 pukul 10.54.21
+ 48. Imayah | NIP: 197107152000032002 | imayahspdi@gmail.com | Jumat, 21 Agustus 2026 pukul 10.54.22
+ 49. Jamhuri | NIP: 196708152007011017 | jamhurispd42@gmail.com | Jumat, 21 Agustus 2026 pukul 10.54.23
+ 50. Loka Winda Siti Pratiwi | NIP: 199612182024212037 | lokawinda24@gmail.com | Jumat, 21 Agustus 2026 pukul 10.54.23
+ 51. Aan Fitrianani | NIP: 198705272025212081 | fitriananiaan@gmail.com | Jumat, 21 Agustus 2026 pukul 10.54.24
+ 52. Fathiyyatussa'adah | NIP: 198707302024212011 | fathiyya.hameed@gmail.com | Jumat, 21 Agustus 2026 pukul 10.54.25
+ 53. Neri Nerlia | NIP: 198602082023212013 | nerlianeri93@gmail.com | Jumat, 21 Agustus 2026 pukul 10.54.26
+ 54. NINDIA FATMAWATI | NIP: 199812102024212014 | nind2222@gmail.com | Jumat, 21 Agustus 2026 pukul 10.54.26
+ 55. Noni Suntini | NIP: 197002212007012007 | nonisuntini@gmail.com | Jumat, 21 Agustus 2026 pukul 10.54.27
+ 56. SITI ROHMAH ARROSYID | NIP: 199508182024212020 | sitirohmah671@gmail.com | Jumat, 21 Agustus 2026 pukul 10.54.28
+ 57. Wati Susilawati | NIP: 197704182022212001 | wati.susilawati21@yahoo.com | Jumat, 21 Agustus 2026 pukul 10.54.29
+ 58. MUHAMMAD ARIEF RACHMAN HAKIM | NIP: 199107132025211005 | acielthelegend@gmail.com | Jumat, 21 Agustus 2026 pukul 10.54.29
+ 59. NANA JUNAEDI | NIP: 197310122025211042 | nanajunaedi1273@gmail.com | Jumat, 21 Agustus 2026 pukul 10.54.30
+ 60. Vivi Siti Roviqoh | NIP: 198501012022212007 | vivi.r.siti@gmail.com | Jumat, 21 Agustus 2026 pukul 10.54.31
+ 61. GARNIS NURUL FATHONAH | NIP: 199411072025212060 | garnis589@gmail.com | Jumat, 21 Agustus 2026 pukul 10.54.32
+ 62. PUTRA JAYADI | NIP: 200301242025211008 | putrajayadi987@gmail.com | Jumat, 21 Agustus 2026 pukul 10.54.32
+ 63. Sukirah | NIP: 196709062007012012 | sukirahspd65@gmail.com | Jumat, 21 Agustus 2026 pukul 10.54.33
+ 64. Aan Yuningsih | NIP: 196802111992022001 | aanyuningsih47@yahoo.com | Jumat, 21 Agustus 2026 pukul 10.54.34
+ 65. ADE FEBRIANTO | NIP: 199202032024211014 | adefebrianto2117@gmail.com | Jumat, 21 Agustus 2026 pukul 10.54.35
+ 66. DANANG ISWANTO | NIP: 199701142022211001 | diswanto613@gmail.com | Jumat, 21 Agustus 2026 pukul 10.54.35
+ 67. Eni Suhartini | NIP: 196507101988122005 | enisuhartini252@yahoo.com | Jumat, 21 Agustus 2026 pukul 10.54.36
+ 68. Erawati | NIP: 198212082021212002 | sdn2gt.erawati@gmail.com | Jumat, 21 Agustus 2026 pukul 10.54.37
+ 69. Mochammad Rizki Maulana | NIP: 199305012023211003 | exirizky93@gmail.com | Jumat, 21 Agustus 2026 pukul 10.54.37
+ 70. MUHAMMAD CHAKAM | NIP: 199707232022211001 | muhammad_chakam@yahoo.com | Jumat, 21 Agustus 2026 pukul 10.54.38
+ 71. Neni Sumarni | NIP: 198604262019032006 | nenisumarni379@yahoo.com | Jumat, 21 Agustus 2026 pukul 10.54.39
+ 72. NURLAILAH | NIP: 199310222019032011 | nurlailahkarji01@gmail.com | Jumat, 21 Agustus 2026 pukul 10.54.40
+ 73. Onih Oningsih | NIP: 196804122007012022 | oningsih88@yahoo.com | Jumat, 21 Agustus 2026 pukul 10.54.41
+ 74. TUTI SUSILAWATI | NIP: 198302162023212006 | tutisusilawati383@gmail.com | Jumat, 21 Agustus 2026 pukul 10.54.41
+ 75. Apud Syihabudin | NIP: 197704222009021001 | apudsyihabudin@gmail.com | Jumat, 21 Agustus 2026 pukul 10.54.42
+ 76. Een Sunarya | NIP: 197006172025211050 | eensunarya@yahoo.com | Jumat, 21 Agustus 2026 pukul 10.54.43
+ 77. Adinda Firlyasani | NIP: 199204152022212008 | firlyasani@gmail.com | Jumat, 21 Agustus 2026 pukul 10.54.43
+ 78. Dana Ginan Saputra | NIP: 198403242024211001 | danaginan@gmail.com | Jumat, 21 Agustus 2026 pukul 10.54.44
+ 79. DIAN YULISTIN | NIP: 198504102024212011 | tknegerilemahabang10-dianyulistin@yahoo.com | Jumat, 21 Agustus 2026 pukul 10.54.45
+ 80. Dwi Hati Eka | NIP: 197710202010012004 | dwihatieka45@gmail.com | Jumat, 21 Agustus 2026 pukul 10.54.46
+ 81. Firman Awaludin | NIP: 198903062025211071 | firman.awaludin1989@gmail.com | Jumat, 21 Agustus 2026 pukul 10.54.46
+ 82. Herry Prasetiawan | NIP: 198506042022211001 | rhiedoank85@gmail.com | Jumat, 21 Agustus 2026 pukul 10.54.47
+ 83. NUNUNG HERAWATI | NIP: 198912092025212085 | nunungherawaticrb@gmail.com | Jumat, 21 Agustus 2026 pukul 10.54.48
+ 84. Nurudin | NIP: 198210092022211002 | unurudin82@gmail.com | Jumat, 21 Agustus 2026 pukul 10.54.49
+ 85. Nurul Hikmah | NIP: 198507252025212055 | nurul.hikmah250785@gmail.com | Jumat, 21 Agustus 2026 pukul 10.54.49
+ 86. Rahmah Yulia | NIP: 199007162025212090 | rahmahyulia09@gmail.com | Jumat, 21 Agustus 2026 pukul 10.54.50
+ 87. Suci Sa'diyah | NIP: 199307312024212006 | sadiyahsuci1@gmail.com | Jumat, 21 Agustus 2026 pukul 10.54.51
+ 88. Syamsuri | NIP: 196910101990031009 | uyisyamsuri@yahoo.com | Jumat, 21 Agustus 2026 pukul 10.54.52
+ 89. Yuniarsih Harisady | NIP: 198706192023212006 | yharisady@gmail.com | Jumat, 21 Agustus 2026 pukul 10.54.52
+ 90. Gufron | NIP: 196607121986101002 | gufrondoank901@gmail.com | Jumat, 21 Agustus 2026 pukul 10.54.53
+ 91. Nana Mulyana | NIP: 197310102025211056 | nanamulyana474@gmail.com | Jumat, 21 Agustus 2026 pukul 10.54.54
+ 92. NOVIAN NUR RAMADHAN | NIP: 200111302025211002 | ramadhannoviannur@gmail.com | Jumat, 21 Agustus 2026 pukul 10.54.55
+ 93. Awfa Permayasari | NIP: 197809272022212002 | awfapermayasari78@gmail.com | Jumat, 21 Agustus 2026 pukul 10.54.55
+ 94. CHAIRUL FIQIH | NIP: 199811062024211002 | fiqihchairul@gmail.com | Jumat, 21 Agustus 2026 pukul 10.54.56
+ 95. DEDE LIDIANA | NIP: 198204052024212002 | tkgelatik15-dedelidiana@yahoo.com | Jumat, 21 Agustus 2026 pukul 10.54.57
+ 96. DINDA LUTFINA TANZILA | NIP: 199807312024212023 | dindalutfinat@gmail.com | Jumat, 21 Agustus 2026 pukul 10.54.58
+ 97. Khujah Iis Farsyafat | NIP: 199206262022212006 | farsyafatis@gmail.com | Jumat, 21 Agustus 2026 pukul 10.54.58
+ 98. Siti Patimah | NIP: 199502072019032006 | patimahs791@gmail.com | Jumat, 21 Agustus 2026 pukul 10.54.59
+ 99. Watiah | NIP: 197504192023212001 | Atiwatiah75@gmail.com | Jumat, 21 Agustus 2026 pukul 10.55.00
+100. YHESI YUWANA FUSPITASARI | NIP: 199711062022212003 | yhesifuspitasari@gmail.com | Jumat, 21 Agustus 2026 pukul 10.55.01
+101. JUNI | NIP: 197606112025212028 | juni75781@gmail.com | Jumat, 21 Agustus 2026 pukul 10.55.01
+102. Mulus | NIP: 196610141991031006 | mulus1010@gmail.com | Jumat, 21 Agustus 2026 pukul 10.55.02
+103. Aay Ayati | NIP: 198306192022212001 | aayayati83@gmail.com | Jumat, 21 Agustus 2026 pukul 10.55.03
+104. Deline Julianti Putri | NIP: 200007042024212008 | Ralinejulia11@gmail.com | Jumat, 21 Agustus 2026 pukul 10.55.04
+105. Dewi Fathina | NIP: 199410022022212003 | fathinadewi@gmail.com | Jumat, 21 Agustus 2026 pukul 10.55.04
+106. Hendi Hidayat | NIP: 199111232022211001 | hendihidayat23@yahoo.com | Jumat, 21 Agustus 2026 pukul 10.55.05
+107. Jaenudin | NIP: 197103092008011002 | jaenudin328@gmail.com | Jumat, 21 Agustus 2026 pukul 10.55.06
+108. Muadhim Al Ghanie | NIP: 197208102014061001 | muadhimalghanie71@gmail.com | Jumat, 21 Agustus 2026 pukul 10.55.07
+109. Sayuthi | NIP: 196905102006041004 | sayuthi085@gmail.com | Jumat, 21 Agustus 2026 pukul 10.55.07
+110. SITI ANISA | NIP: 199707292024212021 | annisasiti0797@gmail.com | Jumat, 21 Agustus 2026 pukul 10.55.08
+111. Wiwin Dianti | NIP: 197112102001122003 | wiwindianti1971@gmail.com | Jumat, 21 Agustus 2026 pukul 10.55.09
+112. CARWINAH | NIP: 198303152025212108 | winahjani@gmail.com | Jumat, 21 Agustus 2026 pukul 10.55.10
+113. Asiatul Fauziah | NIP: 198709092025212107 | asiatulfauziah0909@gmail.com | Jumat, 21 Agustus 2026 pukul 10.55.10
+114. Elis Nursiah | NIP: 198202052008012003 | elis.nursiah08@gmail.com | Jumat, 21 Agustus 2026 pukul 10.55.11
+115. Galih Pradina | NIP: 199109022022211004 | galihpradina123@gmail.com | Jumat, 21 Agustus 2026 pukul 10.55.12
+116. Ita Ruhayati | NIP: 198708242019032003 | itaruhayati@yahoo.com | Jumat, 21 Agustus 2026 pukul 10.55.13
+117. Lira Utari | NIP: 199207152022212005 | lyrautari16@gmail.com | Jumat, 21 Agustus 2026 pukul 10.55.13
+118. Nurhasanah | NIP: 197106102021212004 | nurhasanahx2018x@gmail.com | Jumat, 21 Agustus 2026 pukul 10.55.14
+119. SITI MAESAROH | NIP: 199807122024212023 | stmaesaroh1211@gmail.com | Jumat, 21 Agustus 2026 pukul 10.55.15
+120. Surtikah | NIP: 196711302007012006 | ikah.surtikah30@gmail.com | Jumat, 21 Agustus 2026 pukul 10.55.16
+121. Andi Aggasi | NIP: 198207272014061002 | muhamadaggasi@gmail.com | Jumat, 21 Agustus 2026 pukul 10.55.16
+122. DIYAN HIDAYAT | NIP: 199302092025211085 | diyan.hidayat93@gmail.com | Jumat, 21 Agustus 2026 pukul 10.55.17
+123. SRI NURCHAENI | NIP: 197605182025212033 | iqsalawalludin@gmail.com | Jumat, 21 Agustus 2026 pukul 10.55.18
+124. Agus Alamsyah Dasuki | NIP: 197809082023211001 | agusalamsyah0809@gmail.com | Jumat, 21 Agustus 2026 pukul 10.55.19
+125. Ayu Safitri | NIP: 199202282024212024 | ayu426605@gmail.com | Jumat, 21 Agustus 2026 pukul 10.55.19
+126. Hermanto | NIP: 197906102023211002 | hermanto.spdi10@gmail.com | Jumat, 21 Agustus 2026 pukul 10.55.20
+127. Juminah | NIP: 197212042001122001 | juminahspd1964@gmail.com | Jumat, 21 Agustus 2026 pukul 10.55.21
+128. Makhfud Alma'arif | NIP: 199110102019031008 | alma170845@gmail.com | Jumat, 21 Agustus 2026 pukul 10.55.22
+129. SHEPTA | NIP: 199307242025211075 | sheptaoke@gmail.com | Jumat, 21 Agustus 2026 pukul 10.55.22
+130. SULIKA ANDRAENI | NIP: 199806112024212028 | andraeni98@gmail.com | Jumat, 21 Agustus 2026 pukul 10.55.23
+131. Sutini | NIP: 196911122008012015 | sutinispd1969@gmail.com | Jumat, 21 Agustus 2026 pukul 10.55.24
+132. Titi Mulyati | NIP: 198612052009022001 | titi.mulyati051286@gmail.com | Jumat, 21 Agustus 2026 pukul 10.55.25
+133. Tresna Wiyanti | NIP: 198801192024212005 | tresnawiyanti94@gmail.com | Jumat, 21 Agustus 2026 pukul 10.55.25
+134. Imanurdin Ramadon | NIP: 197109062025211029 | nurdinramadon590@gmail.com | Jumat, 21 Agustus 2026 pukul 10.55.26
+135. YEPI YULINAR KUSTIARA | NIP: 199506222019032013 | yepi.yulinar.kustiara95@gmail.com | Jumat, 21 Agustus 2026 pukul 10.55.27
+136. Dedi Junaedi | NIP: 196811021992121001 | junaedi.srj01@gmail.com | Jumat, 21 Agustus 2026 pukul 10.55.28
+137. SOFROH | NIP: 198705102025212104 | sofrohassidiq@gmail.com | Jumat, 21 Agustus 2026 pukul 10.55.28
+138. Ade Achmad Yasser | NIP: 198803232009021001 | adespd07@gmail.com | Jumat, 21 Agustus 2026 pukul 10.55.29
+139. ATI KOTUN | NIP: 198203212023212004 | atikotun1@gmail.com | Jumat, 21 Agustus 2026 pukul 10.55.30
+140. KARYATI | NIP: 197902022025212040 | sedongkidulkaryati@gmail.com | Jumat, 21 Agustus 2026 pukul 10.55.31
+141. Lili Solifah | NIP: 198410012022212010 | lilisolifah@gmail.com | Jumat, 21 Agustus 2026 pukul 10.55.31
+142. MOCHAMAD NANAT FATULLOH | NIP: 199606232022211004 | fatullahnanat@gmail.com | Jumat, 21 Agustus 2026 pukul 10.55.32
+143. MUHAMAD ALLIF DWI JAYUSMAN | NIP: 199905122024211004 | allifsd1@gmail.com | Jumat, 21 Agustus 2026 pukul 10.55.33
+144. Novianti Nurlaela | NIP: 197911062022212002 | noviyanti0646@gmail.com | Jumat, 21 Agustus 2026 pukul 10.55.33
+145. SANTIKA PEBRIANA | NIP: 199802272024212007 | santikafebriana8@gmail.com | Jumat, 21 Agustus 2026 pukul 10.55.34
+146. Siti Nursyahri | NIP: 197002142005012008 | nursyahrisiti@gmail.com | Jumat, 21 Agustus 2026 pukul 10.55.35
+147. Sri Rahayu | NIP: 199305262022212001 | srirahayuspd07@gmail.com | Jumat, 21 Agustus 2026 pukul 10.55.36
+148. Sri Wahyuni | NIP: 198601172019032004 | sriwahyuni1737@gmail.com | Jumat, 21 Agustus 2026 pukul 10.55.36
+149. Uni Mauni | NIP: 197108172000122003 | unimauni1@gmail.com | Jumat, 21 Agustus 2026 pukul 10.55.37
+150. Uum Umaroh | NIP: 197406252021212003 | uumumaroh87@gmail.com | Jumat, 21 Agustus 2026 pukul 10.55.38
+151. YULIAN SABITNI AMANAH | NIP: 199707032025212074 | yulian.ya121@gmail.com | Jumat, 21 Agustus 2026 pukul 10.55.39
+152. Ikin | NIP: 197109282000121002 | ikinspd07@gmail.com | Jumat, 21 Agustus 2026 pukul 10.55.39
+153. Wachyudin | NIP: 197309152025211052 | wahyusd92@gmail.com | Jumat, 21 Agustus 2026 pukul 10.55.40
+154. A Saidi | NIP: 197903032022211001 | aidsaidi299@gmail.com | Jumat, 21 Agustus 2026 pukul 10.55.41
+155. Ginanjar Apriyanti | NIP: 198504022022212019 | ginanjar.apriyanti02@gmail.com | Jumat, 21 Agustus 2026 pukul 10.55.42
+156. Iis Istiqomah | NIP: 196902141991032005 | istiqomahiis216@gmail.com | Jumat, 21 Agustus 2026 pukul 10.55.42
+157. IKE SELAWATI | NIP: 199505162024212027 | ikesela59@gmail.com | Jumat, 21 Agustus 2026 pukul 10.55.43
+158. Rara Anisha | NIP: 199203152024212014 | anisharara15@gmail.com | Jumat, 21 Agustus 2026 pukul 10.55.44
+159. Setiawati | NIP: 196801082008012008 | wsetiawati68@gmail.com | Jumat, 21 Agustus 2026 pukul 10.55.45
+160. SITI ASHARI NUR FATIHAH | NIP: 199712112024212011 | sitiashari.nurfatihah@gmail.com | Jumat, 21 Agustus 2026 pukul 10.55.45
+161. SITI ROIKHAH TOYYIBAH | NIP: 198405082022212003 | roikhahtoyyibahsiti@gmail.com | Jumat, 21 Agustus 2026 pukul 10.55.46
+162. Agus Maulana | NIP: 198811102025211144 | maulanaagus024@gmail.com | Jumat, 21 Agustus 2026 pukul 10.55.47
+163. Siti Tristianingsih | NIP: 198611052009022001 | tianingsihtris49@gmail.com | Jumat, 21 Agustus 2026 pukul 10.55.48
+164. Anang Suryana | NIP: 197203112022211001 | sanang20@yahoo.com | Jumat, 21 Agustus 2026 pukul 10.55.48
+165. Esah Wastrilaesah | NIP: 198012202005012011 | wastrilaeesah@gmail.com | Jumat, 21 Agustus 2026 pukul 10.55.49
+166. Ivan Fauzi | NIP: 199404272023211004 | ivanfauzi095@gmail.com | Jumat, 21 Agustus 2026 pukul 10.55.50
+167. Junaedi | NIP: 198008072021211005 | junaedisigong@yahoo.com | Jumat, 21 Agustus 2026 pukul 10.55.51
+168. Nunung Anugrawati | NIP: 196801021989022001 | nununganugrawati05@gmail.com | Jumat, 21 Agustus 2026 pukul 10.55.51
+169. Sri Wahyuni | NIP: 198508182022212004 | sriw35829@gmail.com | Jumat, 21 Agustus 2026 pukul 10.55.52
+170. Yati Sunarti | NIP: 197005012007012010 | sunartiyati2@gmail.com | Jumat, 21 Agustus 2026 pukul 10.55.53
+171. Anah Tasrinah | NIP: 196604131988032010 | anahtasrinah81@yahoo.com | Jumat, 21 Agustus 2026 pukul 10.55.54
+172. AZI PURNAMA | NIP: 198911112025211114 | azipurnama394@gmail.com | Jumat, 21 Agustus 2026 pukul 10.55.54
+173. Ardi Maulana | NIP: 199309192022211002 | afnanbilal964@gmail.com | Jumat, 21 Agustus 2026 pukul 10.55.55
+174. ELIA CAHYANI | NIP: 199504182019032011 | eliacahyani180495@gmail.com | Jumat, 21 Agustus 2026 pukul 10.55.56
+175. Fatmawati | NIP: 197712122023212003 | fatmawatifatmah90@yahoo.co.id | Jumat, 21 Agustus 2026 pukul 10.55.57
+176. Fikhri Maulana | NIP: 199507232022211004 | fikrimaulana6923@gmail.com | Jumat, 21 Agustus 2026 pukul 10.55.57
+177. Ismi Azizah | NIP: 199506242022212002 | azizahismi313@gmail.com | Jumat, 21 Agustus 2026 pukul 10.55.58
+178. Istilapah | NIP: 198702172024212016 | azmaistilapah@gmail.com | Jumat, 21 Agustus 2026 pukul 10.55.59
+179. Oby Maulana | NIP: 198910142022211001 | obymaulana89@gmail.com | Jumat, 21 Agustus 2026 pukul 10.56.00
+180. UUN YUHANAH | NIP: 197603192024212003 | tknegerilemahabang10-uunyuhanah@yahoo.com | Jumat, 21 Agustus 2026 pukul 10.56.00
+181. Yakut | NIP: 197201122022212001 | yakut_72@ymail.com | Jumat, 21 Agustus 2026 pukul 10.56.01
+182. Yayah Maryati | NIP: 198003232009022001 | fauziahhusna1980@gmail.com | Jumat, 21 Agustus 2026 pukul 10.56.02
+183. Yeti Nurhayati | NIP: 198406222022212007 | yetirahman84@gmail.com | Jumat, 21 Agustus 2026 pukul 10.56.03
+184. Gina Maulidah | NIP: 198512012025212009 | ginamaulidah26@gmail.com | Jumat, 21 Agustus 2026 pukul 10.56.03
+185. Mohamad Sama | NIP: 197103182000031002 | mohamadsama40@gmail.com | Jumat, 21 Agustus 2026 pukul 10.56.04
+186. Asep Maulana | NIP: 198612092009021001 | asepm35@gmail.com | Jumat, 21 Agustus 2026 pukul 10.56.05
+187. Lilis Listianah Wardah | NIP: 196610232001122001 | liesty1966@gmail.com | Jumat, 21 Agustus 2026 pukul 10.56.06
+188. Olan Irwandi | NIP: 198707112024211006 | olanirwandi87@gmail.com | Jumat, 21 Agustus 2026 pukul 10.56.06
+189. RIFAN MAULANA | NIP: 199612172024211011 | maulanarifan1712@gmail.com | Jumat, 21 Agustus 2026 pukul 10.56.07
+190. Rohilah | NIP: 196805171992032009 | rohilahilah12@yahoo.co.id | Jumat, 21 Agustus 2026 pukul 10.56.08
+191. Saefudin | NIP: 197805192022211002 | saefudin_efu@yahoo.com | Jumat, 21 Agustus 2026 pukul 10.56.09
+192. Siti Aisyah | NIP: 198502112022212006 | SitiAisyah110285@gmail.com | Jumat, 21 Agustus 2026 pukul 10.56.09
+193. Sulistia Dwi Larasati | NIP: 199409072022212010 | sulistiadwilarasati80@gmail.com | Jumat, 21 Agustus 2026 pukul 10.56.10
+194. Endang Kasmara | NIP: 198007312025211041 | endang_megatama@yahoo.co.id | Jumat, 21 Agustus 2026 pukul 10.56.11
+195. SAEFUL ALIM | NIP: 199108272025211057 | saefulalim987@gmail.com | Jumat, 21 Agustus 2026 pukul 10.56.12
+196. Sri Melina | NIP: 196609291990032006 | srimelina52@gmail.com | Jumat, 21 Agustus 2026 pukul 10.56.12
+197. Abdul Cholik | NIP: 199311282024211002 | abdul.cholik1911@gmail.com | Jumat, 21 Agustus 2026 pukul 10.56.13
+198. DEASSY MARYANI | NIP: 199807102024212036 | deassymaryani774@gmail.com | Jumat, 21 Agustus 2026 pukul 10.56.14
+199. Endang Pratiwi | NIP: 197106122007012014 | pratiwiendang039@gmail.com | Jumat, 21 Agustus 2026 pukul 10.56.15
+200. Harsrinarti Kusumaningrum | NIP: 198011292022212003 | harsrinarti29@gmail.com | Jumat, 21 Agustus 2026 pukul 10.56.15
+201. HENDRI DWI PUTRA | NIP: 198706272022211006 | dwihendry71@gmail.com | Jumat, 21 Agustus 2026 pukul 10.56.16
+
+
+4. DAFTAR EMAIL GAGAL TERKIRIM (63 penerima)
+-----------------------------------------------------------------
+  1. Etin Rohayatin | NIP: 198007212014062003 | etinrohayatin21@gmail.com
+     Alasan: You can only send testing emails to your own email address (yanuarhidayat80@gmail.com). To send emails to other recipients, please verify a domain at resend.com/domains, and change the `from` address to an email using this domain.
+     Waktu : Jumat, 21 Agustus 2026 pukul 10.00.11
+  2. KOTI'AH | NIP: 197206152005012009 | kotiahk016@gmail.com
+     Alasan: You have reached your daily email sending quota.
+     Waktu : Jumat, 21 Agustus 2026 pukul 10.56.17
+  3. LAELI AINUN ZARIYAH | NIP: 199810132024212006 | laelicrb@gmail.com
+     Alasan: You have reached your daily email sending quota.
+     Waktu : Jumat, 21 Agustus 2026 pukul 10.56.17
+  4. Lailatul Badriyah | NIP: 199403162024212019 | lalabadriyah28@gmail.com
+     Alasan: You have reached your daily email sending quota.
+     Waktu : Jumat, 21 Agustus 2026 pukul 10.56.18
+  5. Linna Erliana Dewi | NIP: 198010212024212003 | dewilinnaerliana@gmail.com
+     Alasan: You have reached your daily email sending quota.
+     Waktu : Jumat, 21 Agustus 2026 pukul 10.56.19
+  6. MAR'ATUN SHOLEHAH | NIP: 199306112025212093 | maratuns193@gmail.com
+     Alasan: You have reached your daily email sending quota.
+     Waktu : Jumat, 21 Agustus 2026 pukul 10.56.20
+  7. MARIYATUS SIDDIQI | NIP: 199604222024212022 | mariyatussiddiqi@gmail.com
+     Alasan: You have reached your daily email sending quota.
+     Waktu : Jumat, 21 Agustus 2026 pukul 10.56.20
+  8. NAWAWI | NIP: 196907142021211001 | poconawawi@gmail.com
+     Alasan: You have reached your daily email sending quota.
+     Waktu : Jumat, 21 Agustus 2026 pukul 10.56.21
+  9. Sumitro Fadi Hartanto | NIP: 199010272024211008 | hartantofadi@gmail.com
+     Alasan: You have reached your daily email sending quota.
+     Waktu : Jumat, 21 Agustus 2026 pukul 10.56.22
+ 10. HENDRA PERMANA | NIP: 197505112025211053 | re.resrswt@gmail.com
+     Alasan: You have reached your daily email sending quota.
+     Waktu : Jumat, 21 Agustus 2026 pukul 10.56.22
+ 11. Luthfi Firmansyah | NIP: 199408072025211014 | lut.firman88@gmail.com
+     Alasan: You have reached your daily email sending quota.
+     Waktu : Jumat, 21 Agustus 2026 pukul 10.56.23
+ 12. YUDHA NUGRAHA | NIP: 199711252025211087 | yudangrh1@gmail.com
+     Alasan: You have reached your daily email sending quota.
+     Waktu : Jumat, 21 Agustus 2026 pukul 10.56.24
+ 13. Aan Kusnandar Edi Saputra | NIP: 198205022022211001 | aan.sigong@yahoo.com
+     Alasan: You have reached your daily email sending quota.
+     Waktu : Jumat, 21 Agustus 2026 pukul 10.56.24
+ 14. DEVI MARTHA ASTUTI | NIP: 199503292024212005 | devimartha501@gmail.com
+     Alasan: You have reached your daily email sending quota.
+     Waktu : Jumat, 21 Agustus 2026 pukul 10.56.25
+ 15. Imroatul Ajizah | NIP: 198807042022212011 | ajizah.sigong@yahoo.com
+     Alasan: You have reached your daily email sending quota.
+     Waktu : Jumat, 21 Agustus 2026 pukul 10.56.26
+ 16. Rokisah | NIP: 196903032007012014 | rokisahs@yahoo.com
+     Alasan: You have reached your daily email sending quota.
+     Waktu : Jumat, 21 Agustus 2026 pukul 10.56.26
+ 17. Saefudin Alfarisi | NIP: 198412172011011007 | obeffalfarisi@gmail.com
+     Alasan: You have reached your daily email sending quota.
+     Waktu : Jumat, 21 Agustus 2026 pukul 10.56.27
+ 18. Sahadah | NIP: 196907272021212002 | sahadah.sigong@yahoo.com
+     Alasan: You have reached your daily email sending quota.
+     Waktu : Jumat, 21 Agustus 2026 pukul 10.56.28
+ 19. SAMROTUL JANNAH | NIP: 199103062024212021 | tknegerilemahabang10-samrotuljannah@yahoo.com
+     Alasan: You have reached your daily email sending quota.
+     Waktu : Jumat, 21 Agustus 2026 pukul 10.56.29
+ 20. Watiah | NIP: 196608031988092001 | w19704394@gmail.com
+     Alasan: You have reached your daily email sending quota.
+     Waktu : Jumat, 21 Agustus 2026 pukul 10.56.29
+ 21. Rita Andaya Kurniawati | NIP: 197204142008012008 | ritaandayak@gmail.com
+     Alasan: You have reached your daily email sending quota.
+     Waktu : Jumat, 21 Agustus 2026 pukul 10.56.30
+ 22. Dede Diana | NIP: 197806022008012014 | dededianasigong@gmail.com
+     Alasan: You have reached your daily email sending quota.
+     Waktu : Jumat, 21 Agustus 2026 pukul 10.56.31
+ 23. HILMA NADHIFA FIRDAUSI | NIP: 199703072022212007 | nadhifafirdausihilma@gmail.com
+     Alasan: You have reached your daily email sending quota.
+     Waktu : Jumat, 21 Agustus 2026 pukul 10.56.31
+ 24. Nining Triningsih | NIP: 197108172000122002 | triningsihnining000@gmail.com
+     Alasan: You have reached your daily email sending quota.
+     Waktu : Jumat, 21 Agustus 2026 pukul 10.56.32
+ 25. Siti Sahri Ropiah | NIP: 199103162022212011 | sitisahri12@gmail.com
+     Alasan: You have reached your daily email sending quota.
+     Waktu : Jumat, 21 Agustus 2026 pukul 10.56.33
+ 26. Sodikin | NIP: 196806152008011010 | si7885695@gmail.com
+     Alasan: You have reached your daily email sending quota.
+     Waktu : Jumat, 21 Agustus 2026 pukul 10.56.33
+ 27. Tina Rostiana Dewi | NIP: 199008022022212003 | rostianadewitina@gmail.com
+     Alasan: You have reached your daily email sending quota.
+     Waktu : Jumat, 21 Agustus 2026 pukul 10.56.34
+ 28. Manisah | NIP: 196908171990052003 | kepsekmanisah@gmail.com
+     Alasan: You have reached your daily email sending quota.
+     Waktu : Jumat, 21 Agustus 2026 pukul 10.56.35
+ 29. SITI SOLAEHA | NIP: 198404022025212090 | leha9578@gmail.com
+     Alasan: You have reached your daily email sending quota.
+     Waktu : Jumat, 21 Agustus 2026 pukul 10.56.36
+ 30. HENI PRIANI | NIP: 196807091991122001 | henisatap@gmail.com
+     Alasan: You have reached your daily email sending quota.
+     Waktu : Jumat, 21 Agustus 2026 pukul 10.56.36
+ 31. HERLINA | NIP: 197408062008012006 | tkmuslimatnu85-herlina@yahoo.com
+     Alasan: You have reached your daily email sending quota.
+     Waktu : Jumat, 21 Agustus 2026 pukul 10.56.37
+ 32. HULASOH | NIP: 196702022007012009 | tkmuslimatnu85-hulasoh@yahoo.com
+     Alasan: You have reached your daily email sending quota.
+     Waktu : Jumat, 21 Agustus 2026 pukul 10.56.38
+ 33. HURAERAH | NIP: 196707032007012013 | huraehuraerah@gmail.com
+     Alasan: You have reached your daily email sending quota.
+     Waktu : Jumat, 21 Agustus 2026 pukul 10.56.38
+ 34. SURYANI | NIP: 197104122007012008 | suryaniy147@gmail.com
+     Alasan: You have reached your daily email sending quota.
+     Waktu : Jumat, 21 Agustus 2026 pukul 10.56.39
+ 35. FAJAR SIDIK | NIP: 200104062025211027 | fajarsidik10.id@gmail.com
+     Alasan: You have reached your daily email sending quota.
+     Waktu : Jumat, 21 Agustus 2026 pukul 10.56.40
+ 36. DILA | NIP: 199707252024212005 | dilaregina342@gmail.com
+     Alasan: You have reached your daily email sending quota.
+     Waktu : Jumat, 21 Agustus 2026 pukul 10.56.40
+ 37. Fhebi Septiana | NIP: 199001132024211006 | fhebi.septiana@gmail.com
+     Alasan: You have reached your daily email sending quota.
+     Waktu : Jumat, 21 Agustus 2026 pukul 10.56.41
+ 38. GILANG FAZRIANTO | NIP: 199808112024211002 | gilangfazrianto11@gmail.com
+     Alasan: You have reached your daily email sending quota.
+     Waktu : Jumat, 21 Agustus 2026 pukul 10.56.42
+ 39. Iis Nurjannah | NIP: 199110092024212004 | guruiisnurjannah@gmail.com
+     Alasan: You have reached your daily email sending quota.
+     Waktu : Jumat, 21 Agustus 2026 pukul 10.56.42
+ 40. Istianah | NIP: 197011232023212001 | gurupaiistianah@gmail.com
+     Alasan: You have reached your daily email sending quota.
+     Waktu : Jumat, 21 Agustus 2026 pukul 10.56.43
+ 41. Martin Risdianti | NIP: 198103232022212003 | martinrisdianti@gmail.com
+     Alasan: You have reached your daily email sending quota.
+     Waktu : Jumat, 21 Agustus 2026 pukul 10.56.44
+ 42. MEGASARI PURNAMA | NIP: 199607232022212001 | megasaripurnama665@gmail.com
+     Alasan: You have reached your daily email sending quota.
+     Waktu : Jumat, 21 Agustus 2026 pukul 10.56.45
+ 43. MELYA NUR OCTAVIANI | NIP: 199805232024212019 | melyaoctaviani@gmail.com
+     Alasan: You have reached your daily email sending quota.
+     Waktu : Jumat, 21 Agustus 2026 pukul 10.56.45
+ 44. Moch. Bagus Jovan Sudirman | NIP: 199108112024211006 | bagusjovangurukelas6@gmail.com
+     Alasan: You have reached your daily email sending quota.
+     Waktu : Jumat, 21 Agustus 2026 pukul 10.56.46
+ 45. Siti Nuryani | NIP: 198607082022212001 | gurukelasnuryani@gmail.com
+     Alasan: You have reached your daily email sending quota.
+     Waktu : Jumat, 21 Agustus 2026 pukul 10.56.47
+ 46. Siti Widiyaningsih | NIP: 198212042022212002 | sitiwdyngsh@gmail.com
+     Alasan: You have reached your daily email sending quota.
+     Waktu : Jumat, 21 Agustus 2026 pukul 10.56.47
+ 47. Lisa Andriyani | NIP: 198512182010012006 | lisaandriyani720@gmail.com
+     Alasan: You have reached your daily email sending quota.
+     Waktu : Jumat, 21 Agustus 2026 pukul 10.56.48
+ 48. Jayadi | NIP: 197401172025211002 | pepestahujayadi@gmail.com
+     Alasan: You have reached your daily email sending quota.
+     Waktu : Jumat, 21 Agustus 2026 pukul 10.56.49
+ 49. SITI NURLAELASARI | NIP: 198701242025212055 | nurlaelasarisiti99@gmail.com
+     Alasan: You have reached your daily email sending quota.
+     Waktu : Jumat, 21 Agustus 2026 pukul 10.56.49
+ 50. TITIN SUPRIHATIN | NIP: 196805252007012011 | tkgelatik15-titinsuprihatin@yahoo.co.id
+     Alasan: You have reached your daily email sending quota.
+     Waktu : Jumat, 21 Agustus 2026 pukul 10.56.50
+ 51. YAYAH SAERAH | NIP: 196707242007012003 | tknegerilemahabang10-yayahsaerah@yahoo.com
+     Alasan: You have reached your daily email sending quota.
+     Waktu : Jumat, 21 Agustus 2026 pukul 10.56.51
+ 52. ELI LAELASARI | NIP: 197408092008012002 | tknegerilemahabang10-elilaelasari@yahoo.com
+     Alasan: You have reached your daily email sending quota.
+     Waktu : Jumat, 21 Agustus 2026 pukul 10.56.51
+ 53. MERTYANI RAHAYU | NIP: 199403102025212080 | tknegerilemahabang10-mertyanirahayu@yahoo.com
+     Alasan: You have reached your daily email sending quota.
+     Waktu : Jumat, 21 Agustus 2026 pukul 10.56.52
+ 54. ANSI ANGGRAENI | NIP: 199412052024212014 | ansi.anggraeni@gmail.com
+     Alasan: You have reached your daily email sending quota.
+     Waktu : Jumat, 21 Agustus 2026 pukul 10.56.53
+ 55. Iin Inayatul Maulah | NIP: 197807162022212008 | iin.inayatul16@gmail.com
+     Alasan: You have reached your daily email sending quota.
+     Waktu : Jumat, 21 Agustus 2026 pukul 10.56.54
+ 56. Kusnaeni | NIP: 196704202008012004 | kusnaeni67@gmail.com
+     Alasan: You have reached your daily email sending quota.
+     Waktu : Jumat, 21 Agustus 2026 pukul 10.56.54
+ 57. MERLIENIS LESTARI | NIP: 199803192024212011 | ernislestari174@gmail.com
+     Alasan: You have reached your daily email sending quota.
+     Waktu : Jumat, 21 Agustus 2026 pukul 10.56.55
+ 58. Misniah | NIP: 197404142021212006 | misniah14@gmail.com
+     Alasan: You have reached your daily email sending quota.
+     Waktu : Jumat, 21 Agustus 2026 pukul 10.56.56
+ 59. Yeni Yunita | NIP: 199508232022212003 | yunitayeni63@gmail.com
+     Alasan: You have reached your daily email sending quota.
+     Waktu : Jumat, 21 Agustus 2026 pukul 10.56.56
+ 60. FITRI LESTARI | NIP: 198710012009022001 | fitrilestari3320@gmail.com
+     Alasan: You have reached your daily email sending quota.
+     Waktu : Jumat, 21 Agustus 2026 pukul 10.56.57
+ 61. MARTININGSIH | NIP: 198803092025212064 | martiningsih903@gmail.com
+     Alasan: You have reached your daily email sending quota.
+     Waktu : Jumat, 21 Agustus 2026 pukul 10.56.58
+ 62. SUNANDAR | NIP: 197610132025211042 | sunandard.dadang@gmail.com
+     Alasan: You have reached your daily email sending quota.
+     Waktu : Jumat, 21 Agustus 2026 pukul 10.56.58
+ 63. Sukra | NIP: 196701091988031003 | sukracirebon4@gmail.com
+     Alasan: You have reached your daily email sending quota.
+     Waktu : Jumat, 21 Agustus 2026 pukul 10.56.59
+
+=================================================================
+AKHIR LAPORAN
+=================================================================
