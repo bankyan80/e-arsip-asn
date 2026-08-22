@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { UserPlus, Pencil, Trash2 } from "lucide-react";
+import { UserPlus, Pencil, Trash2, Eye, EyeOff } from "lucide-react";
 import { apiFetch } from "@/lib/fetch";
 import { Card, Button, Modal, Input, Select, Badge, formatDate } from "@/components/ui";
 
@@ -22,6 +22,7 @@ export default function UsersPage() {
   const [modal, setModal] = useState<"create" | "edit" | null>(null);
   const [form, setForm] = useState<Partial<AdminUser> & { password?: string }>({});
   const [msg, setMsg] = useState("");
+  const [showPass, setShowPass] = useState(false);
 
   async function load() {
     const data = await apiFetch<{ data: AdminUser[] }>("/api/users");
@@ -140,7 +141,22 @@ export default function UsersPage() {
           )}
           <div>
             <label className="mb-1 block text-sm text-slate-600">Password {modal === "edit" ? "(kosongkan jika tidak diganti)" : ""}</label>
-            <Input type="password" value={form.password || ""} onChange={(e) => setForm({ ...form, password: e.target.value })} />
+            <div className="relative">
+              <Input
+                type={showPass ? "text" : "password"}
+                value={form.password || ""}
+                onChange={(e) => setForm({ ...form, password: e.target.value })}
+                className="pr-10"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPass((v) => !v)}
+                className="absolute right-2 top-[9px] text-slate-400 hover:text-slate-600"
+                title={showPass ? "Sembunyikan password" : "Tampilkan password"}
+              >
+                {showPass ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
           </div>
         </div>
         <div className="mt-4 flex justify-end gap-2">
