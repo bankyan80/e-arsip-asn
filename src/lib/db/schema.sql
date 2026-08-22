@@ -30,6 +30,7 @@ CREATE TABLE IF NOT EXISTS users (
   password_hash TEXT NOT NULL,
   nama VARCHAR(200) NOT NULL,
   role VARCHAR(30) NOT NULL DEFAULT 'OPERATOR',
+  unit_kerja VARCHAR(200),
   aktif BOOLEAN NOT NULL DEFAULT true,
   last_login_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
@@ -238,3 +239,4 @@ CREATE TABLE IF NOT EXISTS asn_email_change (
 );
 CREATE INDEX IF NOT EXISTS idx_asn_email_change_asn ON asn_email_change(asn_id, terpakai);
 ALTER TABLE asn_email_change ADD COLUMN IF NOT EXISTS kanal VARCHAR(20) NOT NULL DEFAULT 'EMAIL';
+ALTER TABLE users ADD COLUMN IF NOT EXISTS unit_kerja VARCHAR(200);

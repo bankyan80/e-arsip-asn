@@ -14,6 +14,7 @@ export async function GET() {
       username: session.username,
       role: session.role,
       nama: session.nama,
+      unitKerja: session.unitKerja ?? null,
     },
   });
 }

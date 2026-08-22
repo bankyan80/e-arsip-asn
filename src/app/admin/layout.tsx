@@ -32,10 +32,20 @@ const navItems = [
   { href: "/admin/settings", label: "Pengaturan", icon: Settings },
 ];
 
+// ADMIN SEKOLAH: hanya menu pantau + laporan (read-only)
+const SCHOOL_ADMIN_HREFS = [
+  "/admin/dashboard",
+  "/admin/asn",
+  "/admin/dokumen",
+  "/admin/kelengkapan",
+  "/admin/laporan",
+];
+
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
-  const [user, setUser] = useState<{ nama?: string; role?: string } | null>(null);
+  const [user, setUser] = useState<{ nama?: string; role?: string; unitKerja?: string | null } | null>(null);
+  const visibleNav = user?.role === "ADMIN SEKOLAH" ? navItems.filter((i) => SCHOOL_ADMIN_HREFS.includes(i.href)) : navItems;
 
   useEffect(() => {
     fetch("/api/auth/me")
@@ -61,7 +71,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <span className="font-semibold">e-ARSIP ASN</span>
         </div>
         <nav className="flex-1 space-y-1 px-3 py-4">
-          {navItems.map((item) => {
+          {visibleNav.map((item) => {
             const active = pathname.startsWith(item.href);
             const Icon = item.icon;
             return (
@@ -117,7 +127,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               </button>
             </div>
             <nav className="space-y-1">
-              {navItems.map((item) => {
+              {visibleNav.map((item) => {
                 const active = pathname.startsWith(item.href);
                 const Icon = item.icon;
                 return (

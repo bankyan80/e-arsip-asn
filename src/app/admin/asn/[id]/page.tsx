@@ -111,6 +111,15 @@ export default function AsnDetailPage() {
   const [delOpen, setDelOpen] = useState(false);
   const [delText, setDelText] = useState("");
   const [deleting, setDeleting] = useState(false);
+  const [role, setRole] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetch("/api/auth/me")
+      .then((r) => r.json())
+      .then((d) => setRole(d.user?.role ?? null))
+      .catch(() => {});
+  }, []);
+  const readOnly = role !== "SUPER ADMIN" && role !== "ADMIN" && role !== "OPERATOR";
 
   async function load() {
     const data = await apiFetch<{ asn: ASNData; dokumen: DokumenRow[]; audit: any[] }>(`/api/asn/${id}`);
@@ -209,10 +218,12 @@ export default function AsnDetailPage() {
             <p className="font-medium">{asn.telegram_verified_at ? formatDate(asn.telegram_verified_at) : "-"}</p>
           </div>
         </div>
-        <div className="mt-4 flex gap-2">
-          <Button variant="outline" onClick={() => setEdit(true)}>✏️ Edit Data</Button>
-          <Button variant="danger" onClick={() => { setDelOpen(true); setDelText(""); }}>🗑 Hapus ASN</Button>
-        </div>
+        {!readOnly && (
+          <div className="mt-4 flex gap-2">
+            <Button variant="outline" onClick={() => setEdit(true)}>✏️ Edit Data</Button>
+            <Button variant="danger" onClick={() => { setDelOpen(true); setDelText(""); }}>🗑 Hapus ASN</Button>
+          </div>
+        )}
       </Card>
 
       <div className="grid gap-6 lg:grid-cols-2">

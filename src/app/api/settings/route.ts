@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { query } from "@/lib/db";
-import { getSession } from "@/lib/auth";
+import { getSession, isSchoolAdmin } from "@/lib/auth";
 import { auditLog } from "@/lib/audit";
 
 export const runtime = "nodejs";
@@ -8,6 +8,7 @@ export const runtime = "nodejs";
 export async function GET() {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (isSchoolAdmin(session)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const settings = await query<{ kunci: string; nilai: string; deskripsi: string | null }>(
     `SELECT * FROM settings ORDER BY kunci`

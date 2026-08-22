@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { query } from "@/lib/db";
-import { getSession } from "@/lib/auth";
+import { getSession, isSchoolAdmin } from "@/lib/auth";
 import { auditLog } from "@/lib/audit";
 import type { Dokumen, JenisDokumen, ASN } from "@/lib/types";
 
@@ -40,6 +40,12 @@ export async function GET(request: NextRequest) {
   if (jenisId) {
     where += ` AND d.jenis_dokumen_id = $${i}`;
     params.push(Number(jenisId));
+    i++;
+  }
+  // ADMIN SEKOLAH: hanya dokumen ASN di sekolahnya (read-only)
+  if (isSchoolAdmin(session)) {
+    where += ` AND a.unit_kerja = $${i}`;
+    params.push(session.unitKerja ?? "");
     i++;
   }
 

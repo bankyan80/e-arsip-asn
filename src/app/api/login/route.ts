@@ -54,6 +54,7 @@ export async function POST(request: NextRequest) {
     username: user.username,
     role: user.role,
     nama: user.nama,
+    unitKerja: user.unit_kerja ?? null,
   });
 
   await auditLog({

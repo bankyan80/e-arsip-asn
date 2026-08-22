@@ -1,4 +1,4 @@
-export type Role = "SUPER ADMIN" | "ADMIN" | "OPERATOR";
+export type Role = "SUPER ADMIN" | "ADMIN" | "OPERATOR" | "ADMIN SEKOLAH";
 
 export type ASNStatus = "PNS" | "PPPK" | "LAINNYA";
 
@@ -123,6 +123,7 @@ export interface User {
   password_hash: string;
   nama: string;
   role: Role;
+  unit_kerja?: string | null;
   aktif: boolean;
   last_login_at: string | null;
 }

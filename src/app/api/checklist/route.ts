@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { queryOne } from "@/lib/db";
-import { getSession } from "@/lib/auth";
+import { getSession, isSchoolAdmin } from "@/lib/auth";
 import { buildChecklist, resolveJenisAsn, conditionLabel } from "@/lib/rule-engine";
 import { labelJenisAsn } from "@/lib/types";
 import type { ASN } from "@/lib/types";
@@ -16,6 +16,11 @@ export async function GET(request: NextRequest) {
 
   const asn = await queryOne<ASN>(`SELECT * FROM asn WHERE nip = $1`, [nip]);
   if (!asn) return NextResponse.json({ error: "ASN tidak ditemukan" }, { status: 404 });
+
+  // ADMIN SEKOLAH hanya boleh melihat checklist ASN di sekolahnya
+  if (isSchoolAdmin(session) && (asn.unit_kerja ?? "") !== (session.unitKerja ?? "")) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
 
   const jenis = resolveJenisAsn(asn);
   const { items, summary } = await buildChecklist(asn);

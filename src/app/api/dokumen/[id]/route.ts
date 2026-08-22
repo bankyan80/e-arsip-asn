@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { query, queryOne } from "@/lib/db";
-import { getSession } from "@/lib/auth";
+import { getSession, isSchoolAdmin } from "@/lib/auth";
 import { auditLog } from "@/lib/audit";
 import { notifyAsn } from "@/lib/notifications";
 import { deleteBlob } from "@/lib/storage";
@@ -27,6 +27,11 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
   if (!doc) return NextResponse.json({ error: "Dokumen tidak ditemukan" }, { status: 404 });
 
   const asn = await queryOne<ASN>(`SELECT * FROM asn WHERE nip = $1`, [doc.nip]);
+
+  // ADMIN SEKOLAH hanya boleh melihat dokumen ASN di sekolahnya
+  if (isSchoolAdmin(session) && ((asn?.unit_kerja ?? "") !== (session.unitKerja ?? ""))) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
 
   await auditLog({
     aksi: "VIEW",

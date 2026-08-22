@@ -1,12 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { query } from "@/lib/db";
-import { getSession } from "@/lib/auth";
+import { getSession, isSchoolAdmin } from "@/lib/auth";
 
 export const runtime = "nodejs";
 
 export async function GET(request: NextRequest) {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  // ADMIN SEKOLAH tidak diberi akses audit log
+  if (isSchoolAdmin(session)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const url = new URL(request.url);
   const q = url.searchParams.get("q") ?? "";

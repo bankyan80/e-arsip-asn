@@ -14,6 +14,7 @@ export interface SessionPayload {
   username: string;
   role: string;
   nama: string;
+  unitKerja?: string | null;
 }
 
 export async function signSession(payload: SessionPayload): Promise<string> {
@@ -38,6 +39,10 @@ export async function getSession(): Promise<SessionPayload | null> {
   const token = store.get(COOKIE_NAME)?.value;
   if (!token) return null;
   return await verifySession(token);
+}
+
+export function isSchoolAdmin(session: SessionPayload): boolean {
+  return session.role === "ADMIN SEKOLAH";
 }
 
 export async function setSession(payload: SessionPayload) {

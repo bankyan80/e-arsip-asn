@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { query, queryOne } from "@/lib/db";
-import { getSession } from "@/lib/auth";
+import { getSession, isSchoolAdmin } from "@/lib/auth";
 import { auditLog } from "@/lib/audit";
 import { readBlob } from "@/lib/storage";
 import type { Dokumen, ASN } from "@/lib/types";
@@ -10,15 +10,21 @@ export const runtime = "nodejs";
 export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (!["SUPER ADMIN", "ADMIN"].includes(session.role)) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
 
   const id = Number(params.id);
   const doc = await queryOne<Dokumen>(`SELECT * FROM dokumen WHERE id = $1`, [id]);
   if (!doc) return NextResponse.json({ error: "Dokumen tidak ditemukan" }, { status: 404 });
 
   const asn = await queryOne<ASN>(`SELECT * FROM asn WHERE nip = $1`, [doc.nip]);
+
+  // ADMIN SEKOLAH boleh mengunduh hanya dokumen ASN di sekolahnya (read-only)
+  if (isSchoolAdmin(session)) {
+    if ((asn?.unit_kerja ?? "") !== (session.unitKerja ?? "")) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+  } else if (!["SUPER ADMIN", "ADMIN"].includes(session.role)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
 
   // Dokumen hasil import Drive: arahkan langsung ke file asli di Google Drive
   if (doc.sumber === "drive" && doc.blob_url) {

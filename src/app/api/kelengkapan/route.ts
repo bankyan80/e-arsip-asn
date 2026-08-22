@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { query } from "@/lib/db";
-import { getSession } from "@/lib/auth";
+import { getSession, isSchoolAdmin } from "@/lib/auth";
 import { buildChecklist, resolveJenisAsn } from "@/lib/rule-engine";
 import type { ASN, Dokumen } from "@/lib/types";
 
@@ -9,15 +9,26 @@ export const runtime = "nodejs";
 export async function GET(request: NextRequest) {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const scoped = isSchoolAdmin(session);
 
   const url = new URL(request.url);
   const q = url.searchParams.get("q") ?? "";
 
+  const conds: string[] = [];
+  const params: any[] = [];
+  if (q) {
+    conds.push(`(nama ILIKE $${params.length + 1} OR nip ILIKE $${params.length + 1})`);
+    params.push(`%${q}%`);
+  }
+  if (scoped) {
+    conds.push(`unit_kerja = $${params.length + 1}`);
+    params.push(session.unitKerja ?? "");
+  }
+  const where = conds.length ? `WHERE ${conds.join(" AND ")}` : "";
+
   const asnList = await query<ASN>(
-    `SELECT * FROM asn
-     ${q ? `WHERE nama ILIKE $1 OR nip ILIKE $1` : ""}
-     ORDER BY nama ASC`,
-    q ? [`%${q}%`] : []
+    `SELECT * FROM asn ${where} ORDER BY nama ASC`,
+    params
   );
 
   const docs = await query<Pick<Dokumen, "id" | "nip" | "jenis_dokumen_id" | "jenis_dokumen_kode" | "status" | "tanggal_upload" | "versi">>(

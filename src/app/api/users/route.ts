@@ -17,7 +17,8 @@ async function guard(request: NextRequest) {
 export async function GET() {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const rows = await query<User>(`SELECT id, username, nama, role, aktif, last_login_at, created_at FROM users ORDER BY created_at ASC`);
+  if (!["SUPER ADMIN", "ADMIN"].includes(session.role)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const rows = await query<User>(`SELECT id, username, nama, role, unit_kerja, aktif, last_login_at, created_at FROM users ORDER BY created_at ASC`);
   return NextResponse.json({ data: rows });
 }
 
@@ -25,17 +26,20 @@ export async function POST(request: NextRequest) {
   const session = await guard(request);
   if (session instanceof NextResponse) return session;
 
-  const { username, password, nama, role } = await request.json().catch(() => ({}));
+  const { username, password, nama, role, unit_kerja } = await request.json().catch(() => ({}));
   if (!username || !password || !nama || !role) {
     return NextResponse.json({ error: "Username, password, nama, dan role wajib diisi" }, { status: 400 });
+  }
+  if (role === "ADMIN SEKOLAH" && !unit_kerja) {
+    return NextResponse.json({ error: "Unit kerja sekolah wajib diisi untuk Admin Sekolah" }, { status: 400 });
   }
   if (session.role !== "SUPER ADMIN" && role === "SUPER ADMIN") {
     return NextResponse.json({ error: "Hanya Super Admin yang dapat membuat akun Super Admin" }, { status: 403 });
   }
   const hash = await bcrypt.hash(password, 10);
   const rows = await query<User>(
-    `INSERT INTO users (username, password_hash, nama, role) VALUES ($1,$2,$3,$4) RETURNING id, username, nama, role, aktif`,
-    [username, hash, nama, role]
+    `INSERT INTO users (username, password_hash, nama, role, unit_kerja) VALUES ($1,$2,$3,$4,$5) RETURNING id, username, nama, role, unit_kerja, aktif`,
+    [username, hash, nama, role, role === "ADMIN SEKOLAH" ? unit_kerja : null]
   );
   await auditLog({
     aksi: "CREATE",
@@ -51,8 +55,12 @@ export async function PUT(request: NextRequest) {
   if (session instanceof NextResponse) return session;
 
   const body = await request.json().catch(() => ({}));
-  const { id, username, nama, role, aktif, password } = body;
+  const { id, username, nama, role, aktif, password, unit_kerja } = body;
   if (!id) return NextResponse.json({ error: "id wajib" }, { status: 400 });
+
+  if (role === "ADMIN SEKOLAH" && !unit_kerja) {
+    return NextResponse.json({ error: "Unit kerja sekolah wajib diisi untuk Admin Sekolah" }, { status: 400 });
+  }
 
   if (session.role !== "SUPER ADMIN") {
     if (role === "SUPER ADMIN") {
@@ -68,7 +76,7 @@ export async function PUT(request: NextRequest) {
   const sets: string[] = [];
   const vals: any[] = [];
   let i = 1;
-  const allowed: Record<string, unknown> = { username, nama, role, aktif };
+  const allowed: Record<string, unknown> = { username, nama, role, aktif, unit_kerja: role === "ADMIN SEKOLAH" ? unit_kerja : role !== undefined ? null : undefined };
   for (const k of Object.keys(allowed)) {
     if (allowed[k] !== undefined) {
       sets.push(`${k} = $${i}`);
@@ -84,7 +92,7 @@ export async function PUT(request: NextRequest) {
   if (sets.length === 0) return NextResponse.json({ error: "Tidak ada data yang diubah" }, { status: 400 });
   vals.push(id);
   const rows = await query<User>(
-    `UPDATE users SET ${sets.join(", ")}, updated_at = now() WHERE id = $${i} RETURNING id, username, nama, role, aktif`,
+    `UPDATE users SET ${sets.join(", ")}, updated_at = now() WHERE id = $${i} RETURNING id, username, nama, role, unit_kerja, aktif`,
     vals
   );
   await auditLog({

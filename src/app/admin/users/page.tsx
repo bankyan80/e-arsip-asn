@@ -10,6 +10,7 @@ interface AdminUser {
   username: string;
   nama: string;
   role: string;
+  unit_kerja: string | null;
   aktif: boolean;
   last_login_at: string | null;
   created_at: string;
@@ -17,6 +18,7 @@ interface AdminUser {
 
 export default function UsersPage() {
   const [rows, setRows] = useState<AdminUser[]>([]);
+  const [units, setUnits] = useState<string[]>([]);
   const [modal, setModal] = useState<"create" | "edit" | null>(null);
   const [form, setForm] = useState<Partial<AdminUser> & { password?: string }>({});
   const [msg, setMsg] = useState("");
@@ -28,6 +30,9 @@ export default function UsersPage() {
 
   useEffect(() => {
     load();
+    apiFetch<{ data: string[] }>("/api/asn/units")
+      .then((d) => setUnits(d.data))
+      .catch(() => {});
   }, []);
 
   async function save() {
@@ -81,7 +86,10 @@ export default function UsersPage() {
               <tr key={r.id} className="hover:bg-slate-50">
                 <td className="px-4 py-3 font-medium">{r.username}</td>
                 <td className="px-4 py-3">{r.nama}</td>
-                <td className="px-4 py-3"><Badge tone={r.role === "SUPER ADMIN" ? "red" : r.role === "ADMIN" ? "blue" : "gray"}>{r.role}</Badge></td>
+                <td className="px-4 py-3">
+                  <Badge tone={r.role === "SUPER ADMIN" ? "red" : r.role === "ADMIN" ? "blue" : r.role === "ADMIN SEKOLAH" ? "indigo" : "gray"}>{r.role}</Badge>
+                  {r.unit_kerja && <div className="mt-1 text-xs text-slate-500">{r.unit_kerja}</div>}
+                </td>
                 <td className="px-4 py-3"><Badge tone={r.aktif ? "green" : "gray"}>{r.aktif ? "Aktif" : "Nonaktif"}</Badge></td>
                 <td className="px-4 py-3 text-xs">{formatDate(r.last_login_at)}</td>
                 <td className="px-4 py-3">
@@ -110,8 +118,26 @@ export default function UsersPage() {
               <option value="SUPER ADMIN">SUPER ADMIN</option>
               <option value="ADMIN">ADMIN</option>
               <option value="OPERATOR">OPERATOR</option>
+              <option value="ADMIN SEKOLAH">ADMIN SEKOLAH</option>
             </Select>
           </div>
+          {form.role === "ADMIN SEKOLAH" && (
+            <div>
+              <label className="mb-1 block text-sm text-slate-600">Unit Kerja / Sekolah</label>
+              <Input
+                list="daftar-unit-kerja"
+                value={form.unit_kerja || ""}
+                onChange={(e) => setForm({ ...form, unit_kerja: e.target.value })}
+                placeholder="Harus sama dengan unit kerja ASN"
+              />
+              <datalist id="daftar-unit-kerja">
+                {units.map((u) => (
+                  <option key={u} value={u} />
+                ))}
+              </datalist>
+              {!(form.unit_kerja || "").trim() && <p className="mt-1 text-xs text-rose-500">Wajib diisi untuk Admin Sekolah</p>}
+            </div>
+          )}
           <div>
             <label className="mb-1 block text-sm text-slate-600">Password {modal === "edit" ? "(kosongkan jika tidak diganti)" : ""}</label>
             <Input type="password" value={form.password || ""} onChange={(e) => setForm({ ...form, password: e.target.value })} />

@@ -32,6 +32,15 @@ export default function DokumenPage() {
   const [jenisList, setJenisList] = useState<Array<{ id: number; nama: string }>>([]);
   const [editJenisId, setEditJenisId] = useState("");
   const [savingJenis, setSavingJenis] = useState(false);
+  const [role, setRole] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetch("/api/auth/me")
+      .then((r) => r.json())
+      .then((d) => setRole(d.user?.role ?? null))
+      .catch(() => {});
+  }, []);
+  const readOnly = role !== "SUPER ADMIN" && role !== "ADMIN" && role !== "OPERATOR";
 
   useEffect(() => {
     apiFetch<{ data: Array<{ id: number; nama: string }> }>("/api/jenis-dokumen")
@@ -173,20 +182,24 @@ export default function DokumenPage() {
           <div className="space-y-3 text-sm">
             <div className="flex items-center justify-between gap-3">
               <span className="shrink-0 text-slate-500">Kategori</span>
-              <div className="flex flex-1 items-center justify-end gap-2">
-                <Select
-                  className="max-w-56"
-                  value={editJenisId || String(jenisList.find((j) => j.nama === selected.jenis_nama)?.id ?? "")}
-                  onChange={(e) => setEditJenisId(e.target.value)}
-                >
-                  {jenisList.map((j) => (
-                    <option key={j.id} value={j.id}>{j.nama}</option>
-                  ))}
-                </Select>
-                {editJenisId && editJenisId !== String(jenisList.find((j) => j.nama === selected.jenis_nama)?.id ?? "") && (
-                  <Button disabled={savingJenis} onClick={saveJenis}>{savingJenis ? "..." : "Simpan"}</Button>
-                )}
-              </div>
+              {!readOnly ? (
+                <div className="flex flex-1 items-center justify-end gap-2">
+                  <Select
+                    className="max-w-56"
+                    value={editJenisId || String(jenisList.find((j) => j.nama === selected.jenis_nama)?.id ?? "")}
+                    onChange={(e) => setEditJenisId(e.target.value)}
+                  >
+                    {jenisList.map((j) => (
+                      <option key={j.id} value={j.id}>{j.nama}</option>
+                    ))}
+                  </Select>
+                  {editJenisId && editJenisId !== String(jenisList.find((j) => j.nama === selected.jenis_nama)?.id ?? "") && (
+                    <Button disabled={savingJenis} onClick={saveJenis}>{savingJenis ? "..." : "Simpan"}</Button>
+                  )}
+                </div>
+              ) : (
+                <span>{selected.jenis_nama}</span>
+              )}
             </div>
             <div className="flex items-center justify-between">
               <span className="text-slate-500">NIP / Nama</span><span>{selected.nip} - {selected.nama_asn}</span>
@@ -208,7 +221,7 @@ export default function DokumenPage() {
             )}
             <div className="flex gap-2 pt-4">
               <a href={`/api/file/${selected.id}`} className="flex-1"><Button className="w-full" variant="outline">📥 Unduh</Button></a>
-              {selected.status === "MENUNGGU" && (
+              {!readOnly && selected.status === "MENUNGGU" && (
                 <>
                   <Button className="flex-1" onClick={() => { setModal("reject"); setRejectReason(""); }}>Tolak</Button>
                   <Button className="flex-1" onClick={() => verify(selected, "approve")}><CheckCircle2 className="mr-1 h-4 w-4" /> Setujui</Button>

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { query } from "@/lib/db";
-import { getSession } from "@/lib/auth";
+import { getSession, isSchoolAdmin } from "@/lib/auth";
 import { buildChecklist, resolveJenisAsn } from "@/lib/rule-engine";
 import type { ASN, Dokumen } from "@/lib/types";
 
@@ -44,6 +44,12 @@ export async function GET(request: NextRequest) {
   if (unitKerja) {
     where += ` AND a.unit_kerja ILIKE $${i}`;
     params.push(`%${unitKerja}%`);
+    i++;
+  }
+  // ADMIN SEKOLAH: hanya ASN di unit kerja sekolahnya (read-only)
+  if (isSchoolAdmin(session)) {
+    where += ` AND a.unit_kerja = $${i}`;
+    params.push(session.unitKerja ?? "");
     i++;
   }
 
