@@ -104,7 +104,7 @@ export async function sendReminderEmail(
 ): Promise<boolean> {
   const list = daftarKurang.map((x) => `<li>${escapeHtml(x)}</li>`).join("");
   const botUrl = "https://t.me/ArsipASN_bot";
-  const appUrl = env.appBaseUrl;
+  const appUrl = `${env.appBaseUrl.replace(/\/$/, "")}/asn/login`;
   const daftarKurangBox =
     daftarKurang.length > 0
       ? `<div style="background:#eef4ff;border-left:5px solid #2563eb;border-radius:8px;padding:18px 20px;margin:25px 0;">
