@@ -37,10 +37,16 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Hanya Super Admin yang dapat membuat akun Super Admin" }, { status: 403 });
   }
   const hash = await bcrypt.hash(password, 10);
-  const rows = await query<User>(
-    `INSERT INTO users (username, password_hash, nama, role, unit_kerja) VALUES ($1,$2,$3,$4,$5) RETURNING id, username, nama, role, unit_kerja, aktif`,
-    [username, hash, nama, role, role === "ADMIN SEKOLAH" ? unit_kerja : null]
-  );
+  let rows: User[];
+  try {
+    rows = await query<User>(
+      `INSERT INTO users (username, password_hash, nama, role, unit_kerja) VALUES ($1,$2,$3,$4,$5) RETURNING id, username, nama, role, unit_kerja, aktif`,
+      [username.trim(), hash, nama, role, role === "ADMIN SEKOLAH" ? unit_kerja : null]
+    );
+  } catch (e: any) {
+    if (e.code === "23505") return NextResponse.json({ error: "Username sudah digunakan, pakai yang lain" }, { status: 409 });
+    throw e;
+  }
   await auditLog({
     aksi: "CREATE",
     adminUserId: session.userId,

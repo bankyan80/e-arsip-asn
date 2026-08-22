@@ -29,6 +29,7 @@ export default function UsersPage() {
   const [modal, setModal] = useState<"create" | "edit" | null>(null);
   const [form, setForm] = useState<Partial<AdminUser> & { password?: string }>({});
   const [msg, setMsg] = useState("");
+  const [err, setErr] = useState("");
   const [showPass, setShowPass] = useState(false);
   const [npsnHit, setNpsnHit] = useState<string | null>(null);
 
@@ -87,20 +88,31 @@ export default function UsersPage() {
   }, [asnNames]);
 
   async function save() {
+    setErr("");
     const isEdit = !!form.id;
-    const body: any = { ...form };
-    // Cadangan: password awal Admin Sekolah = NPSN sekolahnya
-    if (!isEdit && body.role === "ADMIN SEKOLAH" && !body.password && npsnHit) {
-      body.password = npsnHit;
+    // Password awal Admin Sekolah otomatis memakai NPSN sekolahnya
+    const password = form.password || (!isEdit && form.role === "ADMIN SEKOLAH" ? npsnHit || "" : "");
+
+    // Validasi sisi klien agar kesalahan langsung terlihat
+    if (!(form.username || "").trim()) return setErr("Username wajib diisi");
+    if (!(form.nama || "").trim()) return setErr("Nama wajib diisi");
+    if (form.role === "ADMIN SEKOLAH" && !(form.unit_kerja || "").trim())
+      return setErr("Unit kerja sekolah wajib diisi untuk Admin Sekolah");
+    if (!isEdit && !password) return setErr("Password wajib diisi");
+
+    const body: any = { ...form, password: undefined };
+    if (!isEdit && password) body.password = password;
+    try {
+      await apiFetch("/api/users", {
+        method: isEdit ? "PUT" : "POST",
+        body: JSON.stringify(body),
+      });
+      setMsg(isEdit ? "Admin diperbarui" : "Admin ditambahkan");
+      setModal(null);
+      load();
+    } catch (e: any) {
+      setErr(e.message || "Gagal menyimpan");
     }
-    if (!body.password) delete body.password;
-    await apiFetch(isEdit ? "/api/users" : "/api/users", {
-      method: isEdit ? "PUT" : "POST",
-      body: JSON.stringify(body),
-    });
-    setMsg(isEdit ? "Admin diperbarui" : "Admin ditambahkan");
-    setModal(null);
-    load();
   }
 
   async function remove(row: AdminUser) {
@@ -123,6 +135,7 @@ export default function UsersPage() {
       </div>
 
       {msg && <p className="text-sm text-emerald-600">{msg}</p>}
+      {err && <p className="text-sm text-rose-600">{err}</p>}
 
       <Card className="overflow-x-auto p-0">
         <table className="w-full text-left text-sm">
