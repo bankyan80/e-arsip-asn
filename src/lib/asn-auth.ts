@@ -1,4 +1,5 @@
 import { SignJWT, jwtVerify } from "jose";
+import { randomInt } from "crypto";
 import { cookies } from "next/headers";
 
 const COOKIE_NAME = "e-arsip-asn-auth";
@@ -60,5 +61,6 @@ export function maskEmail(email: string): string {
 }
 
 export function generateOtp(): string {
-  return String(Math.floor(100000 + Math.random() * 900000));
+  // RNG kriptografi — tidak memakai Math.random()
+  return String(randomInt(100000, 1000000));
 }

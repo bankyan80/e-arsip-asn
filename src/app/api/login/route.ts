@@ -13,6 +13,12 @@ const WINDOW_MS = 15 * 60 * 1000;
 
 function recordAttempt(key: string): number {
   const now = Date.now();
+  // Cegah map tumbuh tanpa batas di lingkungan serverless
+  if (attempts.size > 5000) {
+    for (const [k, v] of Array.from(attempts.entries())) {
+      if (now > v.resetAt) attempts.delete(k);
+    }
+  }
   const rec = attempts.get(key);
   if (!rec || now > rec.resetAt) {
     attempts.set(key, { count: 1, resetAt: now + WINDOW_MS });
@@ -23,13 +29,15 @@ function recordAttempt(key: string): number {
 }
 
 export async function POST(request: NextRequest) {
-  const { username, password } = await request.json().catch(() => ({}));
+  const body = await request.json().catch(() => ({}));
+  const username = typeof body.username === "string" ? body.username.trim() : "";
+  const password = typeof body.password === "string" ? body.password : "";
   if (!username || !password) {
     return NextResponse.json({ error: "Username dan password wajib diisi" }, { status: 400 });
   }
 
   const ip = request.headers.get("x-forwarded-for")?.split(",")[0] ?? "local";
-  const key = `${ip}|${String(username).toLowerCase()}`;
+  const key = `${ip}|${username.toLowerCase()}`;
   const count = recordAttempt(key);
   if (count > MAX_ATTEMPTS) {
     return NextResponse.json({ error: "Terlalu banyak percobaan. Silakan coba lagi beberapa saat." }, { status: 429 });
@@ -37,11 +45,13 @@ export async function POST(request: NextRequest) {
 
   const user = await queryOne<User>(`SELECT * FROM users WHERE username = $1 LIMIT 1`, [username]);
   if (!user || !user.aktif) {
+    await auditLog({ aksi: "LOGIN_GAGAL", adminUsername: username, ipAddress: ip, detail: { alasan: "user_tidak_ditemukan_atau_nonaktif" } });
     return NextResponse.json({ error: "Username atau password salah" }, { status: 401 });
   }
 
   const ok = await bcrypt.compare(password, user.password_hash);
   if (!ok) {
+    await auditLog({ aksi: "LOGIN_GAGAL", adminUserId: user.id, adminUsername: user.username, ipAddress: ip, detail: { alasan: "password_salah" } });
     return NextResponse.json({ error: "Username atau password salah" }, { status: 401 });
   }
 

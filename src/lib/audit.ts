@@ -2,6 +2,7 @@ import { query } from "./db";
 
 export type AuditAction =
   | "LOGIN"
+  | "LOGIN_GAGAL"
   | "LOGIN_ASN"
   | "LOGOUT"
   | "UPLOAD"
