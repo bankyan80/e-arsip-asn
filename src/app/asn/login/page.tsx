@@ -218,6 +218,27 @@ export default function AsnLoginPage() {
                 </p>
               )}
 
+              {/* Catatan: cara mengaktifkan opsi Telegram */}
+              {step === 2 && !channels.telegram && (
+                <div className="mt-4 rounded-xl border border-sky-100 bg-sky-50 p-3 text-xs leading-relaxed text-slate-600">
+                  <p className="mb-1 font-semibold text-sky-900">
+                    💬 Ingin kode dikirim ke Telegram?
+                  </p>
+                  Hubungkan akun Anda terlebih dahulu:
+                  buka{" "}
+                  <a
+                    href="https://t.me/ArsipASN_bot"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="font-medium text-indigo-600 underline"
+                  >
+                    bot e-ARSIP ASN
+                  </a>{" "}
+                  → ketik <b>/start</b> → masukkan NIP Anda. Setelah terhubung, pilihan
+                  &ldquo;Kirim via Telegram&rdquo; akan muncul di halaman ini.
+                </div>
+              )}
+
               <button
                 onClick={backToNip}
                 className="mt-4 flex w-full items-center justify-center gap-1.5 py-2 text-sm text-slate-500 hover:text-slate-700"
