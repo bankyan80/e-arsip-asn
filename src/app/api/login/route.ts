@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
   await query(`UPDATE users SET last_login_at = now() WHERE id = $1`, [user.id]);
 
   await setSession({
-    userId: user.id,
+    userId: Number(user.id),
     username: user.username,
     role: user.role,
     nama: user.nama,

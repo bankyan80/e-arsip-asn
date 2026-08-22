@@ -30,11 +30,18 @@ export async function verifySession(token: string): Promise<SessionPayload | nul
     const { payload } = await jwtVerify(token, secret());
     // Tolak token ASN dan payload tak valid agar tidak lolos sebagai sesi admin
     if ((payload as Record<string, unknown>).scope === "ASN") return null;
-    const p = payload as unknown as SessionPayload;
-    if (typeof p.userId !== "number" || typeof p.username !== "string" || typeof p.role !== "string") {
+    const p = payload as unknown as SessionPayload & { userId?: unknown };
+    // pg mengembalikan id sebagai string — terima angka maupun digit-string lalu normalkan
+    const uid =
+      typeof p.userId === "number"
+        ? p.userId
+        : typeof p.userId === "string" && /^\d+$/.test(p.userId)
+          ? Number(p.userId)
+          : NaN;
+    if (!Number.isInteger(uid) || typeof p.username !== "string" || typeof p.role !== "string") {
       return null;
     }
-    return p;
+    return { ...p, userId: uid };
   } catch {
     return null;
   }
