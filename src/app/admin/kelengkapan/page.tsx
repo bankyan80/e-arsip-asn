@@ -11,9 +11,13 @@ interface KelengkapanRow {
   nama: string;
   status: string;
   unit_kerja: string | null;
-  total_jenis: number;
+  jenis_asn_resolved?: string;
+  total_wajib: number;
+  total_kondisional: number;
+  terverifikasi: number;
+  menunggu: number;
+  belum: number;
   pct_kelengkapan: number;
-  dokumen: { jenis_dokumen_id: number; status: string }[];
 }
 
 export default function KelengkapanPage() {
@@ -64,8 +68,11 @@ export default function KelengkapanPage() {
               <p className="mb-2 text-xs text-slate-500">{r.unit_kerja || "-"}</p>
               <ProgressBar value={r.pct_kelengkapan} />
               <div className="mt-3 flex items-center justify-between text-xs text-slate-500">
-                <span>{r.dokumen.filter((d) => d.status === "DISETUJUI" || d.status === "TERVERIFIKASI").length} disetujui</span>
-                <span>{r.dokumen.length} terunggah / {r.total_jenis} wajib</span>
+                <span>{r.terverifikasi} disetujui</span>
+                <span>
+                  {r.terverifikasi + r.menunggu} terunggah / {r.total_wajib + r.total_kondisional} harus ada
+                  {r.belum > 0 && <span className="text-rose-500"> · {r.belum} belum</span>}
+                </span>
               </div>
             </Card>
           ))
