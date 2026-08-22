@@ -67,6 +67,11 @@ export default function LoginPage() {
           </button>
         </form>
         <p className="mt-4 text-center text-xs text-slate-400">Default: admin / admin123</p>
+        <p className="mt-2 text-center text-xs">
+          <a href="/asn/login" className="text-indigo-600 underline">
+            Anda ASN? Masuk di sini
+          </a>
+        </p>
       </div>
     </main>
   );

@@ -11,14 +11,20 @@ export default function HomePage() {
         </p>
         <div className="mt-8 flex flex-col gap-3">
           <Link
-            href="/login"
+            href="/asn/login"
             className="rounded-lg bg-indigo-600 px-6 py-3 text-center font-medium text-white transition hover:bg-indigo-700"
+          >
+            Masuk ASN (HP)
+          </Link>
+          <Link
+            href="/login"
+            className="rounded-lg border border-slate-300 bg-white px-6 py-3 text-center font-medium text-slate-700 transition hover:bg-slate-50"
           >
             Masuk Admin
           </Link>
         </div>
         <p className="mt-6 text-sm text-slate-500">
-          ASN dapat mengunggah dokumen langsung melalui Telegram Bot
+          Login ASN tanpa password &mdash; kode dikirim via Telegram/email
         </p>
       </div>
     </main>

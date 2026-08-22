@@ -203,3 +203,19 @@ UPDATE asn SET jenis_asn = CASE
     ELSE NULL
   END
 WHERE jenis_asn IS NULL;
+
+-- ============================================================
+-- PORTAL ASN — Login OTP (tanpa password)
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS asn_login_otp (
+  id BIGSERIAL PRIMARY KEY,
+  nip VARCHAR(30) NOT NULL,
+  kode_hash TEXT NOT NULL,
+  kanal VARCHAR(40) NOT NULL DEFAULT 'TELEGRAM',
+  percobaan INTEGER NOT NULL DEFAULT 0,
+  terpakai BOOLEAN NOT NULL DEFAULT false,
+  kadaluarsa_at TIMESTAMPTZ NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_asn_otp_nip ON asn_login_otp(nip, terpakai);

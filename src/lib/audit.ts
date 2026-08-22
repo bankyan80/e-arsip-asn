@@ -2,11 +2,13 @@ import { query } from "./db";
 
 export type AuditAction =
   | "LOGIN"
+  | "LOGIN_ASN"
   | "LOGOUT"
   | "UPLOAD"
   | "UPDATE"
   | "DELETE"
   | "DOWNLOAD"
+  | "DOWNLOAD_ASN"
   | "VIEW"
   | "VERIFY"
   | "REJECT"
