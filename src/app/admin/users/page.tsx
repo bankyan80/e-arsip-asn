@@ -47,20 +47,44 @@ export default function UsersPage() {
       .catch(() => {});
   }, []);
 
+  // Cocokkan nama dengan data ASN; hasilkan patch form (unit kerja + password awal NPSN)
+  function asnPatchFor(f: Partial<AdminUser> & { password?: string }): Partial<AdminUser> & { password?: string } {
+    const v = (f.nama || "").trim();
+    if (!v) return {};
+    const hit = asnNames.find((n) => n.nama.toLowerCase() === v.toLowerCase());
+    if (!hit) return {};
+    const patch: Partial<AdminUser> & { password?: string } = {};
+    if (f.role === "ADMIN SEKOLAH") {
+      if (!f.unit_kerja && hit.unit_kerja) patch.unit_kerja = hit.unit_kerja;
+      // Password awal = NPSN, hanya untuk akun baru yang belum mengisi password
+      if (!f.id && !f.password && hit.npsn) patch.password = hit.npsn;
+    }
+    return patch;
+  }
+
   function onNamaChange(v: string) {
-    // Jika nama persis ada di data ASN: isi otomatis unit kerja + NPSN,
-    // dan untuk akun baru Admin Sekolah gunakan NPSN sebagai password awal
-    const hit = asnNames.find((n) => n.nama.toLowerCase() === v.trim().toLowerCase());
     setForm((f) => {
-      const patch: Partial<AdminUser & { password?: string }> = { nama: v };
-      if (hit && f.role === "ADMIN SEKOLAH") {
-        if (!f.unit_kerja && hit.unit_kerja) patch.unit_kerja = hit.unit_kerja;
-        if (!f.id && !f.password && hit.npsn) patch.password = hit.npsn;
-      }
-      return { ...f, ...patch };
+      const next = { ...f, nama: v };
+      return { ...next, ...asnPatchFor(next) };
     });
+    const hit = asnNames.find((n) => n.nama.toLowerCase() === v.trim().toLowerCase());
     setNpsnHit(hit?.npsn ?? null);
   }
+
+  function onRoleChange(role: string) {
+    setForm((f) => {
+      const next = { ...f, role };
+      return { ...next, ...asnPatchFor(next) };
+    });
+  }
+
+  // Saat daftar nama ASN selesai dimuat, terapkan ulang kecocokan untuk form yang sedang terbuka
+  useEffect(() => {
+    if (modal && asnNames.length) {
+      setForm((f) => ({ ...f, ...asnPatchFor(f) }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [asnNames]);
 
   async function save() {
     const isEdit = !!form.id;
@@ -156,7 +180,7 @@ export default function UsersPage() {
           </div>
           <div>
             <label className="mb-1 block text-sm text-slate-600">Role</label>
-            <Select value={form.role || ""} onChange={(e) => setForm({ ...form, role: e.target.value })}>
+            <Select value={form.role || ""} onChange={(e) => onRoleChange(e.target.value)}>
               <option value="SUPER ADMIN">SUPER ADMIN</option>
               <option value="ADMIN">ADMIN</option>
               <option value="OPERATOR">OPERATOR</option>
