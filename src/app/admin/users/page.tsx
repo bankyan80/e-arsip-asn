@@ -48,19 +48,27 @@ export default function UsersPage() {
   }, []);
 
   function onNamaChange(v: string) {
-    // Jika nama persis ada di data ASN, isi otomatis unit kerja + NPSN (kecuali sudah diisi manual)
+    // Jika nama persis ada di data ASN: isi otomatis unit kerja + NPSN,
+    // dan untuk akun baru Admin Sekolah gunakan NPSN sebagai password awal
     const hit = asnNames.find((n) => n.nama.toLowerCase() === v.trim().toLowerCase());
-    setForm((f) => ({
-      ...f,
-      nama: v,
-      ...(hit && f.role === "ADMIN SEKOLAH" && !f.unit_kerja && hit.unit_kerja ? { unit_kerja: hit.unit_kerja } : {}),
-    }));
+    setForm((f) => {
+      const patch: Partial<AdminUser & { password?: string }> = { nama: v };
+      if (hit && f.role === "ADMIN SEKOLAH") {
+        if (!f.unit_kerja && hit.unit_kerja) patch.unit_kerja = hit.unit_kerja;
+        if (!f.id && !f.password && hit.npsn) patch.password = hit.npsn;
+      }
+      return { ...f, ...patch };
+    });
     setNpsnHit(hit?.npsn ?? null);
   }
 
   async function save() {
     const isEdit = !!form.id;
     const body: any = { ...form };
+    // Cadangan: password awal Admin Sekolah = NPSN sekolahnya
+    if (!isEdit && body.role === "ADMIN SEKOLAH" && !body.password && npsnHit) {
+      body.password = npsnHit;
+    }
     if (!body.password) delete body.password;
     await apiFetch(isEdit ? "/api/users" : "/api/users", {
       method: isEdit ? "PUT" : "POST",
@@ -174,7 +182,14 @@ export default function UsersPage() {
             </div>
           )}
           <div>
-            <label className="mb-1 block text-sm text-slate-600">Password {modal === "edit" ? "(kosongkan jika tidak diganti)" : ""}</label>
+            <label className="mb-1 block text-sm text-slate-600">
+              Password{" "}
+              {modal === "edit"
+                ? "(kosongkan jika tidak diganti)"
+                : form.role === "ADMIN SEKOLAH"
+                  ? "(otomatis terisi NPSN sekolah)"
+                  : ""}
+            </label>
             <div className="relative">
               <Input
                 type={showPass ? "text" : "password"}
