@@ -19,6 +19,7 @@ interface AdminUser {
 interface AsnNama {
   nama: string;
   unit_kerja: string | null;
+  npsn: string | null;
 }
 
 export default function UsersPage() {
@@ -29,6 +30,7 @@ export default function UsersPage() {
   const [form, setForm] = useState<Partial<AdminUser> & { password?: string }>({});
   const [msg, setMsg] = useState("");
   const [showPass, setShowPass] = useState(false);
+  const [npsnHit, setNpsnHit] = useState<string | null>(null);
 
   async function load() {
     const data = await apiFetch<{ data: AdminUser[] }>("/api/users");
@@ -46,13 +48,14 @@ export default function UsersPage() {
   }, []);
 
   function onNamaChange(v: string) {
-    // Jika nama persis ada di data ASN, isi otomatis unit kerjanya (kecuali sudah diisi manual)
+    // Jika nama persis ada di data ASN, isi otomatis unit kerja + NPSN (kecuali sudah diisi manual)
     const hit = asnNames.find((n) => n.nama.toLowerCase() === v.trim().toLowerCase());
     setForm((f) => ({
       ...f,
       nama: v,
       ...(hit && f.role === "ADMIN SEKOLAH" && !f.unit_kerja && hit.unit_kerja ? { unit_kerja: hit.unit_kerja } : {}),
     }));
+    setNpsnHit(hit?.npsn ?? null);
   }
 
   async function save() {
@@ -167,6 +170,7 @@ export default function UsersPage() {
                 ))}
               </datalist>
               {!(form.unit_kerja || "").trim() && <p className="mt-1 text-xs text-rose-500">Wajib diisi untuk Admin Sekolah</p>}
+              {npsnHit && <p className="mt-1 text-xs text-emerald-600">NPSN: {npsnHit}</p>}
             </div>
           )}
           <div>

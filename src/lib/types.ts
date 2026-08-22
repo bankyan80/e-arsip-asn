@@ -128,6 +128,14 @@ export interface User {
   last_login_at: string | null;
 }
 
+export interface Sekolah {
+  id: number;
+  nama: string;
+  npsn: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface JenisDokumen {
   id: number;
   kode: string;

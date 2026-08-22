@@ -240,3 +240,17 @@ CREATE TABLE IF NOT EXISTS asn_email_change (
 CREATE INDEX IF NOT EXISTS idx_asn_email_change_asn ON asn_email_change(asn_id, terpakai);
 ALTER TABLE asn_email_change ADD COLUMN IF NOT EXISTS kanal VARCHAR(20) NOT NULL DEFAULT 'EMAIL';
 ALTER TABLE users ADD COLUMN IF NOT EXISTS unit_kerja VARCHAR(200);
+
+CREATE TABLE IF NOT EXISTS sekolah (
+  id BIGSERIAL PRIMARY KEY,
+  nama VARCHAR(200) NOT NULL UNIQUE,
+  npsn VARCHAR(8) UNIQUE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+-- Sinkronisasi otomatis: sekolah baru dari unit kerja ASN masuk daftar (idempotent)
+INSERT INTO sekolah (nama)
+SELECT DISTINCT a.unit_kerja FROM asn a
+WHERE a.unit_kerja IS NOT NULL AND a.unit_kerja <> ''
+  AND (a.unit_kerja ILIKE 'SD %' OR a.unit_kerja ILIKE 'TK %' OR a.unit_kerja ILIKE 'SMP %' OR a.unit_kerja ILIKE 'SMA %' OR a.unit_kerja ILIKE 'SMK %')
+ON CONFLICT (nama) DO NOTHING;
